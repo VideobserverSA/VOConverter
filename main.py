@@ -6,6 +6,7 @@ import xml.etree.ElementTree as xmlParser
 from subprocess import *
 import os
 import tempfile
+import sys
 
 ffmpeg_path = "ffmpeg.exe"
 
@@ -31,7 +32,7 @@ class FileChooser(object):
         self.parse_playlist(filename=fn)
 
     def quit_app(self):
-        exit()
+        sys.exit(0)
 
     def parse_playlist(self, filename):
 
@@ -61,8 +62,8 @@ class FileChooser(object):
             comments = ""
 
             if item_type == "ga":
-                time_start = int(child.find("game_action").find("video_time_start").text)
-                time_end = int(child.find("game_action").find("video_time_end").text)
+                time_start = int(float(child.find("game_action").find("video_time_start").text))
+                time_end = int(float(child.find("game_action").find("video_time_end").text))
                 comments = child.find("game_action").find("comments").text
 
             if item_type == "cue":
@@ -138,7 +139,7 @@ class FileChooser(object):
         temp_dir.cleanup()
 
         # DEBUG
-        exit()
+        sys.exit(0)
 
 if __name__ == '__main__':
     fc = FileChooser()
