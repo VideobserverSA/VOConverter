@@ -14,9 +14,6 @@ root = Tk()
 
 class FileChooser(object):
 
-    # meter = ""
-    # num_items = ""
-
     def __init__(self):
         btn = Button(text="Open File", command=self.open_dialog)
         btn.pack()
@@ -28,6 +25,9 @@ class FileChooser(object):
         another.pack()
 
         self.temp_dir = tempfile.TemporaryDirectory()
+        self.num_items = 0
+
+        self.base_name = ""
 
     def open_dialog(self):
 
@@ -59,13 +59,17 @@ class FileChooser(object):
         base = tree.getroot()
         video_path = base.get("video_path")
 
+        self.base_name = base.get("name");
+        if self.base_name == None:
+            self.base_name = os.path.basename(filename)
+
         # get playlist length
         play_len = len(base.findall('.items/item'))
         print("NItems>> ", play_len)
         # we say that the join is the last step
         play_len += 1
         self.num_items = play_len
-        self.meter.set(0.0, "Converting: " + base.get("name") + " " + "0%")
+        self.meter.set(0.0, "Converting: " + self.base_name + " " + "0%")
 
         # now if we have the file:/// present we remove it
         video_path = video_path.replace("file:///", "")
@@ -101,7 +105,7 @@ class FileChooser(object):
             print("")
 
             duration = time_end - time_start
-            tmp_out = temp_dir.name + "\\" + str(cut_number) + ".mp4"
+            tmp_out = self.temp_dir.name + "\\" + str(cut_number) + ".mp4"
             cut_number += 1
 
             try:
@@ -132,7 +136,7 @@ class FileChooser(object):
                     ], shell=True)
                 # calc progress
                 progress = (cut_number / self.num_items)
-                self.meter.set(progress, "Converting: " + base.get("name") + " " + str((progress * 100)) + "%")
+                self.meter.set(progress, "Converting: " + self.base_name + " " + str((progress * 100)) + "%")
 
             except CalledProcessError as cpe:
                 print("ERROR>> ", cpe.output)
@@ -154,14 +158,14 @@ class FileChooser(object):
         # outfile
         # put it on desktop for now
         desktop_dir = os.path.expanduser("~/Desktop/")
-        join_args.append(desktop_dir + "\\" + base.get("name") + ".mp4")
+        join_args.append(desktop_dir + "\\" + self.base_name + ".mp4")
 
         try:
             out = check_output(join_args, shell=False)
         except CalledProcessError as cpe:
             print("ERROR>>", cpe.output)
 
-        self.meter.set(1, "Done: " + base.get("name") + " " + "100" + "%")
+        self.meter.set(1, "Done: " + self.base_name + " " + "100" + "%")
 
         # DEBUG
         # sys.exit(0)
