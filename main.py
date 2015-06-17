@@ -14,12 +14,20 @@ root = Tk()
 
 class FileChooser(object):
 
+    # meter = ""
+    # num_items = ""
+
     def __init__(self):
         btn = Button(text="Open File", command=self.open_dialog)
         btn.pack()
 
+        self.meter = Meter(root, bg="white", fillcolor="light blue")
+        self.meter.pack()
+
         another = Button(text="Quit", command=self.quit_app)
         another.pack()
+
+        self.temp_dir = tempfile.TemporaryDirectory()
 
     def open_dialog(self):
 
@@ -32,21 +40,36 @@ class FileChooser(object):
         self.parse_playlist(filename=fn)
 
     def quit_app(self):
+
+        # Cleanup
+        self.temp_dir.cleanup()
+
         sys.exit(0)
 
     def parse_playlist(self, filename):
 
         # to keep the cut files
-        temp_dir = tempfile.TemporaryDirectory()
+
         # we have a name so make sure we create the dir
-        if not os.path.exists(temp_dir.name):
-            os.makedirs(temp_dir.name)
+        if not os.path.exists(self.temp_dir.name):
+            os.makedirs(self.temp_dir.name)
 
         print("INfile>> ", filename)
         tree = xmlParser.parse(filename)
         base = tree.getroot()
         video_path = base.get("video_path")
-        video_path = video_path[8:]
+
+        # get playlist length
+        play_len = len(base.findall('.items/item'))
+        print("NItems>> ", play_len)
+        # we say that the join is the last step
+        play_len += 1
+        self.num_items = play_len
+        self.meter.set(0.0, "Converting: " + base.get("name") + " " + "0%")
+
+        # now if we have the file:/// present we remove it
+        video_path = video_path.replace("file:///", "")
+
         print("VPath>> ", video_path)
 
         print("")
@@ -83,7 +106,7 @@ class FileChooser(object):
 
             try:
                 # out = check_output([ffmpeg_path, args], shell=False)
-                out = check_output([
+                out = check_call([
                     # path to ffmpeg
                     ffmpeg_path,
                     # overwrite
@@ -106,7 +129,10 @@ class FileChooser(object):
                     "mpegts",
                     # output file
                     tmp_out
-                ], shell=False)
+                    ], shell=True)
+                # calc progress
+                progress = (cut_number / self.num_items)
+                self.meter.set(progress, "Converting: " + base.get("name") + " " + str((progress * 100)) + "%")
 
             except CalledProcessError as cpe:
                 print("ERROR>> ", cpe.output)
@@ -122,24 +148,70 @@ class FileChooser(object):
         # the concat files
         concat = "concat:"
         for x in range(0, cut_number):
-            concat += temp_dir.name + "\\" + str(x) + ".mp4" + "|"
+            concat += self.temp_dir.name + "\\" + str(x) + ".mp4" + "|"
         concat = concat[:-1]
         join_args.append(concat)
         # outfile
         # put it on desktop for now
         desktop_dir = os.path.expanduser("~/Desktop/")
-        join_args.append(desktop_dir + "\\" + "final" + ".mp4")
+        join_args.append(desktop_dir + "\\" + base.get("name") + ".mp4")
 
         try:
             out = check_output(join_args, shell=False)
         except CalledProcessError as cpe:
             print("ERROR>>", cpe.output)
 
-        # Cleanup
-        temp_dir.cleanup()
+        self.meter.set(1, "Done: " + base.get("name") + " " + "100" + "%")
 
         # DEBUG
-        sys.exit(0)
+        # sys.exit(0)
+
+# CODE FOR PROGRESS BAR
+class Meter(Frame):
+    def __init__(self, master, width=300, height=20, bg='white', fillcolor='orchid1',\
+                 value=0.0, text=None, font=None, textcolor='black', *args, **kw):
+        Frame.__init__(self, master, bg=bg, width=width, height=height, *args, **kw)
+        self._value = value
+
+        self._canv = Canvas(self, bg=self['bg'], width=self['width'], height=self['height'],\
+                                    highlightthickness=0, relief='flat', bd=0)
+        self._canv.pack(fill='both', expand=1)
+        self._rect = self._canv.create_rectangle(0, 0, 0, self._canv.winfo_reqheight(), fill=fillcolor,\
+                                                 width=0)
+        self._text = self._canv.create_text(self._canv.winfo_reqwidth()/2, self._canv.winfo_reqheight()/2,\
+                                            text='', fill=textcolor)
+        if font:
+            self._canv.itemconfigure(self._text, font=font)
+
+        self.set(value, text)
+        self.bind('<Configure>', self._update_coords)
+
+    def _update_coords(self, event):
+        # Updates the position of the text and rectangle inside the canvas when the size of
+        # the widget gets changed.
+        # looks like we have to call update_idletasks() twice to make sure
+        # to get the results we expect
+        self._canv.update_idletasks()
+        self._canv.coords(self._text, self._canv.winfo_width()/2, self._canv.winfo_height()/2)
+        self._canv.coords(self._rect, 0, 0, self._canv.winfo_width()*self._value, self._canv.winfo_height())
+        self._canv.update_idletasks()
+
+    def get(self):
+        return self._value, self._canv.itemcget(self._text, 'text')
+
+    def set(self, value=0.0, text=None):
+        # make the value failsafe:
+        if value < 0.0:
+            value = 0.0
+        elif value > 1.0:
+            value = 1.0
+        self._value = value
+        if text == None:
+            # if no text is specified use the default percentage string:
+            text = str(int(round(100 * value))) + ' %'
+        self._canv.coords(self._rect, 0, 0, self._canv.winfo_width()*value, self._canv.winfo_height())
+        self._canv.itemconfigure(self._text, text=text)
+        self._canv.update_idletasks()
 
 if __name__ == '__main__':
     fc = FileChooser()
