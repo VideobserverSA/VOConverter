@@ -5,6 +5,7 @@ from tkinter import filedialog
 import xml.etree.ElementTree as xmlParser
 from subprocess import *
 import os
+import tempfile
 
 ffmpeg_path = "ffmpeg.exe"
 
@@ -20,9 +21,12 @@ class FileChooser(object):
         another.pack()
 
     def open_dialog(self):
+
+        initial_dir = os.path.expanduser("~/Documents/VideoObserver/Playlist")
+
         fn = filedialog.askopenfilename(filetypes=(("VO Playlist", "*.vopl"),
                                                    ("All Files", "*.*")),
-                                        initialdir="C://Users//Rui//Documents//VideoObserver//Playlist"
+                                        initialdir=initial_dir
                                         )
         self.parse_playlist(filename=fn)
 
@@ -30,6 +34,13 @@ class FileChooser(object):
         exit()
 
     def parse_playlist(self, filename):
+
+        # to keep the cut files
+        temp_dir = tempfile.TemporaryDirectory()
+        # we have a name so make sure we create the dir
+        if not os.path.exists(temp_dir.name):
+            os.makedirs(temp_dir.name)
+
         print("INfile>> ", filename)
         tree = xmlParser.parse(filename)
         base = tree.getroot()
@@ -54,6 +65,11 @@ class FileChooser(object):
                 time_end = int(child.find("game_action").find("video_time_end").text)
                 comments = child.find("game_action").find("comments").text
 
+            if item_type == "cue":
+                time_start = int(child.find("action_cue").find("starting_time").text)
+                time_end = int(child.find("action_cue").find("ending_time").text)
+                comments = child.find("action_cue").find("comments").text
+
             print("TimeStart>> ", time_start)
             print("TimeEnd>> ", time_end)
             print("Comments>> ", comments)
@@ -61,10 +77,8 @@ class FileChooser(object):
             print("")
 
             duration = time_end - time_start
-            tmp_out = os.path.dirname(os.path.realpath(__file__)) + "\\" + str(cut_number) + ".mp4"
+            tmp_out = temp_dir.name + "\\" + str(cut_number) + ".mp4"
             cut_number += 1
-
-            codec = "-c copy -bsf:v h264_mp4toannexb -f mpegts"
 
             try:
                 # out = check_output([ffmpeg_path, args], shell=False)
@@ -107,16 +121,21 @@ class FileChooser(object):
         # the concat files
         concat = "concat:"
         for x in range(0, cut_number):
-            concat += os.path.dirname(os.path.realpath(__file__)) + "\\" + str(x) + ".mp4" + "|"
+            concat += temp_dir.name + "\\" + str(x) + ".mp4" + "|"
         concat = concat[:-1]
         join_args.append(concat)
         # outfile
-        join_args.append(os.path.dirname(os.path.realpath(__file__)) + "\\" + "final" + ".mp4")
+        # put it on desktop for now
+        desktop_dir = os.path.expanduser("~/Desktop/")
+        join_args.append(desktop_dir + "\\" + "final" + ".mp4")
 
         try:
             out = check_output(join_args, shell=False)
         except CalledProcessError as cpe:
             print("ERROR>>", cpe.output)
+
+        # Cleanup
+        temp_dir.cleanup()
 
         # DEBUG
         exit()
