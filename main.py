@@ -94,8 +94,8 @@ class FileChooser(object):
                 comments = child.find("game_action").find("comments").text
 
             if item_type == "cue":
-                time_start = int(child.find("action_cue").find("starting_time").text)
-                time_end = int(child.find("action_cue").find("ending_time").text)
+                time_start = int(float(child.find("action_cue").find("starting_time").text))
+                time_end = int(float(child.find("action_cue").find("ending_time").text))
                 comments = child.find("action_cue").find("comments").text
 
             print("TimeStart>> ", time_start)
