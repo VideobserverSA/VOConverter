@@ -9,7 +9,7 @@
     <ROW Property="ProductCode" Value="1033:{058A51B5-AC15-4421-B0E3-9481FD7F7315} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="VO Converter"/>
-    <ROW Property="ProductVersion" Value="1.0.2" Type="32"/>
+    <ROW Property="ProductVersion" Value="1.0.3" Type="32"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND"/>
     <ROW Property="UpgradeCode" Value="{20AFAB45-5019-413E-87F5-F22F4FF2596F}"/>
     <ROW Property="WindowsType9X" MultiBuildValue="DefaultBuild:Windows 9x/ME" ValueLocId="-"/>
@@ -43,6 +43,7 @@
     <ROW Directory="US_Dir" Directory_Parent="tzdata_Dir" DefaultDir="US"/>
     <ROW Directory="demos_Dir" Directory_Parent="tk_Dir" DefaultDir="demos"/>
     <ROW Directory="encoding_Dir" Directory_Parent="tcl_Dir" DefaultDir="encoding"/>
+    <ROW Directory="fonts_Dir" Directory_Parent="APPDIR" DefaultDir="fonts"/>
     <ROW Directory="http1.0_Dir" Directory_Parent="tcl_Dir" DefaultDir="http1.0"/>
     <ROW Directory="images_1_Dir" Directory_Parent="tk_Dir" DefaultDir="images"/>
     <ROW Directory="images_Dir" Directory_Parent="demos_Dir" DefaultDir="images"/>
@@ -55,49 +56,50 @@
     <ROW Directory="tzdata_Dir" Directory_Parent="tcl_Dir" DefaultDir="tzdata"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiCompsComponent">
-    <ROW Component="ACT" ComponentId="{78CC5FA7-B9E0-42FC-A81E-F1E2DBF5FCA3}" Directory_="Australia_Dir" Attributes="0" KeyPath="ACT" Type="0"/>
-    <ROW Component="AST4" ComponentId="{C73E29B9-8A02-4EB5-85A7-B0DEBFA5CD96}" Directory_="SystemV_Dir" Attributes="0" KeyPath="AST4" Type="0"/>
-    <ROW Component="Abidjan" ComponentId="{1D007A99-2F22-4665-A7AF-07C9C6B013EA}" Directory_="Africa_Dir" Attributes="0" KeyPath="Abidjan" Type="0"/>
-    <ROW Component="Acre" ComponentId="{576F444D-C7CB-44AA-8115-A7FDC18BC16E}" Directory_="Brazil_Dir" Attributes="0" KeyPath="Acre" Type="0"/>
-    <ROW Component="Adak" ComponentId="{1D0A3114-1093-45D0-944E-BFC62CFEE670}" Directory_="America_Dir" Attributes="0" KeyPath="Adak" Type="0"/>
-    <ROW Component="Aden" ComponentId="{492404CB-8815-4E56-B711-A3A53D6C4717}" Directory_="Asia_Dir" Attributes="0" KeyPath="Aden" Type="0"/>
-    <ROW Component="Alaska" ComponentId="{BE985DFA-0052-4DCB-9431-235D348E3051}" Directory_="US_Dir" Attributes="0" KeyPath="Alaska" Type="0"/>
-    <ROW Component="Amsterdam" ComponentId="{D8C4193F-CDE0-4196-8D8D-C844944218DA}" Directory_="Europe_Dir" Attributes="0" KeyPath="Amsterdam" Type="0"/>
-    <ROW Component="Antananarivo" ComponentId="{7A386C2B-5DD5-44E6-A72E-6CD6D5EF2E8F}" Directory_="Indian_Dir" Attributes="0" KeyPath="Antananarivo" Type="0"/>
-    <ROW Component="Apia" ComponentId="{FDA32C4F-1253-44A7-8A11-7B10449FDAEE}" Directory_="Pacific_Dir" Attributes="0" KeyPath="Apia" Type="0"/>
-    <ROW Component="Atlantic" ComponentId="{BF266E77-D71A-4C84-B7F0-7A440DE9546D}" Directory_="Canada_Dir" Attributes="0" KeyPath="Atlantic" Type="0"/>
-    <ROW Component="Azores" ComponentId="{3282B854-7AB3-42AD-871A-85301E521DD3}" Directory_="Atlantic_Dir" Attributes="0" KeyPath="Azores" Type="0"/>
-    <ROW Component="BajaNorte" ComponentId="{93E7904F-36B4-4C75-A829-5331B3ECFFCE}" Directory_="Mexico_Dir" Attributes="0" KeyPath="BajaNorte" Type="0"/>
-    <ROW Component="Beulah" ComponentId="{EB21C762-F8F7-4217-B50E-AF8A829B3727}" Directory_="North_Dakota_Dir" Attributes="0" KeyPath="Beulah" Type="0"/>
-    <ROW Component="Buenos_Aires" ComponentId="{88B62EBE-B048-4796-907A-12661F6FC576}" Directory_="Argentina_Dir" Attributes="0" KeyPath="Buenos_Aires" Type="0"/>
-    <ROW Component="CET" ComponentId="{1E0C7356-E1E0-4143-959A-E4B9FECBA3F5}" Directory_="tzdata_Dir" Attributes="0" KeyPath="CET" Type="0"/>
-    <ROW Component="Casey" ComponentId="{44B8F4C8-A560-4013-9309-44A74CA8C909}" Directory_="Antarctica_Dir" Attributes="0" KeyPath="Casey" Type="0"/>
-    <ROW Component="Continental" ComponentId="{CD58FB83-4AC7-456F-B102-8C104934E8B7}" Directory_="Chile_Dir" Attributes="0" KeyPath="Continental" Type="0"/>
-    <ROW Component="GMT" ComponentId="{B85EDFB5-CA28-4EAF-A4C5-3CE3EB350536}" Directory_="Etc_Dir" Attributes="0" KeyPath="GMT" Type="0"/>
-    <ROW Component="Indianapolis" ComponentId="{E3E2430A-548C-4ACE-B2C7-40864FFF7CB6}" Directory_="Indiana_Dir" Attributes="0" KeyPath="Indianapolis" Type="0"/>
-    <ROW Component="Longyearbyen" ComponentId="{5A207C21-F400-4C29-9ECB-ED4CC8ADC911}" Directory_="Arctic_Dir" Attributes="0" KeyPath="Longyearbyen" Type="0"/>
-    <ROW Component="Louisville" ComponentId="{2DBD1729-521A-4F49-A40C-C7E8456D31E2}" Directory_="Kentucky_Dir" Attributes="0" KeyPath="Louisville" Type="0"/>
+    <ROW Component="ACT" ComponentId="{6C607D8D-98D8-4B01-B58E-25AA4613E58C}" Directory_="Australia_Dir" Attributes="0" KeyPath="ACT" Type="0"/>
+    <ROW Component="AST4" ComponentId="{568A5ED5-8340-4FED-A781-8DD2C38933BB}" Directory_="SystemV_Dir" Attributes="0" KeyPath="AST4" Type="0"/>
+    <ROW Component="Abidjan" ComponentId="{4E3AF169-085E-48B5-B291-18EDBBAC8D22}" Directory_="Africa_Dir" Attributes="0" KeyPath="Abidjan" Type="0"/>
+    <ROW Component="Acre" ComponentId="{4695EA5F-669B-41EA-A0EB-4DA800ECCF90}" Directory_="Brazil_Dir" Attributes="0" KeyPath="Acre" Type="0"/>
+    <ROW Component="Adak" ComponentId="{01715DEB-E234-44B0-8879-1AABB7F8F9D7}" Directory_="America_Dir" Attributes="0" KeyPath="Adak" Type="0"/>
+    <ROW Component="Aden" ComponentId="{BC35FD89-B4AA-4503-A83C-D58B06EB4C36}" Directory_="Asia_Dir" Attributes="0" KeyPath="Aden" Type="0"/>
+    <ROW Component="Alaska" ComponentId="{964DDA60-8121-428F-8C0F-E91BD8018DCA}" Directory_="US_Dir" Attributes="0" KeyPath="Alaska" Type="0"/>
+    <ROW Component="Amsterdam" ComponentId="{EF4F7A4B-C3EE-4854-9C01-77630D469989}" Directory_="Europe_Dir" Attributes="0" KeyPath="Amsterdam" Type="0"/>
+    <ROW Component="Antananarivo" ComponentId="{2839A1C9-5B30-4BEF-9DCA-6B3482D671B1}" Directory_="Indian_Dir" Attributes="0" KeyPath="Antananarivo" Type="0"/>
+    <ROW Component="Apia" ComponentId="{6A6330EC-EE13-4E66-97FC-27EC906FD1F3}" Directory_="Pacific_Dir" Attributes="0" KeyPath="Apia" Type="0"/>
+    <ROW Component="Atlantic" ComponentId="{61E6D8F4-1CB2-484E-A678-4D94D0171C3F}" Directory_="Canada_Dir" Attributes="0" KeyPath="Atlantic" Type="0"/>
+    <ROW Component="Azores" ComponentId="{57771340-6232-4161-BD76-B04C83E4D021}" Directory_="Atlantic_Dir" Attributes="0" KeyPath="Azores" Type="0"/>
+    <ROW Component="BajaNorte" ComponentId="{D52D7131-F735-4239-8F4A-4E7F59A39935}" Directory_="Mexico_Dir" Attributes="0" KeyPath="BajaNorte" Type="0"/>
+    <ROW Component="Beulah" ComponentId="{61F00608-3CC4-4662-8B8A-2B8A83575C0A}" Directory_="North_Dakota_Dir" Attributes="0" KeyPath="Beulah" Type="0"/>
+    <ROW Component="Buenos_Aires" ComponentId="{84E9BFC2-6A58-460D-A0F3-59EF9F5CFC13}" Directory_="Argentina_Dir" Attributes="0" KeyPath="Buenos_Aires" Type="0"/>
+    <ROW Component="CET" ComponentId="{23CCB314-8B11-495F-9C26-CAFFDBE859CD}" Directory_="tzdata_Dir" Attributes="0" KeyPath="CET" Type="0"/>
+    <ROW Component="Casey" ComponentId="{203ADC3D-EEBF-46A4-90EA-575D84C4A694}" Directory_="Antarctica_Dir" Attributes="0" KeyPath="Casey" Type="0"/>
+    <ROW Component="Continental" ComponentId="{B7002BE3-1205-4BED-8889-7B7F1A2E3C5C}" Directory_="Chile_Dir" Attributes="0" KeyPath="Continental" Type="0"/>
+    <ROW Component="GMT" ComponentId="{49281049-DA5F-4897-8F3A-74DF9D4EE0B5}" Directory_="Etc_Dir" Attributes="0" KeyPath="GMT" Type="0"/>
+    <ROW Component="Indianapolis" ComponentId="{2412FF53-1FC2-4F4B-ADB3-40A9C3F9550E}" Directory_="Indiana_Dir" Attributes="0" KeyPath="Indianapolis" Type="0"/>
+    <ROW Component="Longyearbyen" ComponentId="{A9BEF38B-C070-4B64-9775-8CCC8428D9A1}" Directory_="Arctic_Dir" Attributes="0" KeyPath="Longyearbyen" Type="0"/>
+    <ROW Component="Louisville" ComponentId="{42BF62B4-E224-454B-8A64-8E759804998A}" Directory_="Kentucky_Dir" Attributes="0" KeyPath="Louisville" Type="0"/>
     <ROW Component="ProductInformation" ComponentId="{F57A0239-4BFF-401C-9CA8-140324193FC1}" Directory_="APPDIR" Attributes="4" KeyPath="Version"/>
-    <ROW Component="_ctypes.pyd" ComponentId="{5016F60A-3ED8-4065-A6D4-60DDC64CA6E8}" Directory_="APPDIR" Attributes="256" KeyPath="_ctypes.pyd" Type="0"/>
-    <ROW Component="af.msg" ComponentId="{44EC064F-10E1-4278-9FEA-CD25413DE1B2}" Directory_="msgs_Dir" Attributes="0" KeyPath="af.msg" Type="0"/>
-    <ROW Component="altTheme.tcl" ComponentId="{36EEC992-EE0F-4284-8D24-A67F4EA5CB71}" Directory_="ttk_Dir" Attributes="0" KeyPath="altTheme.tcl" Type="0"/>
-    <ROW Component="anilabel.tcl" ComponentId="{57D7CC77-9577-44CC-BB94-C68FB7B3B5C6}" Directory_="demos_Dir" Attributes="0" KeyPath="anilabel.tcl" Type="0"/>
-    <ROW Component="ascii.enc" ComponentId="{EF15F4CC-C70B-431A-B045-4E967D68FE91}" Directory_="encoding_Dir" Attributes="0" KeyPath="ascii.enc" Type="0"/>
-    <ROW Component="auto.tcl" ComponentId="{0612D2AA-0053-4739-B7B2-D6ADFBE774F5}" Directory_="tcl_Dir" Attributes="0" KeyPath="auto.tcl" Type="0"/>
-    <ROW Component="bgerror.tcl" ComponentId="{91B5AEFD-266C-47CF-B57B-00425D50245B}" Directory_="tk_Dir" Attributes="0" KeyPath="bgerror.tcl" Type="0"/>
-    <ROW Component="cs.msg" ComponentId="{CD13D8B1-A3C4-494B-B053-DFDCD94CEF64}" Directory_="msgs_1_Dir" Attributes="0" KeyPath="cs.msg_1" Type="0"/>
-    <ROW Component="earth.gif" ComponentId="{CCAB60A4-144B-48D6-B856-79EA9DC11AEC}" Directory_="images_Dir" Attributes="0" KeyPath="earth.gif" Type="0"/>
-    <ROW Component="ffmpeg.exe" ComponentId="{27A2B586-A536-497A-834F-F027F0B0FBCD}" Directory_="APPDIR" Attributes="0" KeyPath="ffmpeg.exe"/>
-    <ROW Component="http.tcl" ComponentId="{69ECC3D5-AF44-466D-96ED-8D91BA35F4F2}" Directory_="http1.0_Dir" Attributes="0" KeyPath="http.tcl" Type="0"/>
-    <ROW Component="lamp.png" ComponentId="{02C09746-51CC-42FE-B803-6F1192F278EF}" Directory_="images_1_Dir" Attributes="0" KeyPath="lamp.png" Type="0"/>
-    <ROW Component="optparse.tcl" ComponentId="{F3174677-1484-4FC7-905A-D6ED2530AEA0}" Directory_="opt0.4_Dir" Attributes="0" KeyPath="optparse.tcl" Type="0"/>
-    <ROW Component="python34.dll" ComponentId="{34ACCD6F-96A6-41BC-BFDD-9B03EDE35385}" Directory_="APPDIR" Attributes="256" KeyPath="python34.dll"/>
-    <ROW Component="tcl86t.dll" ComponentId="{B177A8AC-A96B-44DF-BB3C-4FBA6ACE8A1B}" Directory_="APPDIR" Attributes="256" KeyPath="tcl86t.dll"/>
-    <ROW Component="tk86t.dll" ComponentId="{7C6347B3-D3EC-434C-8C0E-79D2E65354DA}" Directory_="APPDIR" Attributes="256" KeyPath="tk86t.dll"/>
+    <ROW Component="_ctypes.pyd" ComponentId="{63B1C968-F321-48B0-9C3D-78021B00A1FA}" Directory_="APPDIR" Attributes="256" KeyPath="_ctypes.pyd" Type="0"/>
+    <ROW Component="af.msg" ComponentId="{25FE4D9B-4A2B-457F-9E4B-10EA88BD3671}" Directory_="msgs_Dir" Attributes="0" KeyPath="af.msg" Type="0"/>
+    <ROW Component="altTheme.tcl" ComponentId="{12FF278F-20D6-4427-BF16-491C92FAF583}" Directory_="ttk_Dir" Attributes="0" KeyPath="altTheme.tcl" Type="0"/>
+    <ROW Component="anilabel.tcl" ComponentId="{EB847BFA-4B7C-4577-A917-D4A630EC0C1F}" Directory_="demos_Dir" Attributes="0" KeyPath="anilabel.tcl" Type="0"/>
+    <ROW Component="ascii.enc" ComponentId="{116B1846-B93A-4C31-B501-6B527C2342F7}" Directory_="encoding_Dir" Attributes="0" KeyPath="ascii.enc" Type="0"/>
+    <ROW Component="auto.tcl" ComponentId="{D0273397-92D2-4766-8D5C-AEF265CAFC17}" Directory_="tcl_Dir" Attributes="0" KeyPath="auto.tcl" Type="0"/>
+    <ROW Component="bgerror.tcl" ComponentId="{35F2EEBA-D81A-42D9-8463-2B3ECDAF7F00}" Directory_="tk_Dir" Attributes="0" KeyPath="bgerror.tcl" Type="0"/>
+    <ROW Component="cs.msg" ComponentId="{C531E3B5-C418-417D-B921-B75186E0A55D}" Directory_="msgs_1_Dir" Attributes="0" KeyPath="cs.msg_1" Type="0"/>
+    <ROW Component="earth.gif" ComponentId="{E53650E0-AA32-44E4-9A22-77D010896BE3}" Directory_="images_Dir" Attributes="0" KeyPath="earth.gif" Type="0"/>
+    <ROW Component="ffmpeg.exe" ComponentId="{DA23BF20-7543-46D2-8410-21CFDAB4EBFB}" Directory_="APPDIR" Attributes="0" KeyPath="ffmpeg.exe"/>
+    <ROW Component="fonts.conf" ComponentId="{82AC53BE-DD95-425E-9657-E3AC07EC1F38}" Directory_="fonts_Dir" Attributes="0" KeyPath="fonts.conf" Type="0"/>
+    <ROW Component="http.tcl" ComponentId="{31D74795-6E77-4351-940C-197CDCF911DE}" Directory_="http1.0_Dir" Attributes="0" KeyPath="http.tcl" Type="0"/>
+    <ROW Component="lamp.png" ComponentId="{80210C6C-35B6-4424-9364-70C981E94CCD}" Directory_="images_1_Dir" Attributes="0" KeyPath="lamp.png" Type="0"/>
+    <ROW Component="optparse.tcl" ComponentId="{C46BC600-0EC3-4126-8259-4AACCC418ABD}" Directory_="opt0.4_Dir" Attributes="0" KeyPath="optparse.tcl" Type="0"/>
+    <ROW Component="python34.dll" ComponentId="{9C85E547-167D-480E-A80F-7D140DB6D3F9}" Directory_="APPDIR" Attributes="256" KeyPath="python34.dll"/>
+    <ROW Component="tcl86t.dll" ComponentId="{695CF0B7-35C7-4212-831C-278AA5448DD4}" Directory_="APPDIR" Attributes="256" KeyPath="tcl86t.dll"/>
+    <ROW Component="tk86t.dll" ComponentId="{66872ED7-2BEE-4D09-8C85-C2A56354AF94}" Directory_="APPDIR" Attributes="256" KeyPath="tk86t.dll"/>
     <ROW Component="voconverter.exe" ComponentId="{83071D87-E71B-4C83-90F7-0FCFA156B670}" Directory_="APPDIR" Attributes="256" KeyPath="voconverter.exe"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiFeatsComponent">
-    <ROW Feature="MainFeature" Title="MainFeature" Description="Description" Display="1" Level="1" Directory_="APPDIR" Attributes="0" Components="ACT AST4 Abidjan Acre Adak Aden Alaska Amsterdam Antananarivo Apia Atlantic Azores BajaNorte Beulah Buenos_Aires CET Casey Continental GMT Indianapolis Longyearbyen Louisville ProductInformation _ctypes.pyd af.msg altTheme.tcl anilabel.tcl ascii.enc auto.tcl bgerror.tcl cs.msg earth.gif ffmpeg.exe http.tcl lamp.png optparse.tcl python34.dll tcl86t.dll tk86t.dll voconverter.exe"/>
+    <ROW Feature="MainFeature" Title="MainFeature" Description="Description" Display="1" Level="1" Directory_="APPDIR" Attributes="0" Components="ACT AST4 Abidjan Acre Adak Aden Alaska Amsterdam Antananarivo Apia Atlantic Azores BajaNorte Beulah Buenos_Aires CET Casey Continental GMT Indianapolis Longyearbyen Louisville ProductInformation _ctypes.pyd af.msg altTheme.tcl anilabel.tcl ascii.enc auto.tcl bgerror.tcl cs.msg earth.gif ffmpeg.exe fonts.conf http.tcl lamp.png optparse.tcl python34.dll tcl86t.dll tk86t.dll voconverter.exe"/>
     <ATTRIBUTE name="CurrentFeature" value="MainFeature"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiFilesComponent">
@@ -853,6 +855,7 @@
     <ROW File="focus.tcl" Component_="bgerror.tcl" FileName="focus.tcl" Attributes="0" SourcePath="dist\tk\focus.tcl" SelfReg="false" NextFile="fontchooser.tcl"/>
     <ROW File="fontchoose.tcl" Component_="anilabel.tcl" FileName="FONTCH~1.TCL|fontchoose.tcl" Attributes="0" SourcePath="dist\tk\demos\fontchoose.tcl" SelfReg="false" NextFile="form.tcl"/>
     <ROW File="fontchooser.tcl" Component_="bgerror.tcl" FileName="FONTCH~1.TCL|fontchooser.tcl" Attributes="0" SourcePath="dist\tk\fontchooser.tcl" SelfReg="false" NextFile="iconlist.tcl"/>
+    <ROW File="fonts.conf" Component_="fonts.conf" FileName="FONTS~1.CON|fonts.conf" Attributes="0" SourcePath="dist\fonts\fonts.conf" SelfReg="false" NextFile="auto.tcl"/>
     <ROW File="fonts.tcl" Component_="altTheme.tcl" FileName="fonts.tcl" Attributes="0" SourcePath="dist\tk\ttk\fonts.tcl" SelfReg="false" NextFile="menubutton.tcl"/>
     <ROW File="form.tcl" Component_="anilabel.tcl" FileName="form.tcl" Attributes="0" SourcePath="dist\tk\demos\form.tcl" SelfReg="false" NextFile="goldberg.tcl"/>
     <ROW File="fr.msg" Component_="af.msg" FileName="fr.msg" Attributes="0" SourcePath="dist\tcl\msgs\fr.msg" SelfReg="false" NextFile="fr_be.msg"/>
@@ -1081,13 +1084,13 @@
     <ROW File="ttkscale.tcl" Component_="anilabel.tcl" FileName="ttkscale.tcl" Attributes="0" SourcePath="dist\tk\demos\ttkscale.tcl" SelfReg="false" NextFile="twind.tcl"/>
     <ROW File="twind.tcl" Component_="anilabel.tcl" FileName="twind.tcl" Attributes="0" SourcePath="dist\tk\demos\twind.tcl" SelfReg="false" NextFile="unicodeout.tcl"/>
     <ROW File="uk.msg" Component_="af.msg" FileName="uk.msg" Attributes="0" SourcePath="dist\tcl\msgs\uk.msg" SelfReg="false" NextFile="vi.msg"/>
-    <ROW File="unicodedata.pyd" Component_="_ctypes.pyd" FileName="UNICOD~1.PYD|unicodedata.pyd" Attributes="0" SourcePath="dist\unicodedata.pyd" SelfReg="false" NextFile="voconverter.exe"/>
+    <ROW File="unicodedata.pyd" Component_="_ctypes.pyd" FileName="UNICOD~1.PYD|unicodedata.pyd" Attributes="0" SourcePath="dist\unicodedata.pyd" SelfReg="false" NextFile="fonts.conf"/>
     <ROW File="unicodeout.tcl" Component_="anilabel.tcl" FileName="UNICOD~1.TCL|unicodeout.tcl" Attributes="0" SourcePath="dist\tk\demos\unicodeout.tcl" SelfReg="false" NextFile="vscale.tcl"/>
     <ROW File="unsupported.tcl" Component_="bgerror.tcl" FileName="UNSUPP~1.TCL|unsupported.tcl" Attributes="0" SourcePath="dist\tk\unsupported.tcl" SelfReg="false" NextFile="xmfbox.tcl"/>
     <ROW File="utils.tcl" Component_="altTheme.tcl" FileName="utils.tcl" Attributes="0" SourcePath="dist\tk\ttk\utils.tcl" SelfReg="false" NextFile="vistaTheme.tcl"/>
     <ROW File="vi.msg" Component_="af.msg" FileName="vi.msg" Attributes="0" SourcePath="dist\tcl\msgs\vi.msg" SelfReg="false" NextFile="zh.msg"/>
     <ROW File="vistaTheme.tcl" Component_="altTheme.tcl" FileName="VISTAT~1.TCL|vistaTheme.tcl" Attributes="0" SourcePath="dist\tk\ttk\vistaTheme.tcl" SelfReg="false" NextFile="winTheme.tcl"/>
-    <ROW File="voconverter.exe" Component_="voconverter.exe" FileName="VOCONV~1.EXE|voconverter.exe" Attributes="0" SourcePath="dist\voconverter.exe" SelfReg="false" NextFile="auto.tcl" DigSign="true"/>
+    <ROW File="voconverter.exe" Component_="voconverter.exe" FileName="VOCONV~1.EXE|voconverter.exe" Attributes="0" SourcePath="dist\voconverter.exe" SelfReg="false" NextFile="_ctypes.pyd" DigSign="true"/>
     <ROW File="vscale.tcl" Component_="anilabel.tcl" FileName="vscale.tcl" Attributes="0" SourcePath="dist\tk\demos\vscale.tcl" SelfReg="false" NextFile="widget"/>
     <ROW File="widget" Component_="anilabel.tcl" FileName="widget" Attributes="0" SourcePath="dist\tk\demos\widget" SelfReg="false" NextFile="dialog.tcl"/>
     <ROW File="winTheme.tcl" Component_="altTheme.tcl" FileName="winTheme.tcl" Attributes="0" SourcePath="dist\tk\ttk\winTheme.tcl" SelfReg="false" NextFile="xpTheme.tcl"/>
@@ -1101,8 +1104,12 @@
     <ROW File="zh_tw.msg" Component_="af.msg" FileName="zh_tw.msg" Attributes="0" SourcePath="dist\tcl\msgs\zh_tw.msg" SelfReg="false" NextFile="optparse.tcl"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.BuildComponent">
-    <ROW BuildKey="DefaultBuild" BuildName="DefaultBuild" BuildOrder="1" BuildType="0" Languages="en" InstallationType="4" UseLargeSchema="true"/>
+    <ROW BuildKey="DefaultBuild" BuildName="DefaultBuild" BuildOrder="1" BuildType="0" PackageFolder="pack_out" PackageFileName="VO_Converter" Languages="en" InstallationType="4" UseLargeSchema="true"/>
     <ATTRIBUTE name="CurrentBuild" value="DefaultBuild"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.CacheComponent">
+    <ATTRIBUTE name="CacheIndex" value="VO Converter.txt"/>
+    <ATTRIBUTE name="Folder" value="pack_out\cache"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.DictionaryComponent">
     <ROW Path="&lt;AI_DICTS&gt;ui.ail"/>
