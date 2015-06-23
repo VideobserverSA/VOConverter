@@ -106,40 +106,110 @@ class FileChooser(object):
 
             duration = time_end - time_start
             tmp_out = self.temp_dir.name + "\\" + str(cut_number) + ".mp4"
-            cut_number += 1
 
             try:
-                # out = check_output([ffmpeg_path, args], shell=False)
-                out = check_call([
-                    # path to ffmpeg
-                    ffmpeg_path,
-                    # overwrite
-                    "-y",
-                    # start time
-                    "-ss",
-                    str(time_start),
-                    # input file
-                    "-i",
-                    video_path,
-                    # duration
-                    "-t",
-                    str(duration),
-                    # codec
-                    "-c",
-                    "copy",
-                    "-bsf:v",
-                    "h264_mp4toannexb",
-                    "-f",
-                    "mpegts",
-                    # output file
-                    tmp_out
-                    ], shell=True)
-                # calc progress
-                progress = (cut_number / self.num_items)
-                self.meter.set(progress, "Converting: " + self.base_name + " " + str((progress * 100)) + "%")
+
+                if comments is None:
+                    out = check_call([
+                        # path to ffmpeg
+                        ffmpeg_path,
+                        # overwrite
+                        "-y",
+                        # start time
+                        "-ss",
+                        str(time_start),
+                        # input file
+                        "-i",
+                        video_path,
+                        # duration
+                        "-t",
+                        str(duration),
+                        # codec
+                        "-c",
+                        "copy",
+                        "-bsf:v",
+                        "h264_mp4toannexb",
+                        "-f",
+                        "mpegts",
+                        # output file
+                        tmp_out
+                        ], shell=True)
+                    # calc progress
+                    progress = (cut_number / self.num_items)
+                    self.meter.set(progress, "Converting: " + self.base_name + " " + str((progress * 100)) + "%")
+                else:
+
+                    # write srt file
+                    srt_path = self.temp_dir.name + "\\" + str(cut_number) + ".srt"
+                    srt_file = open(srt_path, "wb")
+
+                    srt_contents = "1\n"
+                    srt_contents += "00:00:00,000" + " --> " + "05:00:00,000" +  "1\n"
+                    srt_contents += comments + "\n"
+
+                    srt_file.write(srt_contents.encode("utf8"))
+                    srt_file.close()
+
+                    escaped_srt_path = srt_path.replace("\\", "\\\\").replace(":", "\:").replace(" ", "\ ")
+
+                    # encode with subtiles
+                    srt_otu = check_call([
+                        ffmpeg_path,
+                        # overwrite
+                        "-y",
+                        # start time
+                        "-ss",
+                        str(time_start),
+                        # input file
+                        "-i",
+                        video_path,
+                        # duration
+                        "-t",
+                        str(duration),
+                        # codec
+                        "-codec:v",
+                        "libx264",
+                        "-crf",
+                        "23",
+                        "-codec:a",
+                        "copy",
+                        "-vf",
+                        "subtitles=" + "'" + escaped_srt_path + "'",
+                        self.temp_dir.name + "\\" + str(cut_number) + "_srt.mp4"
+                        ])
+
+                    out = check_call([
+                        # path to ffmpeg
+                        ffmpeg_path,
+                        # overwrite
+                        "-y",
+                        # start time
+                        "-ss",
+                        str(time_start),
+                        # input file
+                        "-i",
+                        self.temp_dir.name + "\\" + str(cut_number) + "_srt.mp4",
+                        # duration
+                        "-t",
+                        str(duration),
+                        # codec
+                        "-c",
+                        "copy",
+                        "-bsf:v",
+                        "h264_mp4toannexb",
+                        "-f",
+                        "mpegts",
+                        # output file
+                        tmp_out
+                        ], shell=True)
+                    # calc progress
+                    progress = (cut_number / self.num_items)
+                    self.meter.set(progress, "Converting: " + self.base_name + " " + str((progress * 100)) + "%")
 
             except CalledProcessError as cpe:
                 print("ERROR>> ", cpe.output)
+
+            cut_number += 1
 
         # JOIN THE THINGS
         join_args = []
@@ -155,10 +225,21 @@ class FileChooser(object):
             concat += self.temp_dir.name + "\\" + str(x) + ".mp4" + "|"
         concat = concat[:-1]
         join_args.append(concat)
+
+        # fast copy concatneation
+        join_args.append("-c")
+        join_args.append("copy")
+        join_args.append("-bsf:a")
+        join_args.append("aac_adtstoasc")
+        join_args.append("-movflags")
+        join_args.append("faststart")
+
         # outfile
         # put it on desktop for now
         desktop_dir = os.path.expanduser("~/Desktop/")
         join_args.append(desktop_dir + "\\" + self.base_name + ".mp4")
+
+        print("JOINARGS>>", ' '.join(join_args))
 
         try:
             out = check_output(join_args, shell=False)
