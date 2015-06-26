@@ -58,10 +58,11 @@ class FileChooser(object):
         print("INfile>> ", filename)
         tree = xmlParser.parse(filename)
         base = tree.getroot()
+        # if the file name has spaces we end up with %20 in the url
         video_path = urllib.parse.unquote(base.get("video_path"))
 
         self.base_name = base.get("name")
-        if self.base_name == None:
+        if self.base_name is None:
             self.base_name = os.path.basename(filename)
 
         # get playlist length
