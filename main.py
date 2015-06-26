@@ -7,6 +7,7 @@ from subprocess import *
 import os
 import tempfile
 import sys
+import urllib.parse
 
 ffmpeg_path = "ffmpeg.exe"
 
@@ -57,9 +58,9 @@ class FileChooser(object):
         print("INfile>> ", filename)
         tree = xmlParser.parse(filename)
         base = tree.getroot()
-        video_path = base.get("video_path")
+        video_path = urllib.parse.unquote(base.get("video_path"))
 
-        self.base_name = base.get("name");
+        self.base_name = base.get("name")
         if self.base_name == None:
             self.base_name = os.path.basename(filename)
 
@@ -133,7 +134,7 @@ class FileChooser(object):
                         "mpegts",
                         # output file
                         tmp_out
-                        ], shell=True)
+                        ], stderr=STDOUT, shell=False)
                     # calc progress
                     progress = (cut_number / self.num_items)
                     self.meter.set(progress, "Converting: " + self.base_name + " " + str((progress * 100)) + "%")
@@ -153,7 +154,7 @@ class FileChooser(object):
                     escaped_srt_path = srt_path.replace("\\", "\\\\").replace(":", "\:").replace(" ", "\ ")
 
                     # encode with subtiles
-                    srt_otu = check_call([
+                    srt_out = check_call([
                         ffmpeg_path,
                         # overwrite
                         "-y",
@@ -176,7 +177,7 @@ class FileChooser(object):
                         "-vf",
                         "subtitles=" + "'" + escaped_srt_path + "'",
                         self.temp_dir.name + "\\" + str(cut_number) + "_srt.mp4"
-                        ])
+                        ], stderr=STDOUT, shell=False)
 
                     out = check_call([
                         # path to ffmpeg
@@ -201,7 +202,7 @@ class FileChooser(object):
                         "mpegts",
                         # output file
                         tmp_out
-                        ], shell=True)
+                        ], stderr=STDOUT, shell=False)
                     # calc progress
                     progress = (cut_number / self.num_items)
                     self.meter.set(progress, "Converting: " + self.base_name + " " + str((progress * 100)) + "%")
@@ -242,7 +243,7 @@ class FileChooser(object):
         print("JOINARGS>>", ' '.join(join_args))
 
         try:
-            out = check_output(join_args, shell=False)
+            out = check_output(join_args, stderr=STDOUT, shell=False)
         except CalledProcessError as cpe:
             print("ERROR>>", cpe.output)
 
