@@ -100,6 +100,9 @@ class FileChooser(object):
                 time_end = int(float(child.find("action_cue").find("ending_time").text))
                 comments = child.find("action_cue").find("comments").text
 
+            # add some padding
+            time_end += 2
+
             print("TimeStart>> ", time_start)
             print("TimeEnd>> ", time_end)
             print("Comments>> ", comments)
@@ -185,9 +188,9 @@ class FileChooser(object):
                         ffmpeg_path,
                         # overwrite
                         "-y",
-                        # start time
+                        # start time, since this clip is already we want to use it all
                         "-ss",
-                        str(time_start),
+                        "0",
                         # input file
                         "-i",
                         self.temp_dir.name + "\\" + str(cut_number) + "_srt.mp4",
