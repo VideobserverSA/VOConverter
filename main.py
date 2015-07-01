@@ -89,16 +89,23 @@ class FileChooser(object):
             time_start = ""
             time_end = ""
             comments = ""
+            enable_comments = True
 
             if item_type == "ga":
                 time_start = int(float(child.find("game_action").find("video_time_start").text))
                 time_end = int(float(child.find("game_action").find("video_time_end").text))
                 comments = child.find("game_action").find("comments").text
+                ec = child.find("game_action").find("comments_enabled")
+                if ec is not None:
+                    enable_comments = ec.text
 
             if item_type == "cue":
                 time_start = int(float(child.find("action_cue").find("starting_time").text))
                 time_end = int(float(child.find("action_cue").find("ending_time").text))
                 comments = child.find("action_cue").find("comments").text
+                ec = child.find("action_cue").find("comments_enabled")
+                if ec is not None:
+                    enable_comments = ec.text
 
             # add some padding
             time_end += 2
@@ -106,6 +113,7 @@ class FileChooser(object):
             print("TimeStart>> ", time_start)
             print("TimeEnd>> ", time_end)
             print("Comments>> ", comments)
+            print("Enable Comments>> ", enable_comments)
 
             print("")
 
@@ -114,7 +122,7 @@ class FileChooser(object):
 
             try:
 
-                if comments is None:
+                if comments is None or enable_comments == "false":
                     out = check_call([
                         # path to ffmpeg
                         ffmpeg_path,
@@ -240,9 +248,10 @@ class FileChooser(object):
         join_args.append("faststart")
 
         # outfile
+        out_filename = self.base_name.replace(".vopl", "")
         # put it on desktop for now
         desktop_dir = os.path.expanduser("~/Desktop/")
-        join_args.append(desktop_dir + "\\" + self.base_name + ".mp4")
+        join_args.append(desktop_dir + "\\" + out_filename + ".mp4")
 
         print("JOINARGS>>", ' '.join(join_args))
 

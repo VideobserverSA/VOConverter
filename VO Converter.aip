@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<DOCUMENT Type="Advanced Installer" CreateVersion="12.2" version="12.2" Modules="simple" RootPath="." Language="en" Id="{F18542BE-F241-4936-B574-A0568B2F8711}">
+<DOCUMENT Type="Advanced Installer" CreateVersion="12.2" version="12.2.1" Modules="simple" RootPath="." Language="en" Id="{F18542BE-F241-4936-B574-A0568B2F8711}">
   <COMPONENT cid="caphyon.advinst.msicomp.MsiPropsComponent">
     <ROW Property="AI_BITMAP_DISPLAY_MODE" Value="0"/>
     <ROW Property="ALLUSERS" Value="1" MultiBuildValue="DefaultBuild:2"/>
@@ -9,7 +9,7 @@
     <ROW Property="ProductCode" Value="1033:{058A51B5-AC15-4421-B0E3-9481FD7F7315} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="VO Converter"/>
-    <ROW Property="ProductVersion" Value="1.0.7" Type="32"/>
+    <ROW Property="ProductVersion" Value="1.0.9" Type="32"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND"/>
     <ROW Property="UpgradeCode" Value="{20AFAB45-5019-413E-87F5-F22F4FF2596F}"/>
     <ROW Property="WindowsType9X" MultiBuildValue="DefaultBuild:Windows 9x/ME" ValueLocId="-"/>
@@ -702,7 +702,7 @@
     <ROW File="_elementtree.pyd" Component_="_ctypes.pyd" FileName="_ELEME~1.PYD|_elementtree.pyd" Attributes="0" SourcePath="dist\_elementtree.pyd" SelfReg="false" NextFile="_hashlib.pyd"/>
     <ROW File="_hashlib.pyd" Component_="_ctypes.pyd" FileName="_hashlib.pyd" Attributes="0" SourcePath="dist\_hashlib.pyd" SelfReg="false" NextFile="_lzma.pyd"/>
     <ROW File="_lzma.pyd" Component_="_ctypes.pyd" FileName="_lzma.pyd" Attributes="0" SourcePath="dist\_lzma.pyd" SelfReg="false" NextFile="_tkinter.pyd"/>
-    <ROW File="_tkinter.pyd" Component_="_ctypes.pyd" FileName="_tkinter.pyd" Attributes="0" SourcePath="dist\_tkinter.pyd" SelfReg="false" NextFile="dist.zip"/>
+    <ROW File="_tkinter.pyd" Component_="_ctypes.pyd" FileName="_tkinter.pyd" Attributes="0" SourcePath="dist\_tkinter.pyd" SelfReg="false" NextFile="ffmpeg.exe"/>
     <ROW File="af.msg" Component_="af.msg" FileName="af.msg" Attributes="0" SourcePath="dist\tcl\msgs\af.msg" SelfReg="false" NextFile="af_za.msg"/>
     <ROW File="af_za.msg" Component_="af.msg" FileName="af_za.msg" Attributes="0" SourcePath="dist\tcl\msgs\af_za.msg" SelfReg="false" NextFile="ar.msg"/>
     <ROW File="altTheme.tcl" Component_="altTheme.tcl" FileName="altTheme.tcl" Attributes="0" SourcePath="dist\tk\ttk\altTheme.tcl" SelfReg="false" NextFile="aquaTheme.tcl"/>
@@ -787,7 +787,6 @@
     <ROW File="dialog1.tcl" Component_="anilabel.tcl" FileName="dialog1.tcl" Attributes="0" SourcePath="dist\tk\demos\dialog1.tcl" SelfReg="false" NextFile="dialog2.tcl"/>
     <ROW File="dialog2.tcl" Component_="anilabel.tcl" FileName="dialog2.tcl" Attributes="0" SourcePath="dist\tk\demos\dialog2.tcl" SelfReg="false" NextFile="en.msg"/>
     <ROW File="dingbats.enc" Component_="ascii.enc" FileName="dingbats.enc" Attributes="0" SourcePath="dist\tcl\encoding\dingbats.enc" SelfReg="false" NextFile="ebcdic.enc"/>
-    <ROW File="dist.zip" Component_="_ctypes.pyd" FileName="dist.zip" Attributes="0" SourcePath="dist\dist.zip" SelfReg="false" NextFile="ffmpeg.exe"/>
     <ROW File="earth.gif" Component_="earth.gif" FileName="earth.gif" Attributes="0" SourcePath="dist\tk\demos\images\earth.gif" SelfReg="false" NextFile="earthris.gif"/>
     <ROW File="earthris.gif" Component_="earth.gif" FileName="earthris.gif" Attributes="0" SourcePath="dist\tk\demos\images\earthris.gif" SelfReg="false" NextFile="flagdown.xbm"/>
     <ROW File="ebcdic.enc" Component_="ascii.enc" FileName="ebcdic.enc" Attributes="0" SourcePath="dist\tcl\encoding\ebcdic.enc" SelfReg="false" NextFile="euccn.enc"/>
