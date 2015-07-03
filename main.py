@@ -267,17 +267,17 @@ class FileChooser(object):
 
 # CODE FOR PROGRESS BAR
 class Meter(Frame):
-    def __init__(self, master, width=300, height=20, bg='white', fillcolor='orchid1',\
+    def __init__(self, master, width=300, height=20, bg='white', fillcolor='orchid1',
                  value=0.0, text=None, font=None, textcolor='black', *args, **kw):
         Frame.__init__(self, master, bg=bg, width=width, height=height, *args, **kw)
         self._value = value
 
-        self._canv = Canvas(self, bg=self['bg'], width=self['width'], height=self['height'],\
-                                    highlightthickness=0, relief='flat', bd=0)
+        self._canv = Canvas(self, bg=self['bg'], width=self['width'], height=self['height'],
+                            highlightthickness=0, relief='flat', bd=0)
         self._canv.pack(fill='both', expand=1)
-        self._rect = self._canv.create_rectangle(0, 0, 0, self._canv.winfo_reqheight(), fill=fillcolor,\
+        self._rect = self._canv.create_rectangle(0, 0, 0, self._canv.winfo_reqheight(), fill=fillcolor,
                                                  width=0)
-        self._text = self._canv.create_text(self._canv.winfo_reqwidth()/2, self._canv.winfo_reqheight()/2,\
+        self._text = self._canv.create_text(self._canv.winfo_reqwidth()/2, self._canv.winfo_reqheight()/2,
                                             text='', fill=textcolor)
         if font:
             self._canv.itemconfigure(self._text, font=font)
