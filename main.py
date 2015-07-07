@@ -108,7 +108,8 @@ class FileChooser(object):
                     enable_comments = ec.text
 
             # add some padding
-            time_end += 2
+            # time_start += 2
+            # time_end += 2
 
             print("TimeStart>> ", time_start)
             print("TimeEnd>> ", time_end)
@@ -128,9 +129,6 @@ class FileChooser(object):
                         ffmpeg_path,
                         # overwrite
                         "-y",
-                        # start time
-                        "-ss",
-                        str(time_start),
                         # input file
                         "-i",
                         video_path,
@@ -144,6 +142,9 @@ class FileChooser(object):
                         "h264_mp4toannexb",
                         "-f",
                         "mpegts",
+                         # start time
+                        "-ss",
+                        str(time_start),
                         # output file
                         tmp_out
                         ], stderr=STDOUT, shell=False)
@@ -166,13 +167,35 @@ class FileChooser(object):
                     escaped_srt_path = srt_path.replace("\\", "\\\\").replace(":", "\:").replace(" ", "\ ")
 
                     # encode with subtiles
-                    srt_out = check_call([
+                    # srt_out = check_call([
+                    #     ffmpeg_path,
+                    #     # overwrite
+                    #     "-y",
+                    #     # start time
+                    #     "-ss",
+                    #     str(time_start),
+                    #     # input file
+                    #     "-i",
+                    #     video_path,
+                    #     # duration
+                    #     "-t",
+                    #     str(duration),
+                    #     # codec
+                    #     "-codec:v",
+                    #     "libx264",
+                    #     "-crf",
+                    #     "23",
+                    #     "-codec:a",
+                    #     "copy",
+                    #     "-vf",
+                    #     "subtitles=" + "'" + escaped_srt_path + "'",
+                    #     self.temp_dir.name + "\\" + str(cut_number) + "_srt.mp4"
+                    #     ], stderr=STDOUT, shell=False)
+
+                    with Popen([
                         ffmpeg_path,
                         # overwrite
                         "-y",
-                        # start time
-                        "-ss",
-                        str(time_start),
                         # input file
                         "-i",
                         video_path,
@@ -188,8 +211,20 @@ class FileChooser(object):
                         "copy",
                         "-vf",
                         "subtitles=" + "'" + escaped_srt_path + "'",
+                        # start time
+                        "-ss",
+                        str(time_start),
                         self.temp_dir.name + "\\" + str(cut_number) + "_srt.mp4"
-                        ], stderr=STDOUT, shell=False)
+                        ],
+                        shell=False,
+                        universal_newlines=True,
+                        stderr=STDOUT
+                        # stdout=PIPE
+                    ) as subtitle_proc:
+                        print("CENAS")
+                        # print(subtitle_proc.stdout.read())
+
+                    # subtitle_proc.wait()
 
                     out = check_call([
                         # path to ffmpeg
