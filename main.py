@@ -8,6 +8,8 @@ import os
 import tempfile
 import sys
 import urllib.parse
+import threading
+import time
 
 ffmpeg_path = "ffmpeg.exe"
 
@@ -46,6 +48,91 @@ class FileChooser(object):
         self.temp_dir.cleanup()
 
         sys.exit(0)
+
+    def encode_with_subtitles(self, cut_number, video_path, time_start, duration, comments, tmp_out):
+
+        print("IN THREAD!!!!!!!!!")
+
+        # write srt file
+        srt_path = self.temp_dir.name + "\\" + str(cut_number) + ".srt"
+        srt_file = open(srt_path, "wb")
+
+        srt_log_path = self.temp_dir.name + "\\" + str(cut_number) + ".srt.log"
+        srt_log_file = open(srt_log_path, "wb")
+
+        log_path = self.temp_dir.name + "\\" + str(cut_number) + ".log"
+        log_file = open(log_path, "wb")
+
+        srt_contents = "1\n"
+        srt_contents += "00:00:00,000" + " --> " + "05:00:00,000" +  "1\n"
+        srt_contents += comments + "\n"
+
+        srt_file.write(srt_contents.encode("utf8"))
+        srt_file.close()
+
+        escaped_srt_path = srt_path.replace("\\", "\\\\").replace(":", "\:").replace(" ", "\ ")
+
+        proc = check_call([
+            ffmpeg_path,
+            # overwrite
+            "-y",
+            # input file
+            "-i",
+            video_path,
+            # duration
+            "-t",
+            str(duration),
+            # codec
+            "-codec:v",
+            "libx264",
+            "-crf",
+            "23",
+            "-codec:a",
+            "copy",
+            "-vf",
+            "subtitles=" + "'" + escaped_srt_path + "'",
+            # start time
+            "-ss",
+            str(time_start),
+            self.temp_dir.name + "\\" + str(cut_number) + "_srt.mp4"
+        ],
+            shell=False,
+            universal_newlines=True,
+            stderr=STDOUT,
+            stdout=srt_log_file
+        )
+
+        out = check_call([
+            # path to ffmpeg
+            ffmpeg_path,
+            # overwrite
+            "-y",
+            # start time, since this clip is already we want to use it all
+            "-ss",
+            "0",
+            # input file
+            "-i",
+            self.temp_dir.name + "\\" + str(cut_number) + "_srt.mp4",
+            # duration
+            "-t",
+            str(duration),
+            # codec
+            "-c",
+            "copy",
+            "-bsf:v",
+            "h264_mp4toannexb",
+            "-f",
+            "mpegts",
+            # output file
+            tmp_out
+        ],  stderr=STDOUT,
+            stdout=log_file,
+            shell=False)
+        # calc progress
+        progress = (cut_number / self.num_items)
+        self.meter.set(progress, "Converting: " + self.base_name + " " + str((progress * 100)) + "%")
+
+        print("END END TH")
 
     def parse_playlist(self, filename):
 
@@ -124,6 +211,10 @@ class FileChooser(object):
             try:
 
                 if comments is None or enable_comments == "false":
+
+                    log_path = self.temp_dir.name + "\\" + str(cut_number) + ".log"
+                    log_file = open(log_path, "wb")
+
                     out = check_call([
                         # path to ffmpeg
                         ffmpeg_path,
@@ -147,112 +238,33 @@ class FileChooser(object):
                         str(time_start),
                         # output file
                         tmp_out
-                        ], stderr=STDOUT, shell=False)
+                        ],
+                        stderr=STDOUT,
+                        stdout=log_file,
+                        shell=False)
                     # calc progress
                     progress = (cut_number / self.num_items)
                     self.meter.set(progress, "Converting: " + self.base_name + " " + str((progress * 100)) + "%")
                 else:
-
-                    # write srt file
-                    srt_path = self.temp_dir.name + "\\" + str(cut_number) + ".srt"
-                    srt_file = open(srt_path, "wb")
-
-                    srt_contents = "1\n"
-                    srt_contents += "00:00:00,000" + " --> " + "05:00:00,000" +  "1\n"
-                    srt_contents += comments + "\n"
-
-                    srt_file.write(srt_contents.encode("utf8"))
-                    srt_file.close()
-
-                    escaped_srt_path = srt_path.replace("\\", "\\\\").replace(":", "\:").replace(" ", "\ ")
-
-                    # encode with subtiles
-                    # srt_out = check_call([
-                    #     ffmpeg_path,
-                    #     # overwrite
-                    #     "-y",
-                    #     # start time
-                    #     "-ss",
-                    #     str(time_start),
-                    #     # input file
-                    #     "-i",
-                    #     video_path,
-                    #     # duration
-                    #     "-t",
-                    #     str(duration),
-                    #     # codec
-                    #     "-codec:v",
-                    #     "libx264",
-                    #     "-crf",
-                    #     "23",
-                    #     "-codec:a",
-                    #     "copy",
-                    #     "-vf",
-                    #     "subtitles=" + "'" + escaped_srt_path + "'",
-                    #     self.temp_dir.name + "\\" + str(cut_number) + "_srt.mp4"
-                    #     ], stderr=STDOUT, shell=False)
-
-                    with Popen([
-                        ffmpeg_path,
-                        # overwrite
-                        "-y",
-                        # input file
-                        "-i",
+                    print("BEFORE TH")
+                    sub_thr = threading.Thread(target=self.encode_with_subtitles, args=[
+                        cut_number,
                         video_path,
-                        # duration
-                        "-t",
-                        str(duration),
-                        # codec
-                        "-codec:v",
-                        "libx264",
-                        "-crf",
-                        "23",
-                        "-codec:a",
-                        "copy",
-                        "-vf",
-                        "subtitles=" + "'" + escaped_srt_path + "'",
-                        # start time
-                        "-ss",
-                        str(time_start),
-                        self.temp_dir.name + "\\" + str(cut_number) + "_srt.mp4"
-                        ],
-                        shell=False,
-                        universal_newlines=True,
-                        stderr=STDOUT
-                        # stdout=PIPE
-                    ) as subtitle_proc:
-                        print("CENAS")
-                        # print(subtitle_proc.stdout.read())
-
-                    # subtitle_proc.wait()
-
-                    out = check_call([
-                        # path to ffmpeg
-                        ffmpeg_path,
-                        # overwrite
-                        "-y",
-                        # start time, since this clip is already we want to use it all
-                        "-ss",
-                        "0",
-                        # input file
-                        "-i",
-                        self.temp_dir.name + "\\" + str(cut_number) + "_srt.mp4",
-                        # duration
-                        "-t",
-                        str(duration),
-                        # codec
-                        "-c",
-                        "copy",
-                        "-bsf:v",
-                        "h264_mp4toannexb",
-                        "-f",
-                        "mpegts",
-                        # output file
+                        time_start,
+                        duration,
+                        comments,
                         tmp_out
-                        ], stderr=STDOUT, shell=False)
-                    # calc progress
-                    progress = (cut_number / self.num_items)
-                    self.meter.set(progress, "Converting: " + self.base_name + " " + str((progress * 100)) + "%")
+                    ])
+                    #sub_thr.start()
+                    #sub_thr.join()
+                    sub_thr.run()
+
+                    while sub_thr.is_alive():
+                        time.sleep(1)
+                        print("sleeping...")
+
+                    #sub_thr.join()
+                    print("AFTER TH")
 
             except CalledProcessError as cpe:
                 print("ERROR>> ", cpe.output)
@@ -290,8 +302,11 @@ class FileChooser(object):
 
         print("JOINARGS>>", ' '.join(join_args))
 
+        join_log_path = self.temp_dir.name + "\\" + "join.log"
+        join_log_file = open(join_log_path, "wb")
+
         try:
-            out = check_output(join_args, stderr=STDOUT, shell=False)
+            out = check_call(join_args, stderr=STDOUT, stdout=join_log_file, shell=False)
         except CalledProcessError as cpe:
             print("ERROR>>", cpe.output)
 
