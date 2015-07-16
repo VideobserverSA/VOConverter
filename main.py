@@ -10,14 +10,38 @@ import sys
 import urllib.parse
 import threading
 import time
+import json
 
 ffmpeg_path = "ffmpeg.exe"
+ffprobe_path = "ffprobe.exe"
 
 root = Tk()
 
+
+class VideoInfo:
+
+    def __init__(self):
+        self.width = 0
+        self.height = 0
+
+    def set_w_and_h(self, w, h):
+        self.width = w
+        self.height = h
+
+
+class SleepThreaded(threading.Thread):
+
+    def __init__(self, seconds):
+        super().__init__()
+        self.seconds = seconds
+
+    def run(self):
+        time.sleep(self.seconds)
+
+
 class EncodeSubtitles(threading.Thread):
 
-    def __init__(self, temp_dir, cut_number, video_path, time_start, duration, comments, tmp_out):
+    def __init__(self, temp_dir, cut_number, video_path, video_info, time_start, duration, comments, tmp_out):
 
         super().__init__()
 
@@ -28,6 +52,7 @@ class EncodeSubtitles(threading.Thread):
         self.comments = comments
         self.tmp_out = tmp_out
         self.temp_dir = temp_dir
+        self.video_info = video_info
 
     def run(self):
         print("IN THREAD!!!!!!!!!")
@@ -43,13 +68,64 @@ class EncodeSubtitles(threading.Thread):
         log_file = open(log_path, "wb")
 
         srt_contents = "1\n"
-        srt_contents += "00:00:00,000" + " --> " + "05:00:00,000" +  "1\n"
+        srt_contents += "00:00:00,000" + " --> " + "05:00:00,000" + "1\n"
         srt_contents += self.comments + "\n"
 
         srt_file.write(srt_contents.encode("utf8"))
         srt_file.close()
 
         escaped_srt_path = srt_path.replace("\\", "\\\\").replace(":", "\:").replace(" ", "\ ")
+
+
+        try:
+            image_proc = check_call([
+                ffmpeg_path,
+                "-y",
+                "-loop",
+                "1",
+                # video stream
+                "-i",
+                "teste.jpg",
+                "-c:v",
+                "libx264",
+                # duration
+                "-t",
+                "2",
+                "-pix_fmt",
+                "yuv444p",
+                "-vf",
+                "scale=" + str(self.video_info.width) + "x" + str(self.video_info.height),
+                self.temp_dir.name + "\\" + str(self.cut_number) + "_sep_no_sound.mp4"
+            ], shell=False)
+        except CalledProcessError as cpe:
+            print("IMAGE OUT", cpe.output)
+
+        try:
+            sound_proc = check_call([
+                ffmpeg_path,
+                "-y",
+                # sound stream
+                "-ar",
+                "48000",
+                "-ac",
+                "2",
+                "-f",
+                "s16le",
+                "-i",
+                "silence.wav",
+                "-i",
+                self.temp_dir.name + "\\" + str(self.cut_number) + "_sep_no_sound.mp4",
+                "-shortest",
+                "-c:v",
+                "copy",
+                "-c:a",
+                "aac",
+                "-strict",
+                "-2",
+                self.temp_dir.name + "\\" + str(self.cut_number) + "_sep.mp4"
+            ], shell=False)
+        except CalledProcessError as cpe:
+            print("SOUND OUT", cpe.output)
 
         proc = check_call([
             ffmpeg_path,
@@ -58,6 +134,11 @@ class EncodeSubtitles(threading.Thread):
             # input file
             "-i",
             self.video_path,
+            # image test
+            # "-i",
+            # "teste.jpg",
+            # "-filter_complex",
+            # "\"[0:v][1:v] overlay=25:25:enable='between(t,0," + str(self.duration) + ")'\"",
             # duration
             "-t",
             str(self.duration),
@@ -81,6 +162,45 @@ class EncodeSubtitles(threading.Thread):
             stdout=srt_log_file
         )
 
+        cat_file_name = self.temp_dir.name + "\\" + str(self.cut_number) + "_cat.txt"
+        sep_path = self.temp_dir.name + "\\" + str(self.cut_number) + "_sep.mp4"
+        srt_path = self.temp_dir.name + "\\" + str(self.cut_number) + "_srt.mp4"
+        # I JUST LOVE TRIPLE ESCAPING
+        esc_sep_path = sep_path.replace("\\", "\\\\").replace(":", "\\:").replace(" ", "\\ ")
+        esc_srt_path = srt_path.replace("\\", "\\\\").replace(":", "\\:").replace(" ", "\\ ")
+        f = open(cat_file_name, "wb")
+
+        cat_out = "file '" + sep_path + "'\n" + "file '" + srt_path + "'"
+
+        f.write(cat_out.encode("utf8"))
+        f.close()
+
+        try:
+            concat_out = check_output([
+                ffmpeg_path,
+                "-y",
+                "-f",
+                "concat",
+                "-i",
+                cat_file_name,
+                self.temp_dir.name + "\\" + str(self.cut_number) + "_cat.mp4"
+            ], shell=False)
+        except CalledProcessError as cpe:
+            print("CAT OUT", cpe.output)
+
+        inter_out = check_output([
+            ffmpeg_path,
+            "-y",
+            "-i",
+            self.temp_dir.name + "\\" + str(self.cut_number) + "_cat.mp4",
+            "-c:v",
+            "libx264",
+            "-c:a",
+            "copy",
+            self.temp_dir.name + "\\" + str(self.cut_number) + "_cat_conv.mp4"
+            ], shell=False)
+
+
         out = check_call([
             # path to ffmpeg
             ffmpeg_path,
@@ -91,10 +211,11 @@ class EncodeSubtitles(threading.Thread):
             "0",
             # input file
             "-i",
-            self.temp_dir.name + "\\" + str(self.cut_number) + "_srt.mp4",
+            self.temp_dir.name + "\\" + str(self.cut_number) + "_cat_conv.mp4",
             # duration
             "-t",
-            str(self.duration),
+            # str(self.duration),
+            "10000",
             # codec
             "-c",
             "copy",
@@ -109,6 +230,7 @@ class EncodeSubtitles(threading.Thread):
             shell=False)
 
         print("END END TH")
+
 
 class FileChooser(object):
 
@@ -127,6 +249,8 @@ class FileChooser(object):
 
         self.base_name = ""
 
+        self.video_info = ""
+
     def open_dialog(self):
 
         initial_dir = os.path.expanduser("~/Documents/VideoObserver/Playlist")
@@ -144,6 +268,27 @@ class FileChooser(object):
 
         sys.exit(0)
 
+    def get_video_info(self, video_path):
+
+        out = check_output([
+            ffprobe_path,
+            "-v",
+            "quiet",
+            "-print_format",
+            "json",
+            "-show_format",
+            "-show_streams",
+            video_path
+        ], shell=False, universal_newlines=True)
+
+        info_json = json.loads(out)
+
+        for stream in info_json["streams"]:
+            if stream["codec_type"] == "video":
+                video_info = VideoInfo()
+                video_info.set_w_and_h(stream["width"], stream["height"])
+                return video_info
+
     def parse_playlist(self, filename):
 
         # to keep the cut files
@@ -157,6 +302,8 @@ class FileChooser(object):
         base = tree.getroot()
         # if the file name has spaces we end up with %20 in the url
         video_path = urllib.parse.unquote(base.get("video_path"))
+
+
 
         self.base_name = base.get("name")
         if self.base_name is None:
@@ -172,6 +319,8 @@ class FileChooser(object):
 
         # now if we have the file:/// present we remove it
         video_path = video_path.replace("file:///", "")
+
+        self.video_info = self.get_video_info(video_path)
 
         print("VPath>> ", video_path)
 
@@ -243,7 +392,7 @@ class FileChooser(object):
                         "h264_mp4toannexb",
                         "-f",
                         "mpegts",
-                         # start time
+                        # start time
                         "-ss",
                         str(time_start),
                         # output file
@@ -259,31 +408,24 @@ class FileChooser(object):
                     print("BEFORE TH")
 
                     sub_thr = EncodeSubtitles(temp_dir=self.temp_dir, cut_number=cut_number, video_path=video_path,
+                                              video_info=self.video_info,
                                               time_start=time_start, duration=duration, comments=comments,
                                               tmp_out=tmp_out)
 
                     sub_thr.start()
 
-                    # sub_thr = threading.Thread(target=self.encode_with_subtitles, args=[
-                    #     cut_number,
-                    #     video_path,
-                    #     time_start,
-                    #     duration,
-                    #     comments,
-                    #     tmp_out
-                    # ])
-                    #sub_thr.start()
-                    #sub_thr.join()
-                    #sub_thr.run()
-
                     while sub_thr.is_alive():
-                        time.sleep(1)
                         print("sleeping...")
+
+                        # get progress
+
+                        dummy_event = threading.Event()
+                        dummy_event.wait(timeout=1)
 
                     progress = (cut_number / self.num_items)
                     self.meter.set(progress, "Converting: " + self.base_name + " " + str((progress * 100)) + "%")
 
-                    #sub_thr.join()
+                    # sub_thr.join()
                     print("AFTER TH")
 
             except CalledProcessError as cpe:
@@ -375,7 +517,7 @@ class Meter(Frame):
         elif value > 1.0:
             value = 1.0
         self._value = value
-        if text == None:
+        if text is None:
             # if no text is specified use the default percentage string:
             text = str(int(round(100 * value))) + ' %'
         self._canv.coords(self._rect, 0, 0, self._canv.winfo_width()*value, self._canv.winfo_height())
