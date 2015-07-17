@@ -162,31 +162,56 @@ class EncodeSubtitles(threading.Thread):
             stdout=srt_log_file
         )
 
-        cat_file_name = self.temp_dir.name + "\\" + str(self.cut_number) + "_cat.txt"
-        sep_path = self.temp_dir.name + "\\" + str(self.cut_number) + "_sep.mp4"
-        srt_path = self.temp_dir.name + "\\" + str(self.cut_number) + "_srt.mp4"
-        # I JUST LOVE TRIPLE ESCAPING
-        esc_sep_path = sep_path.replace("\\", "\\\\").replace(":", "\\:").replace(" ", "\\ ")
-        esc_srt_path = srt_path.replace("\\", "\\\\").replace(":", "\\:").replace(" ", "\\ ")
-        f = open(cat_file_name, "wb")
+        # cat_file_name = self.temp_dir.name + "\\" + str(self.cut_number) + "_cat.txt"
+        # sep_path = self.temp_dir.name + "\\" + str(self.cut_number) + "_sep.mp4"
+        # srt_path = self.temp_dir.name + "\\" + str(self.cut_number) + "_srt.mp4"
+        # # I JUST LOVE TRIPLE ESCAPING
+        # esc_sep_path = sep_path.replace("\\", "\\\\").replace(":", "\\:").replace(" ", "\\ ")
+        # esc_srt_path = srt_path.replace("\\", "\\\\").replace(":", "\\:").replace(" ", "\\ ")
+        # f = open(cat_file_name, "wb")
+        #
+        # cat_out = "file '" + sep_path + "'\n" + "file '" + srt_path + "'"
+        #
+        # f.write(cat_out.encode("utf8"))
+        # f.close()
+        #
+        # try:
+        #     concat_out = check_output([
+        #         ffmpeg_path,
+        #         "-y",
+        #         "-f",
+        #         "concat",
+        #         "-i",
+        #         cat_file_name,
+        #         self.temp_dir.name + "\\" + str(self.cut_number) + "_cat.mp4"
+        #     ], shell=False)
+        # except CalledProcessError as cpe:
+        #     print("CAT OUT", cpe.output)
 
-        cat_out = "file '" + sep_path + "'\n" + "file '" + srt_path + "'"
-
-        f.write(cat_out.encode("utf8"))
-        f.close()
 
         try:
-            concat_out = check_output([
+            concat_out = check_call([
                 ffmpeg_path,
+                # overwrite
                 "-y",
-                "-f",
-                "concat",
+                # separator
                 "-i",
-                cat_file_name,
+                self.temp_dir.name + "\\" + str(self.cut_number) + "_sep.mp4",
+                # the clip
+                "-i",
+                self.temp_dir.name + "\\" + str(self.cut_number) + "_srt.mp4",
+                # the concat filter
+                "-map",
+                "[v]",
+                "-map",
+                "[a]",
+                "-filter_complex",
+                "[0:0] [0:1] [1:0] [1:1] concat=n=2:v=1:a=1 [v] [a]",
                 self.temp_dir.name + "\\" + str(self.cut_number) + "_cat.mp4"
             ], shell=False)
         except CalledProcessError as cpe:
             print("CAT OUT", cpe.output)
+
 
         inter_out = check_output([
             ffmpeg_path,
@@ -212,11 +237,6 @@ class EncodeSubtitles(threading.Thread):
             # input file
             "-i",
             self.temp_dir.name + "\\" + str(self.cut_number) + "_cat_conv.mp4",
-            # duration
-            "-t",
-            # str(self.duration),
-            "10000",
-            # codec
             "-c",
             "copy",
             "-bsf:v",
