@@ -85,16 +85,16 @@ class EncodeSubtitles(threading.Thread):
                 "1",
                 # video stream
                 "-i",
-                "teste.jpg",
+                "vo_sep.png",
                 "-c:v",
                 "libx264",
                 # duration
                 "-t",
-                "2",
+                "1",
                 "-pix_fmt",
                 "yuv444p",
                 "-vf",
-                "scale=" + str(self.video_info.width) + "x" + str(self.video_info.height),
+                "scale=" + str(self.video_info.width) + "x" + str(self.video_info.height) + ",setsar=1:1",
                 self.temp_dir.name + "\\" + str(self.cut_number) + "_sep_no_sound.mp4"
             ], shell=False)
         except CalledProcessError as cpe:
@@ -161,33 +161,6 @@ class EncodeSubtitles(threading.Thread):
             stderr=STDOUT,
             stdout=srt_log_file
         )
-
-        # cat_file_name = self.temp_dir.name + "\\" + str(self.cut_number) + "_cat.txt"
-        # sep_path = self.temp_dir.name + "\\" + str(self.cut_number) + "_sep.mp4"
-        # srt_path = self.temp_dir.name + "\\" + str(self.cut_number) + "_srt.mp4"
-        # # I JUST LOVE TRIPLE ESCAPING
-        # esc_sep_path = sep_path.replace("\\", "\\\\").replace(":", "\\:").replace(" ", "\\ ")
-        # esc_srt_path = srt_path.replace("\\", "\\\\").replace(":", "\\:").replace(" ", "\\ ")
-        # f = open(cat_file_name, "wb")
-        #
-        # cat_out = "file '" + sep_path + "'\n" + "file '" + srt_path + "'"
-        #
-        # f.write(cat_out.encode("utf8"))
-        # f.close()
-        #
-        # try:
-        #     concat_out = check_output([
-        #         ffmpeg_path,
-        #         "-y",
-        #         "-f",
-        #         "concat",
-        #         "-i",
-        #         cat_file_name,
-        #         self.temp_dir.name + "\\" + str(self.cut_number) + "_cat.mp4"
-        #     ], shell=False)
-        # except CalledProcessError as cpe:
-        #     print("CAT OUT", cpe.output)
-
 
         try:
             concat_out = check_call([
