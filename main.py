@@ -403,8 +403,6 @@ class FileChooser(object):
         # if the file name has spaces we end up with %20 in the url
         video_path = urllib.parse.unquote(base.get("video_path"))
 
-
-
         self.base_name = base.get("name")
         if self.base_name is None:
             self.base_name = os.path.basename(filename)
@@ -500,7 +498,8 @@ class FileChooser(object):
                         dummy_event.wait(timeout=1)
 
                     fast_copy_thr = ConvertToFastCopy(temp_dir=self.temp_dir, cut_number=cut_number,
-                                                      input_video=self.temp_dir.name + "\\" + str(cut_number) + "_srt.mp4",
+                                                      input_video=self.temp_dir.name + "\\" + str(cut_number)
+                                                      + "_srt.mp4",
                                                       tmp_out=tmp_out)
 
                     fast_copy_thr.start()
@@ -565,6 +564,7 @@ class FileChooser(object):
 
         # DEBUG
         # sys.exit(0)
+
 
 # CODE FOR PROGRESS BAR
 class Meter(Frame):
