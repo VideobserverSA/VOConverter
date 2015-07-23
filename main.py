@@ -42,6 +42,37 @@ class SleepThreaded(threading.Thread):
         time.sleep(self.seconds)
 
 
+class GetScreenshot(threading.Thread):
+
+    def __init__(self, input_video, out_file, video_time):
+
+        super().__init__()
+
+        self.input_video = input_video
+        self.out_file = out_file
+        self.video_time = video_time
+
+    def run(self):
+        try:
+            screen_proc = check_call([
+                ffmpeg_path,
+                "-y",
+                "-ss",
+                str(self.video_time),
+                "-i",
+                self.input_video,
+                "-f",
+                "image2",
+                "-vcodec",
+                "mjpeg",
+                "-vframes",
+                "1",
+                self.out_file
+            ], shell=False)
+        except CalledProcessError as cpe:
+            print("SCREEN OUT", cpe.output)
+
+
 class AddSeparator(threading.Thread):
 
     def __init__(self, temp_dir, cut_number, input_video, video_info, duration, image_path, tmp_out):
@@ -153,6 +184,15 @@ class AddOverlay(threading.Thread):
         ori_img = Image.open(self.image_path)
         res_img = ori_img.resize((self.video_info.width, self.video_info.height), Image.ANTIALIAS)
         res_img.save(self.temp_dir.name + "\\" + str(self.cut_number) + "_overlay_res.png")
+
+        screenshot_thr = GetScreenshot(input_video=self.input_video,
+                                       out_file=self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb.png",
+                                       video_time=self.time_start)
+        screenshot_thr.start()
+        while screenshot_thr.is_alive():
+            # print("sleeping...")
+            dummy_event = threading.Event()
+            dummy_event.wait(timeout=1)
 
         try:
             overlay_out = check_call([
@@ -323,7 +363,7 @@ class EncodeSubtitles(threading.Thread):
             "-codec:a",
             "copy",
             "-vf",
-            "ass=" + "'" + "1.ass" + "'",
+            "subtitles=" + "'" + escaped_srt_path + "'",
             self.temp_dir.name + "\\" + str(self.cut_number) + "_srt.mp4"
         ],
             shell=False,
@@ -508,31 +548,31 @@ class FileChooser(object):
                         dummy_event = threading.Event()
                         dummy_event.wait(timeout=1)
 
-                    # add overlay
-                    raw_png = base64.b64decode(drawing)
-                    f = open(self.temp_dir.name + "\\" + str(cut_number) + "_overlay.png", "wb")
-                    f.write(raw_png)
-                    f.close()
-
-                    over_time_start = int(float(drawing_time) - time_start) - 1
-                    over_duration = int(float(drawing_time) - time_start) + 1
-
-                    # over_time_start = 2
-                    # over_duration = 4
-
-                    overlay_thr = AddOverlay(temp_dir=self.temp_dir, cut_number=cut_number,
-                                             input_video=self.temp_dir.name + "\\" + str(cut_number) + "_srt.mp4",
-                                             video_info=self.video_info, time_start=over_time_start,
-                                             duration=over_duration,
-                                             tmp_out=self.temp_dir.name + "\\" + str(cut_number) + "_overlay.mp4",
-                                             image_path=self.temp_dir.name + "\\" + str(cut_number) + "_overlay.png")
-
-                    overlay_thr.start()
-
-                    while overlay_thr.is_alive():
-                        # print("sleeping...")
-                        dummy_event = threading.Event()
-                        dummy_event.wait(timeout=1)
+                    # # add overlay
+                    # raw_png = base64.b64decode(drawing)
+                    # f = open(self.temp_dir.name + "\\" + str(cut_number) + "_overlay.png", "wb")
+                    # f.write(raw_png)
+                    # f.close()
+                    #
+                    # over_time_start = int(float(drawing_time) - time_start) - 1
+                    # over_duration = int(float(drawing_time) - time_start) + 1
+                    #
+                    # # over_time_start = 2
+                    # # over_duration = 4
+                    #
+                    # overlay_thr = AddOverlay(temp_dir=self.temp_dir, cut_number=cut_number,
+                    #                          input_video=self.temp_dir.name + "\\" + str(cut_number) + "_srt.mp4",
+                    #                          video_info=self.video_info, time_start=over_time_start,
+                    #                          duration=over_duration,
+                    #                          tmp_out=self.temp_dir.name + "\\" + str(cut_number) + "_overlay.mp4",
+                    #                          image_path=self.temp_dir.name + "\\" + str(cut_number) + "_overlay.png")
+                    #
+                    # overlay_thr.start()
+                    #
+                    # while overlay_thr.is_alive():
+                    #     # print("sleeping...")
+                    #     dummy_event = threading.Event()
+                    #     dummy_event.wait(timeout=1)
 
                     fast_copy_thr = ConvertToFastCopy(temp_dir=self.temp_dir, cut_number=cut_number,
                                                       input_video=self.temp_dir.name + "\\" + str(cut_number)
