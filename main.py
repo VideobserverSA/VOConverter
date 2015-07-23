@@ -368,7 +368,7 @@ class AddOverlay(threading.Thread):
                 "[a]",
                 "-filter_complex",
                 "[0:0] [0:1] [1:0] [1:1] concat=n=2:v=1:a=1 [v] [a]",
-                self.temp_dir.name + "\\" + str(self.cut_number) + "_finish_overlay.mp4"
+                self.tmp_out,
             ], shell=False)
         except CalledProcessError as cpe:
             print("CAT OUT", cpe.output)
@@ -517,7 +517,7 @@ class EncodeSubtitles(threading.Thread):
             "copy",
             "-vf",
             "subtitles=" + "'" + escaped_srt_path + "'",
-            self.temp_dir.name + "\\" + str(self.cut_number) + "_srt.mp4"
+            self.tmp_out
         ],
             shell=False,
             universal_newlines=True,
@@ -628,6 +628,7 @@ class FileChooser(object):
             time_end = ""
             comments = ""
             enable_comments = True
+            has_comments = False
 
             has_drawing = False
             drawing = ""
@@ -640,6 +641,11 @@ class FileChooser(object):
                 ec = child.find("game_action").find("comments_enabled")
                 if ec is not None:
                     enable_comments = ec.text
+                drw = child.find("game_action").find("drawing")
+                if drw is not None:
+                    drawing = drw.find("bitmap").text
+                    drawing_time = drw.find("time").text
+                    has_drawing = True
 
             if item_type == "cue":
                 time_start = int(float(child.find("action_cue").find("starting_time").text))
@@ -652,6 +658,7 @@ class FileChooser(object):
                 if drw is not None:
                     drawing = drw.find("bitmap").text
                     drawing_time = drw.find("time").text
+                    has_drawing = True
 
             # add some padding
             # time_start += 2
@@ -667,87 +674,69 @@ class FileChooser(object):
             duration = time_end - time_start
             tmp_out = self.temp_dir.name + "\\" + str(cut_number) + ".mp4"
 
-            try:
+            # now we see what we need to do...
 
-                if comments is None or enable_comments == "false":
+            #  first check for comments
+            if comments is not None and enable_comments == "true":
+                has_comments = True
+                sub_thr = EncodeSubtitles(temp_dir=self.temp_dir, cut_number=cut_number, video_path=video_path,
+                                          video_info=self.video_info,
+                                          time_start=time_start, duration=duration, comments=comments,
+                                          tmp_out=self.temp_dir.name + "\\" + str(cut_number) + "_comments.mp4")
+                sub_thr.start()
+                while sub_thr.is_alive():
+                    # print("sleeping...")
+                    dummy_event = threading.Event()
+                    dummy_event.wait(timeout=1)
+            else:
+                # just cut in time
+                fast_cut_thr = CutFastCopy(temp_dir=self.temp_dir, cut_number=cut_number, video_path=video_path,
+                                           time_start=time_start, duration=duration,
+                                           tmp_out=self.temp_dir.name + "\\" + str(cut_number) + "_comments.mp4")
+                fast_cut_thr.start()
+                while fast_cut_thr.is_alive():
+                    dummy_event = threading.Event()
+                    dummy_event.wait(timeout=1)
 
-                    fast_cut_thr = CutFastCopy(temp_dir=self.temp_dir, cut_number=cut_number, video_path=video_path,
-                                               time_start=time_start, duration=duration,
-                                               tmp_out=self.temp_dir.name + "\\" + str(cut_number) + ".mp4")
+            # do we add an overlay?
+            if has_drawing:
+                raw_png = base64.b64decode(drawing)
+                f = open(self.temp_dir.name + "\\" + str(cut_number) + "_overlay.png", "wb")
+                f.write(raw_png)
+                f.close()
+                overlay_thr = AddOverlay(temp_dir=self.temp_dir, cut_number=cut_number,
+                                         input_video=self.temp_dir.name + "\\" + str(cut_number) + "_comments.mp4",
+                                         video_info=self.video_info,
+                                         video_time=float(drawing_time) - time_start,
+                                         tmp_out=self.temp_dir.name + "\\" + str(cut_number) + "_overlay.mp4",
+                                         image_path=self.temp_dir.name + "\\" + str(cut_number) + "_overlay.png")
+                overlay_thr.start()
+                while overlay_thr.is_alive():
+                    # print("sleeping...")
+                    dummy_event = threading.Event()
+                    dummy_event.wait(timeout=1)
 
-                    fast_cut_thr.start()
+            # lastly we convert to fast copy for the final join
+            fast_copy_input = ""
+            if has_drawing:
+                fast_copy_input = self.temp_dir.name + "\\" + str(cut_number) + "_overlay.mp4"
+            else:
+                fast_copy_input = self.temp_dir.name + "\\" + str(cut_number) + "_comments.mp4"
 
-                    while fast_cut_thr.is_alive():
-                        dummy_event = threading.Event()
-                        dummy_event.wait(timeout=1)
+            fast_copy_thr = ConvertToFastCopy(temp_dir=self.temp_dir, cut_number=cut_number,
+                                              input_video=fast_copy_input, tmp_out=tmp_out)
+            fast_copy_thr.start()
+            while fast_copy_thr.is_alive():
+                # print("sleeping...")
+                dummy_event = threading.Event()
+                dummy_event.wait(timeout=1)
 
-                    # calc progress
-                    progress = cut_number / self.num_items
-                    progress_str = str(math.ceil(progress * 100))
-                    self.meter.set(progress, "Converting: " + self.base_name + " " + progress_str + "%")
-                else:
+            # calc progress
+            progress = cut_number / self.num_items
+            progress_str = str(math.ceil(progress * 100))
+            self.meter.set(progress, "Converting: " + self.base_name + " " + progress_str + "%")
 
-                    sub_thr = EncodeSubtitles(temp_dir=self.temp_dir, cut_number=cut_number, video_path=video_path,
-                                              video_info=self.video_info,
-                                              time_start=time_start, duration=duration, comments=comments,
-                                              tmp_out=self.temp_dir.name + "\\" + str(cut_number) + "_srt.mp4")
-
-                    sub_thr.start()
-
-                    while sub_thr.is_alive():
-                        # print("sleeping...")
-                        dummy_event = threading.Event()
-                        dummy_event.wait(timeout=1)
-
-                    # add overlay
-                    raw_png = base64.b64decode(drawing)
-                    f = open(self.temp_dir.name + "\\" + str(cut_number) + "_overlay.png", "wb")
-                    f.write(raw_png)
-                    f.close()
-
-                    over_time_start = int(float(drawing_time) - time_start) - 1
-                    over_duration = int(float(drawing_time) - time_start) + 1
-
-                    # over_time_start = 2
-                    # over_duration = 4
-
-                    overlay_thr = AddOverlay(temp_dir=self.temp_dir, cut_number=cut_number,
-                                             input_video=self.temp_dir.name + "\\" + str(cut_number) + "_srt.mp4",
-                                             video_info=self.video_info,
-                                             video_time=float(drawing_time) - time_start,
-                                             tmp_out=self.temp_dir.name + "\\" + str(cut_number) + "_overlay.mp4",
-                                             image_path=self.temp_dir.name + "\\" + str(cut_number) + "_overlay.png")
-
-                    overlay_thr.start()
-
-                    while overlay_thr.is_alive():
-                        # print("sleeping...")
-                        dummy_event = threading.Event()
-                        dummy_event.wait(timeout=1)
-
-                    fast_copy_thr = ConvertToFastCopy(temp_dir=self.temp_dir, cut_number=cut_number,
-                                                      input_video=self.temp_dir.name + "\\" + str(cut_number)
-                                                      + "_srt.mp4",
-                                                      tmp_out=tmp_out)
-
-                    fast_copy_thr.start()
-
-                    while fast_copy_thr.is_alive():
-                        # print("sleeping...")
-                        dummy_event = threading.Event()
-                        dummy_event.wait(timeout=1)
-
-                    # calc progress
-                    progress = cut_number / self.num_items
-                    progress_str = str(math.ceil(progress * 100))
-                    self.meter.set(progress, "Converting: " + self.base_name + " " + progress_str + "%")
-
-                    # sub_thr.join()
-
-            except CalledProcessError as cpe:
-                print("ERROR>> ", cpe.output)
-
-            cut_number += 1
+        cut_number += 1
 
         # JOIN THE THINGS
         join_args = []
