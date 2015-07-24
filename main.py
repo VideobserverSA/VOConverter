@@ -736,7 +736,7 @@ class FileChooser(object):
             progress_str = str(math.ceil(progress * 100))
             self.meter.set(progress, "Converting: " + self.base_name + " " + progress_str + "%")
 
-        cut_number += 1
+            cut_number += 1
 
         # JOIN THE THINGS
         join_args = []
