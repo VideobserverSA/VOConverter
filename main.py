@@ -183,15 +183,16 @@ class AddOverlay(threading.Thread):
         res_img = ori_img.resize((self.video_info.width, self.video_info.height), Image.ANTIALIAS)
         res_img.save(self.temp_dir.name + "\\" + str(self.cut_number) + "_overlay_res.png")
 
-        # get screenshot at the correct time
-        screenshot_thr = GetScreenshot(input_video=self.input_video,
-                                       out_file=self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb.png",
-                                       video_time=self.video_time)
-        screenshot_thr.start()
-        while screenshot_thr.is_alive():
-            # print("sleeping...")
-            dummy_event = threading.Event()
-            dummy_event.wait(timeout=1)
+        # we have the full image no need to get the screenshot
+        # # get screenshot at the correct time
+        # screenshot_thr = GetScreenshot(input_video=self.input_video,
+        #                                out_file=self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb.png",
+        #                                video_time=self.video_time)
+        # screenshot_thr.start()
+        # while screenshot_thr.is_alive():
+        #     # print("sleeping...")
+        #     dummy_event = threading.Event()
+        #     dummy_event.wait(timeout=1)
 
         # create the pause image
         try:
@@ -202,7 +203,9 @@ class AddOverlay(threading.Thread):
                 "1",
                 # video stream
                 "-i",
-                self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb.png",
+                self.temp_dir.name + "\\" + str(self.cut_number) + "_overlay_res.png",
+                # we have the full image no need to get the screenshot
+                # self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb.png",
                 "-c:v",
                 "libx264",
                 # duration
