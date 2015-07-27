@@ -312,6 +312,11 @@ class AddOverlay(threading.Thread):
             # start time
             "-ss",
             str(self.video_time),
+            # audio codec options
+            "-c:a",
+            "copy",
+            "-bsf:a",
+            "aac_adtstoasc",
             # codec
             # "-c",
             # "copy",
@@ -340,6 +345,11 @@ class AddOverlay(threading.Thread):
                 # the overlay
                 "-i",
                 self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb_overlay_sound.mp4",
+                # audio codec
+                "-c:a",
+                "aac",
+                "-strict",
+                "-2",
                 # the concat filter
                 "-map",
                 "[v]",
@@ -364,6 +374,11 @@ class AddOverlay(threading.Thread):
                 # the overlay
                 "-i",
                 self.temp_dir.name + "\\" + str(self.cut_number) + "_end.mp4",
+                # audio codec
+                "-c:a",
+                "aac",
+                "-strict",
+                "-2",
                 # the concat filter
                 "-map",
                 "[v]",

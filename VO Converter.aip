@@ -9,7 +9,7 @@
     <ROW Property="ProductCode" Value="1033:{058A51B5-AC15-4421-B0E3-9481FD7F7315} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="VO Converter"/>
-    <ROW Property="ProductVersion" Value="1.0.12" Type="32"/>
+    <ROW Property="ProductVersion" Value="1.0.15" Type="32"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND"/>
     <ROW Property="UpgradeCode" Value="{20AFAB45-5019-413E-87F5-F22F4FF2596F}"/>
     <ROW Property="WindowsType9X" MultiBuildValue="DefaultBuild:Windows 9x/ME" ValueLocId="-"/>
@@ -79,7 +79,7 @@
     <ROW Component="Longyearbyen" ComponentId="{A9BEF38B-C070-4B64-9775-8CCC8428D9A1}" Directory_="Arctic_Dir" Attributes="0" KeyPath="Longyearbyen" Type="0"/>
     <ROW Component="Louisville" ComponentId="{42BF62B4-E224-454B-8A64-8E759804998A}" Directory_="Kentucky_Dir" Attributes="0" KeyPath="Louisville" Type="0"/>
     <ROW Component="ProductInformation" ComponentId="{F57A0239-4BFF-401C-9CA8-140324193FC1}" Directory_="APPDIR" Attributes="4" KeyPath="Version"/>
-    <ROW Component="_ctypes.pyd" ComponentId="{63B1C968-F321-48B0-9C3D-78021B00A1FA}" Directory_="APPDIR" Attributes="256" KeyPath="_ctypes.pyd" Type="0"/>
+    <ROW Component="_bz2.pyd" ComponentId="{8815E90F-87EE-452E-AC7A-35501F3C0B6B}" Directory_="APPDIR" Attributes="0" KeyPath="_bz2.pyd" Type="0"/>
     <ROW Component="af.msg" ComponentId="{25FE4D9B-4A2B-457F-9E4B-10EA88BD3671}" Directory_="msgs_Dir" Attributes="0" KeyPath="af.msg" Type="0"/>
     <ROW Component="altTheme.tcl" ComponentId="{12FF278F-20D6-4427-BF16-491C92FAF583}" Directory_="ttk_Dir" Attributes="0" KeyPath="altTheme.tcl" Type="0"/>
     <ROW Component="anilabel.tcl" ComponentId="{EB847BFA-4B7C-4577-A917-D4A630EC0C1F}" Directory_="demos_Dir" Attributes="0" KeyPath="anilabel.tcl" Type="0"/>
@@ -88,19 +88,20 @@
     <ROW Component="bgerror.tcl" ComponentId="{35F2EEBA-D81A-42D9-8463-2B3ECDAF7F00}" Directory_="tk_Dir" Attributes="0" KeyPath="bgerror.tcl" Type="0"/>
     <ROW Component="cs.msg" ComponentId="{C531E3B5-C418-417D-B921-B75186E0A55D}" Directory_="msgs_1_Dir" Attributes="0" KeyPath="cs.msg_1" Type="0"/>
     <ROW Component="earth.gif" ComponentId="{E53650E0-AA32-44E4-9A22-77D010896BE3}" Directory_="images_Dir" Attributes="0" KeyPath="earth.gif" Type="0"/>
-    <ROW Component="ffmpeg.exe" ComponentId="{DA23BF20-7543-46D2-8410-21CFDAB4EBFB}" Directory_="APPDIR" Attributes="0" KeyPath="ffmpeg.exe"/>
+    <ROW Component="ffmpeg.exe" ComponentId="{415B758C-FDE8-4AFC-B037-359D02AD5D34}" Directory_="APPDIR" Attributes="0" KeyPath="ffmpeg.exe"/>
+    <ROW Component="ffprobe.exe" ComponentId="{85253F7B-CC08-49FA-98B6-A52B80A6334E}" Directory_="APPDIR" Attributes="0" KeyPath="ffprobe.exe"/>
     <ROW Component="fonts.conf" ComponentId="{82AC53BE-DD95-425E-9657-E3AC07EC1F38}" Directory_="fonts_Dir" Attributes="0" KeyPath="fonts.conf" Type="0"/>
     <ROW Component="http.tcl" ComponentId="{31D74795-6E77-4351-940C-197CDCF911DE}" Directory_="http1.0_Dir" Attributes="0" KeyPath="http.tcl" Type="0"/>
     <ROW Component="lamp.png" ComponentId="{80210C6C-35B6-4424-9364-70C981E94CCD}" Directory_="images_1_Dir" Attributes="0" KeyPath="lamp.png" Type="0"/>
-    <ROW Component="msvcr100.dll" ComponentId="{722D81BA-90B1-4E6B-94BE-3D4CA1920C78}" Directory_="APPDIR" Attributes="0" KeyPath="msvcr100.dll"/>
+    <ROW Component="msvcr100.dll" ComponentId="{8B552435-14B6-4AAC-8638-8BCCBFFA4240}" Directory_="APPDIR" Attributes="0" KeyPath="msvcr100.dll"/>
     <ROW Component="optparse.tcl" ComponentId="{C46BC600-0EC3-4126-8259-4AACCC418ABD}" Directory_="opt0.4_Dir" Attributes="0" KeyPath="optparse.tcl" Type="0"/>
-    <ROW Component="python34.dll" ComponentId="{9C85E547-167D-480E-A80F-7D140DB6D3F9}" Directory_="APPDIR" Attributes="256" KeyPath="python34.dll"/>
-    <ROW Component="tcl86t.dll" ComponentId="{695CF0B7-35C7-4212-831C-278AA5448DD4}" Directory_="APPDIR" Attributes="256" KeyPath="tcl86t.dll"/>
-    <ROW Component="tk86t.dll" ComponentId="{66872ED7-2BEE-4D09-8C85-C2A56354AF94}" Directory_="APPDIR" Attributes="256" KeyPath="tk86t.dll"/>
+    <ROW Component="python34.dll" ComponentId="{01F1817E-789A-4773-9DE3-55D5663A68D8}" Directory_="APPDIR" Attributes="0" KeyPath="python34.dll"/>
+    <ROW Component="tcl86t.dll" ComponentId="{182BE351-88B0-4720-835D-DF06185C1D03}" Directory_="APPDIR" Attributes="0" KeyPath="tcl86t.dll"/>
+    <ROW Component="tk86t.dll" ComponentId="{C4DEDB45-8E2F-4807-A534-524DD0035083}" Directory_="APPDIR" Attributes="0" KeyPath="tk86t.dll"/>
     <ROW Component="voconverter.exe" ComponentId="{83071D87-E71B-4C83-90F7-0FCFA156B670}" Directory_="APPDIR" Attributes="256" KeyPath="voconverter.exe"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiFeatsComponent">
-    <ROW Feature="MainFeature" Title="MainFeature" Description="Description" Display="1" Level="1" Directory_="APPDIR" Attributes="0" Components="ACT AST4 Abidjan Acre Adak Aden Alaska Amsterdam Antananarivo Apia Atlantic Azores BajaNorte Beulah Buenos_Aires CET Casey Continental GMT Indianapolis Longyearbyen Louisville ProductInformation _ctypes.pyd af.msg altTheme.tcl anilabel.tcl ascii.enc auto.tcl bgerror.tcl cs.msg earth.gif ffmpeg.exe fonts.conf http.tcl lamp.png msvcr100.dll optparse.tcl python34.dll tcl86t.dll tk86t.dll voconverter.exe"/>
+    <ROW Feature="MainFeature" Title="MainFeature" Description="Description" Display="1" Level="1" Directory_="APPDIR" Attributes="0" Components="ACT AST4 Abidjan Acre Adak Aden Alaska Amsterdam Antananarivo Apia Atlantic Azores BajaNorte Beulah Buenos_Aires CET Casey Continental GMT Indianapolis Longyearbyen Louisville ProductInformation _bz2.pyd af.msg altTheme.tcl anilabel.tcl ascii.enc auto.tcl bgerror.tcl cs.msg earth.gif ffmpeg.exe ffprobe.exe fonts.conf http.tcl lamp.png msvcr100.dll optparse.tcl python34.dll tcl86t.dll tk86t.dll voconverter.exe"/>
     <ATTRIBUTE name="CurrentFeature" value="MainFeature"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiFilesComponent">
@@ -516,6 +517,7 @@
     <ROW File="Oral" Component_="Aden" FileName="Oral" Attributes="0" SourcePath="dist\tcl\tzdata\Asia\Oral" SelfReg="false" NextFile="Phnom_Penh"/>
     <ROW File="Oslo" Component_="Amsterdam" FileName="Oslo" Attributes="0" SourcePath="dist\tcl\tzdata\Europe\Oslo" SelfReg="false" NextFile="Paris"/>
     <ROW File="Ouagadougou" Component_="Abidjan" FileName="OUAGAD~1|Ouagadougou" Attributes="0" SourcePath="dist\tcl\tzdata\Africa\Ouagadougou" SelfReg="false" NextFile="PortoNovo"/>
+    <ROW File="PIL._imaging.pyd" Component_="_bz2.pyd" FileName="PIL_IM~1.PYD|PIL._imaging.pyd" Attributes="0" SourcePath="dist\PIL._imaging.pyd" SelfReg="false" NextFile="pyexpat.pyd"/>
     <ROW File="PRC" Component_="CET" FileName="PRC" Attributes="0" SourcePath="dist\tcl\tzdata\PRC" SelfReg="false" NextFile="PST8PDT"/>
     <ROW File="PST8" Component_="AST4" FileName="PST8" Attributes="0" SourcePath="dist\tcl\tzdata\SystemV\PST8" SelfReg="false" NextFile="PST8PDT_1"/>
     <ROW File="PST8PDT" Component_="CET" FileName="PST8PDT" Attributes="0" SourcePath="dist\tcl\tzdata\PST8PDT" SelfReg="false" NextFile="ROC"/>
@@ -697,12 +699,12 @@
     <ROW File="Zulu" Component_="GMT" FileName="Zulu" Attributes="0" SourcePath="dist\tcl\tzdata\Etc\Zulu" SelfReg="false" NextFile="Amsterdam"/>
     <ROW File="Zulu_1" Component_="CET" FileName="Zulu" Attributes="0" SourcePath="dist\tcl\tzdata\Zulu" SelfReg="false" NextFile="word.tcl"/>
     <ROW File="Zurich" Component_="Amsterdam" FileName="Zurich" Attributes="0" SourcePath="dist\tcl\tzdata\Europe\Zurich" SelfReg="false" NextFile="GB"/>
-    <ROW File="_bz2.pyd" Component_="_ctypes.pyd" FileName="_bz2.pyd" Attributes="0" SourcePath="dist\_bz2.pyd" SelfReg="false" NextFile="msvcr100.dll"/>
-    <ROW File="_ctypes.pyd" Component_="_ctypes.pyd" FileName="_ctypes.pyd" Attributes="0" SourcePath="dist\_ctypes.pyd" SelfReg="false" NextFile="_elementtree.pyd"/>
-    <ROW File="_elementtree.pyd" Component_="_ctypes.pyd" FileName="_ELEME~1.PYD|_elementtree.pyd" Attributes="0" SourcePath="dist\_elementtree.pyd" SelfReg="false" NextFile="_hashlib.pyd"/>
-    <ROW File="_hashlib.pyd" Component_="_ctypes.pyd" FileName="_hashlib.pyd" Attributes="0" SourcePath="dist\_hashlib.pyd" SelfReg="false" NextFile="_lzma.pyd"/>
-    <ROW File="_lzma.pyd" Component_="_ctypes.pyd" FileName="_lzma.pyd" Attributes="0" SourcePath="dist\_lzma.pyd" SelfReg="false" NextFile="_tkinter.pyd"/>
-    <ROW File="_tkinter.pyd" Component_="_ctypes.pyd" FileName="_tkinter.pyd" Attributes="0" SourcePath="dist\_tkinter.pyd" SelfReg="false" NextFile="ffmpeg.exe"/>
+    <ROW File="_bz2.pyd" Component_="_bz2.pyd" FileName="_bz2.pyd" Attributes="0" SourcePath="dist\_bz2.pyd" SelfReg="false" NextFile="_ctypes.pyd"/>
+    <ROW File="_ctypes.pyd" Component_="_bz2.pyd" FileName="_ctypes.pyd" Attributes="0" SourcePath="dist\_ctypes.pyd" SelfReg="false" NextFile="_elementtree.pyd"/>
+    <ROW File="_elementtree.pyd" Component_="_bz2.pyd" FileName="_ELEME~1.PYD|_elementtree.pyd" Attributes="0" SourcePath="dist\_elementtree.pyd" SelfReg="false" NextFile="_hashlib.pyd"/>
+    <ROW File="_hashlib.pyd" Component_="_bz2.pyd" FileName="_hashlib.pyd" Attributes="0" SourcePath="dist\_hashlib.pyd" SelfReg="false" NextFile="_lzma.pyd"/>
+    <ROW File="_lzma.pyd" Component_="_bz2.pyd" FileName="_lzma.pyd" Attributes="0" SourcePath="dist\_lzma.pyd" SelfReg="false" NextFile="_tkinter.pyd"/>
+    <ROW File="_tkinter.pyd" Component_="_bz2.pyd" FileName="_tkinter.pyd" Attributes="0" SourcePath="dist\_tkinter.pyd" SelfReg="false" NextFile="ffmpeg.exe"/>
     <ROW File="af.msg" Component_="af.msg" FileName="af.msg" Attributes="0" SourcePath="dist\tcl\msgs\af.msg" SelfReg="false" NextFile="af_za.msg"/>
     <ROW File="af_za.msg" Component_="af.msg" FileName="af_za.msg" Attributes="0" SourcePath="dist\tcl\msgs\af_za.msg" SelfReg="false" NextFile="ar.msg"/>
     <ROW File="altTheme.tcl" Component_="altTheme.tcl" FileName="altTheme.tcl" Attributes="0" SourcePath="dist\tk\ttk\altTheme.tcl" SelfReg="false" NextFile="aquaTheme.tcl"/>
@@ -844,7 +846,8 @@
     <ROW File="fa.msg" Component_="af.msg" FileName="fa.msg" Attributes="0" SourcePath="dist\tcl\msgs\fa.msg" SelfReg="false" NextFile="fa_in.msg"/>
     <ROW File="fa_in.msg" Component_="af.msg" FileName="fa_in.msg" Attributes="0" SourcePath="dist\tcl\msgs\fa_in.msg" SelfReg="false" NextFile="fa_ir.msg"/>
     <ROW File="fa_ir.msg" Component_="af.msg" FileName="fa_ir.msg" Attributes="0" SourcePath="dist\tcl\msgs\fa_ir.msg" SelfReg="false" NextFile="fi.msg"/>
-    <ROW File="ffmpeg.exe" Component_="ffmpeg.exe" FileName="ffmpeg.exe" Attributes="0" SourcePath="dist\ffmpeg.exe" SelfReg="false" NextFile="pyexpat.pyd" DigSign="true"/>
+    <ROW File="ffmpeg.exe" Component_="ffmpeg.exe" FileName="ffmpeg.exe" Attributes="0" SourcePath="dist\ffmpeg.exe" SelfReg="false" NextFile="ffprobe.exe" DigSign="true"/>
+    <ROW File="ffprobe.exe" Component_="ffprobe.exe" FileName="ffprobe.exe" Attributes="0" SourcePath="dist\ffprobe.exe" SelfReg="false" NextFile="msvcr100.dll" DigSign="true"/>
     <ROW File="fi.msg" Component_="af.msg" FileName="fi.msg" Attributes="0" SourcePath="dist\tcl\msgs\fi.msg" SelfReg="false" NextFile="fo.msg"/>
     <ROW File="filebox.tcl" Component_="anilabel.tcl" FileName="filebox.tcl" Attributes="0" SourcePath="dist\tk\demos\filebox.tcl" SelfReg="false" NextFile="floor.tcl"/>
     <ROW File="flagdown.xbm" Component_="earth.gif" FileName="flagdown.xbm" Attributes="0" SourcePath="dist\tk\demos\images\flagdown.xbm" SelfReg="false" NextFile="flagup.xbm"/>
@@ -973,7 +976,7 @@
     <ROW File="ms_my.msg" Component_="af.msg" FileName="ms_my.msg" Attributes="0" SourcePath="dist\tcl\msgs\ms_my.msg" SelfReg="false" NextFile="mt.msg"/>
     <ROW File="msgbox.tcl" Component_="anilabel.tcl" FileName="msgbox.tcl" Attributes="0" SourcePath="dist\tk\demos\msgbox.tcl" SelfReg="false" NextFile="nl.msg_1"/>
     <ROW File="msgbox.tcl_1" Component_="bgerror.tcl" FileName="msgbox.tcl" Attributes="0" SourcePath="dist\tk\msgbox.tcl" SelfReg="false" NextFile="cs.msg_1"/>
-    <ROW File="msvcr100.dll" Component_="msvcr100.dll" FileName="msvcr100.dll" Attributes="0" SourcePath="msvcr100.dll" SelfReg="false"/>
+    <ROW File="msvcr100.dll" Component_="msvcr100.dll" FileName="msvcr100.dll" Attributes="0" SourcePath="dist\msvcr100.dll" SelfReg="false" NextFile="PIL._imaging.pyd"/>
     <ROW File="mt.msg" Component_="af.msg" FileName="mt.msg" Attributes="0" SourcePath="dist\tcl\msgs\mt.msg" SelfReg="false" NextFile="nb.msg"/>
     <ROW File="nb.msg" Component_="af.msg" FileName="nb.msg" Attributes="0" SourcePath="dist\tcl\msgs\nb.msg" SelfReg="false" NextFile="nl.msg"/>
     <ROW File="nl.msg" Component_="af.msg" FileName="nl.msg" Attributes="0" SourcePath="dist\tcl\msgs\nl.msg" SelfReg="false" NextFile="nl_be.msg"/>
@@ -1013,7 +1016,7 @@
     <ROW File="pwrdLogo175.gif" Component_="lamp.png" FileName="PWRDLO~3.GIF|pwrdLogo175.gif" Attributes="0" SourcePath="dist\tk\images\pwrdLogo175.gif" SelfReg="false" NextFile="pwrdLogo200.gif"/>
     <ROW File="pwrdLogo200.gif" Component_="lamp.png" FileName="PWRDLO~4.GIF|pwrdLogo200.gif" Attributes="0" SourcePath="dist\tk\images\pwrdLogo200.gif" SelfReg="false" NextFile="pwrdLogo75.gif"/>
     <ROW File="pwrdLogo75.gif" Component_="lamp.png" FileName="PWRDLO~5.GIF|pwrdLogo75.gif" Attributes="0" SourcePath="dist\tk\images\pwrdLogo75.gif" SelfReg="false" NextFile="README_1"/>
-    <ROW File="pyexpat.pyd" Component_="_ctypes.pyd" FileName="pyexpat.pyd" Attributes="0" SourcePath="dist\pyexpat.pyd" SelfReg="false" NextFile="python34.dll"/>
+    <ROW File="pyexpat.pyd" Component_="_bz2.pyd" FileName="pyexpat.pyd" Attributes="0" SourcePath="dist\pyexpat.pyd" SelfReg="false" NextFile="python34.dll"/>
     <ROW File="python34.dll" Component_="python34.dll" FileName="python34.dll" Attributes="0" SourcePath="dist\python34.dll" SelfReg="false" NextFile="select.pyd"/>
     <ROW File="radio.tcl" Component_="anilabel.tcl" FileName="radio.tcl" Attributes="0" SourcePath="dist\tk\demos\radio.tcl" SelfReg="false" NextFile="README"/>
     <ROW File="rmt" Component_="anilabel.tcl" FileName="rmt" Attributes="0" SourcePath="dist\tk\demos\rmt" SelfReg="false" NextFile="rolodex"/>
@@ -1031,9 +1034,10 @@
     <ROW File="scrlbar.tcl" Component_="bgerror.tcl" FileName="scrlbar.tcl" Attributes="0" SourcePath="dist\tk\scrlbar.tcl" SelfReg="false" NextFile="spinbox.tcl"/>
     <ROW File="scrollbar.tcl" Component_="altTheme.tcl" FileName="SCROLL~1.TCL|scrollbar.tcl" Attributes="0" SourcePath="dist\tk\ttk\scrollbar.tcl" SelfReg="false" NextFile="sizegrip.tcl"/>
     <ROW File="search.tcl" Component_="anilabel.tcl" FileName="search.tcl" Attributes="0" SourcePath="dist\tk\demos\search.tcl" SelfReg="false" NextFile="spin.tcl"/>
-    <ROW File="select.pyd" Component_="_ctypes.pyd" FileName="select.pyd" Attributes="0" SourcePath="dist\select.pyd" SelfReg="false" NextFile="tcl86t.dll"/>
+    <ROW File="select.pyd" Component_="_bz2.pyd" FileName="select.pyd" Attributes="0" SourcePath="dist\select.pyd" SelfReg="false" NextFile="tcl86t.dll"/>
     <ROW File="sh.msg" Component_="af.msg" FileName="sh.msg" Attributes="0" SourcePath="dist\tcl\msgs\sh.msg" SelfReg="false" NextFile="sk.msg"/>
     <ROW File="shiftjis.enc" Component_="ascii.enc" FileName="shiftjis.enc" Attributes="0" SourcePath="dist\tcl\encoding\shiftjis.enc" SelfReg="false" NextFile="symbol.enc"/>
+    <ROW File="silence.wav" Component_="_bz2.pyd" FileName="silence.wav" Attributes="0" SourcePath="dist\silence.wav" SelfReg="false"/>
     <ROW File="sizegrip.tcl" Component_="altTheme.tcl" FileName="sizegrip.tcl" Attributes="0" SourcePath="dist\tk\ttk\sizegrip.tcl" SelfReg="false" NextFile="spinbox.tcl_1"/>
     <ROW File="sk.msg" Component_="af.msg" FileName="sk.msg" Attributes="0" SourcePath="dist\tcl\msgs\sk.msg" SelfReg="false" NextFile="sl.msg"/>
     <ROW File="sl.msg" Component_="af.msg" FileName="sl.msg" Attributes="0" SourcePath="dist\tcl\msgs\sl.msg" SelfReg="false" NextFile="sq.msg"/>
@@ -1085,13 +1089,13 @@
     <ROW File="ttkscale.tcl" Component_="anilabel.tcl" FileName="ttkscale.tcl" Attributes="0" SourcePath="dist\tk\demos\ttkscale.tcl" SelfReg="false" NextFile="twind.tcl"/>
     <ROW File="twind.tcl" Component_="anilabel.tcl" FileName="twind.tcl" Attributes="0" SourcePath="dist\tk\demos\twind.tcl" SelfReg="false" NextFile="unicodeout.tcl"/>
     <ROW File="uk.msg" Component_="af.msg" FileName="uk.msg" Attributes="0" SourcePath="dist\tcl\msgs\uk.msg" SelfReg="false" NextFile="vi.msg"/>
-    <ROW File="unicodedata.pyd" Component_="_ctypes.pyd" FileName="UNICOD~1.PYD|unicodedata.pyd" Attributes="0" SourcePath="dist\unicodedata.pyd" SelfReg="false" NextFile="fonts.conf"/>
+    <ROW File="unicodedata.pyd" Component_="_bz2.pyd" FileName="UNICOD~1.PYD|unicodedata.pyd" Attributes="0" SourcePath="dist\unicodedata.pyd" SelfReg="false" NextFile="silence.wav"/>
     <ROW File="unicodeout.tcl" Component_="anilabel.tcl" FileName="UNICOD~1.TCL|unicodeout.tcl" Attributes="0" SourcePath="dist\tk\demos\unicodeout.tcl" SelfReg="false" NextFile="vscale.tcl"/>
     <ROW File="unsupported.tcl" Component_="bgerror.tcl" FileName="UNSUPP~1.TCL|unsupported.tcl" Attributes="0" SourcePath="dist\tk\unsupported.tcl" SelfReg="false" NextFile="xmfbox.tcl"/>
     <ROW File="utils.tcl" Component_="altTheme.tcl" FileName="utils.tcl" Attributes="0" SourcePath="dist\tk\ttk\utils.tcl" SelfReg="false" NextFile="vistaTheme.tcl"/>
     <ROW File="vi.msg" Component_="af.msg" FileName="vi.msg" Attributes="0" SourcePath="dist\tcl\msgs\vi.msg" SelfReg="false" NextFile="zh.msg"/>
     <ROW File="vistaTheme.tcl" Component_="altTheme.tcl" FileName="VISTAT~1.TCL|vistaTheme.tcl" Attributes="0" SourcePath="dist\tk\ttk\vistaTheme.tcl" SelfReg="false" NextFile="winTheme.tcl"/>
-    <ROW File="voconverter.exe" Component_="voconverter.exe" FileName="VOCONV~1.EXE|voconverter.exe" Attributes="0" SourcePath="dist\voconverter.exe" SelfReg="false" NextFile="_ctypes.pyd" DigSign="true"/>
+    <ROW File="voconverter.exe" Component_="voconverter.exe" FileName="VOCONV~1.EXE|voconverter.exe" Attributes="0" SourcePath="dist\voconverter.exe" SelfReg="false" NextFile="fonts.conf" DigSign="true"/>
     <ROW File="vscale.tcl" Component_="anilabel.tcl" FileName="vscale.tcl" Attributes="0" SourcePath="dist\tk\demos\vscale.tcl" SelfReg="false" NextFile="widget"/>
     <ROW File="widget" Component_="anilabel.tcl" FileName="widget" Attributes="0" SourcePath="dist\tk\demos\widget" SelfReg="false" NextFile="dialog.tcl"/>
     <ROW File="winTheme.tcl" Component_="altTheme.tcl" FileName="winTheme.tcl" Attributes="0" SourcePath="dist\tk\ttk\winTheme.tcl" SelfReg="false" NextFile="xpTheme.tcl"/>
