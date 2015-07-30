@@ -275,30 +275,33 @@ class AddOverlay(threading.Thread):
         except CalledProcessError as cpe:
             print("SOUND OUT", cpe.output)
 
-        # cut from the begging to the overlay
-        check_call([
-            # path to ffmpeg
-            ffmpeg_path,
-            # overwrite
-            "-y",
-            # input file
-            "-i",
-            self.input_video,
-            # duration
-            "-t",
-            str(self.video_time),
-            # codec
-            "-c",
-            "copy",
-            "-bsf:v",
-            "h264_mp4toannexb",
-            "-f",
-            "mpegts",
-            # output file
-            self.temp_dir.name + "\\" + str(self.cut_number) + "_start.mp4"
-        ],
-            stderr=STDOUT,
-            shell=False)
+        try:
+            # cut from the begging to the overlay
+            check_call([
+                # path to ffmpeg
+                ffmpeg_path,
+                # overwrite
+                "-y",
+                # input file
+                "-i",
+                self.input_video,
+                # duration
+                "-t",
+                str(max(self.video_time, 1)),
+                # codec
+                "-c",
+                "copy",
+                "-bsf:v",
+                "h264_mp4toannexb",
+                "-f",
+                "mpegts",
+                # output file
+                self.temp_dir.name + "\\" + str(self.cut_number) + "_start.mp4"
+            ],
+                stderr=STDOUT,
+                shell=False)
+        except CalledProcessError as cpe:
+            print("START OUT", cpe.output)
 
         # cut from the pause to the end
         check_call([
@@ -311,7 +314,7 @@ class AddOverlay(threading.Thread):
             self.input_video,
             # start time
             "-ss",
-            str(self.video_time),
+            str(max(self.video_time, 1)),
             # audio codec options
             "-c:a",
             "copy",
