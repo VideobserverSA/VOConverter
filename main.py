@@ -457,6 +457,9 @@ class CutFastCopy(threading.Thread):
             ffmpeg_path,
             # overwrite
             "-y",
+            # start time
+            "-ss",
+            str(self.time_start),
             # input file
             "-i",
             self.video_path,
@@ -470,9 +473,6 @@ class CutFastCopy(threading.Thread):
             "h264_mp4toannexb",
             "-f",
             "mpegts",
-            # start time
-            "-ss",
-            str(self.time_start),
             # output file
             self.tmp_out
         ],
