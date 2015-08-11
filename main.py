@@ -654,6 +654,7 @@ class FileChooser(object):
             has_drawing = False
             drawing = ""
             drawing_time = ""
+            screenshot = ""
 
             if item_type == "ga":
                 time_start = int(float(child.find("game_action").find("video_time_start").text))
@@ -666,6 +667,7 @@ class FileChooser(object):
                 if drw is not None:
                     drawing = drw.find("bitmap").text
                     drawing_time = drw.find("time").text
+                    screenshot = drw.find("screenshot").text
                     has_drawing = True
 
             if item_type == "cue":
@@ -679,6 +681,7 @@ class FileChooser(object):
                 if drw is not None:
                     drawing = drw.find("bitmap").text
                     drawing_time = drw.find("time").text
+                    screenshot = drw.find("screenshot").text
                     has_drawing = True
 
             # add some padding
@@ -725,12 +728,25 @@ class FileChooser(object):
                 f = open(self.temp_dir.name + "\\" + str(cut_number) + "_overlay.png", "wb")
                 f.write(raw_png)
                 f.close()
+                pil_png = Image.open(self.temp_dir.name + "\\" + str(cut_number) + "_overlay.png")
+
+                raw_jpeg = base64.b64decode(screenshot)
+                jf = open(self.temp_dir.name + "\\" + str(cut_number) + "_screenshot.png", "wb")
+                jf.write(raw_jpeg)
+                jf.close()
+                pil_jpeg = Image.open(self.temp_dir.name + "\\" + str(cut_number) + "_screenshot.png")
+                pil_jpeg_converted = pil_jpeg.convert(mode="RGBA")
+
+                # and now join the two?
+                pil_composite = Image.alpha_composite(pil_jpeg_converted, pil_png)
+                pil_composite.save(self.temp_dir.name + "\\" + str(cut_number) + "_composite.png", "PNG")
+
                 overlay_thr = AddOverlay(temp_dir=self.temp_dir, cut_number=cut_number,
                                          input_video=self.temp_dir.name + "\\" + str(cut_number) + "_comments.mp4",
                                          video_info=self.video_info,
                                          video_time=float(drawing_time) - time_start,
                                          tmp_out=self.temp_dir.name + "\\" + str(cut_number) + "_overlay.mp4",
-                                         image_path=self.temp_dir.name + "\\" + str(cut_number) + "_overlay.png")
+                                         image_path=self.temp_dir.name + "\\" + str(cut_number) + "_composite.png")
                 overlay_thr.start()
                 while overlay_thr.is_alive():
                     # print("sleeping...")
