@@ -19,6 +19,8 @@ ffmpeg_path = "ffmpeg.exe"
 ffprobe_path = "ffprobe.exe"
 
 root = Tk()
+root.title("Vo Converter")
+root.iconbitmap("icon.ico")
 
 
 class VideoInfo:
@@ -164,7 +166,7 @@ class AddSeparator(threading.Thread):
 
 class AddOverlay(threading.Thread):
 
-    def __init__(self, temp_dir, cut_number, input_video, video_info, video_time, image_path, tmp_out):
+    def __init__(self, temp_dir, cut_number, input_video, video_info, video_time, image_path, tmp_out, pause_time):
 
         super().__init__()
 
@@ -175,6 +177,7 @@ class AddOverlay(threading.Thread):
         self.temp_dir = temp_dir
         self.video_info = video_info
         self.image_path = image_path
+        self.pause_time = pause_time
 
     def run(self):
 
@@ -182,17 +185,6 @@ class AddOverlay(threading.Thread):
         ori_img = Image.open(self.image_path)
         res_img = ori_img.resize((self.video_info.width, self.video_info.height), Image.ANTIALIAS)
         res_img.save(self.temp_dir.name + "\\" + str(self.cut_number) + "_overlay_res.png")
-
-        # we have the full image no need to get the screenshot
-        # # get screenshot at the correct time
-        # screenshot_thr = GetScreenshot(input_video=self.input_video,
-        #                                out_file=self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb.png",
-        #                                video_time=self.video_time)
-        # screenshot_thr.start()
-        # while screenshot_thr.is_alive():
-        #     # print("sleeping...")
-        #     dummy_event = threading.Event()
-        #     dummy_event.wait(timeout=1)
 
         # create the pause image
         try:
@@ -210,7 +202,7 @@ class AddOverlay(threading.Thread):
                 "libx264",
                 # duration
                 "-t",
-                "2",
+                str(self.pause_time),
                 "-pix_fmt",
                 "yuv444p",
                 "-vf",
@@ -483,7 +475,7 @@ class CutFastCopy(threading.Thread):
 
 class EncodeSubtitles(threading.Thread):
 
-    def __init__(self, temp_dir, cut_number, video_path, video_info, time_start, duration, comments, tmp_out):
+    def __init__(self, temp_dir, cut_number, video_path, video_info, time_start, duration, comments, tmp_out, font_size):
 
         super().__init__()
 
@@ -495,69 +487,105 @@ class EncodeSubtitles(threading.Thread):
         self.tmp_out = tmp_out
         self.temp_dir = temp_dir
         self.video_info = video_info
+        self.font_size = font_size
 
     def run(self):
 
         # write srt file
-        srt_path = self.temp_dir.name + "\\" + str(self.cut_number) + ".srt"
-        srt_file = open(srt_path, "wb")
+        ass_log_path = self.temp_dir.name + "\\" + str(self.cut_number) + ".ass.log"
+        ass_log_file = open(ass_log_path, "wb")
 
-        srt_log_path = self.temp_dir.name + "\\" + str(self.cut_number) + ".srt.log"
-        srt_log_file = open(srt_log_path, "wb")
+        ass_contents = "[Script Info]\n"
+        ass_contents += "PlayResY: 600\n"
+        ass_contents += "\n"
+        ass_contents += "[V4 Styles]\n"
+        ass_contents += "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, TertiaryColour," \
+                        "BackColour, Bold, Italic, BorderStyle, Outline, Shadow, Alignment," \
+                        "MarginL, MarginR, MarginV, AlphaLevel, Encoding\n"
+        ass_contents += "Style: Default,Arial," + str(self.font_size) + ",16777215,65535,65535,"\
+                        "-2147483640,0,0,1,3,0,2,30,30,30,0,0\n"
+        ass_contents += "\n"
+        ass_contents += "[Events]\n"
+        ass_contents += "Format: Marked, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
+        ass_contents += "Dialogue: Marked=0,0:00:00.00,5:00:00.00,Default,,0000,0000,0000,," + self.comments + "\n"
 
-        log_path = self.temp_dir.name + "\\" + str(self.cut_number) + ".log"
-        log_file = open(log_path, "wb")
+        ass_path = self.temp_dir.name + "\\" + str(self.cut_number) + ".ass"
+        ass_file = open(ass_path, "wb")
+        ass_file.write(ass_contents.encode("utf8"))
+        ass_file.close()
 
-        srt_contents = "1\n"
-        srt_contents += "00:00:00,000" + " --> " + "05:00:00,000" + "1\n"
-        srt_contents += self.comments + "\n"
+        escaped_ass_path = ass_path.replace("\\", "\\\\").replace(":", "\:").replace(" ", "\ ")
 
-        srt_file.write(srt_contents.encode("utf8"))
-        srt_file.close()
-
-        escaped_srt_path = srt_path.replace("\\", "\\\\").replace(":", "\:").replace(" ", "\ ")
-
-        check_call([
-            ffmpeg_path,
-            # overwrite
-            "-y",
-            # start time
-            "-ss",
-            str(self.time_start),
-            # input file
-            "-i",
-            self.video_path,
-            "-t",
-            str(self.duration),
-            # codec
-            "-codec:v",
-            "libx264",
-            "-crf",
-            "23",
-            "-codec:a",
-            "copy",
-            "-vf",
-            "subtitles=" + "'" + escaped_srt_path + "'",
-            self.tmp_out
-        ],
-            shell=False,
-            universal_newlines=True,
-            stderr=STDOUT,
-            stdout=srt_log_file
-        )
+        try:
+            check_call([
+                ffmpeg_path,
+                # overwrite
+                "-y",
+                # start time
+                "-ss",
+                str(self.time_start),
+                # input file
+                "-i",
+                self.video_path,
+                "-t",
+                str(self.duration),
+                # codec
+                "-codec:v",
+                "libx264",
+                "-crf",
+                "23",
+                "-codec:a",
+                "copy",
+                "-vf",
+                "ass=" + "'" + escaped_ass_path + "'",
+                self.tmp_out
+            ],
+                shell=False,
+                universal_newlines=True,
+                stderr=STDOUT,
+                stdout=ass_log_file
+            )
+        except CalledProcessError as cpe:
+            print("SUB ASS OUT", cpe.output)
 
 
 class FileChooser(object):
 
     def __init__(self):
-        btn = Button(text="Open File", command=self.open_dialog)
-        btn.pack()
+
+        pause_frame = Frame(root)
+        pause_frame.pack(fill=X, padx="5")
+
+        pause_label = Label(pause_frame, text="Drawings Pause Time")
+        pause_label.pack(side=LEFT)
+
+        self.pause_duration = Scale(pause_frame, from_=1, to=10, orient=HORIZONTAL, length="180")
+        self.pause_duration.pack(side=RIGHT)
+        # default value
+        self.pause_duration.set(4)
+
+        font_frame = Frame(root)
+        font_frame.pack(fill=X, padx="5")
+
+        font_size_label = Label(font_frame, text="Font Size")
+        font_size_label.pack(side=LEFT)
+
+        self.font_size = Scale(font_frame, from_=10, to=50, orient=HORIZONTAL, length="180")
+        self.font_size.pack(side=RIGHT)
+        # default value
+        self.font_size.set(30)
 
         self.meter = Meter(root, bg="white", fillcolor="light blue")
-        self.meter.pack()
+        self.meter.pack(pady="10", padx="10")
 
-        another = Button(text="Quit", command=self.quit_app)
-        another.pack()
+        btn_frame = Frame(root)
+        btn_frame.pack(padx="10", pady="10")
+
+        btn = Button(btn_frame, text="Open File", command=self.open_dialog)
+        btn.pack(side=LEFT, padx="10")
+
+        another = Button(btn_frame, text="Quit", command=self.quit_app)
+        another.pack(side=LEFT, padx="10")
 
         self.temp_dir = tempfile.TemporaryDirectory()
         self.num_items = 0
@@ -706,7 +734,8 @@ class FileChooser(object):
                 sub_thr = EncodeSubtitles(temp_dir=self.temp_dir, cut_number=cut_number, video_path=video_path,
                                           video_info=self.video_info,
                                           time_start=time_start, duration=duration, comments=comments,
-                                          tmp_out=self.temp_dir.name + "\\" + str(cut_number) + "_comments.mp4")
+                                          tmp_out=self.temp_dir.name + "\\" + str(cut_number) + "_comments.mp4",
+                                          font_size=self.font_size.get())
                 sub_thr.start()
                 while sub_thr.is_alive():
                     # print("sleeping...")
@@ -746,7 +775,8 @@ class FileChooser(object):
                                          video_info=self.video_info,
                                          video_time=float(drawing_time) - time_start,
                                          tmp_out=self.temp_dir.name + "\\" + str(cut_number) + "_overlay.mp4",
-                                         image_path=self.temp_dir.name + "\\" + str(cut_number) + "_composite.png")
+                                         image_path=self.temp_dir.name + "\\" + str(cut_number) + "_composite.png",
+                                         pause_time=self.pause_duration.get())
                 overlay_thr.start()
                 while overlay_thr.is_alive():
                     # print("sleeping...")
