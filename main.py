@@ -453,9 +453,6 @@ class CutFastCopy(threading.Thread):
             ffmpeg_path,
             # overwrite
             "-y",
-            # start time
-            "-ss",
-            str(self.time_start),
             # input file
             "-i",
             self.video_path,
@@ -469,6 +466,9 @@ class CutFastCopy(threading.Thread):
             "h264_mp4toannexb",
             "-f",
             "mpegts",
+            # start time
+            "-ss",
+            str(self.time_start),
             # output file
             self.tmp_out
         ],
@@ -591,12 +591,19 @@ class FileChooser(object):
         another = Button(btn_frame, text="Quit", command=self.quit_app)
         another.pack(side=LEFT, padx="10")
 
+        self.status_bar = StatusBar(root)
+        self.status_bar.pack(fill=X)
+        self.status_bar.set("%s", "Open file to start...")
+
         self.temp_dir = tempfile.TemporaryDirectory()
         self.num_items = 0
 
         self.base_name = ""
 
         self.video_info = ""
+
+        self.start_time = ""
+        self.end_time = ""
 
     def open_dialog(self):
 
@@ -638,7 +645,11 @@ class FileChooser(object):
 
     def parse_playlist(self, filename):
 
+        # record start time
+        self.start_time = time.time()
+
         # to keep the cut files
+        self.status_bar.set("%s", "Processing...")
 
         # we have a name so make sure we create the dir
         if not os.path.exists(self.temp_dir.name):
@@ -850,8 +861,15 @@ class FileChooser(object):
 
         self.meter.set(1, "Done: " + self.base_name + " " + "100" + "%")
 
-        # DEBUG
-        # sys.exit(0)
+        self.end_time = time.time()
+        time_delta = self.end_time - self.start_time
+
+        seconds = int(time_delta % 60)
+        minutes = int(time_delta / 60)
+        hours = int(time_delta / (60 * 60))
+
+        self.status_bar.set("Done in %s:%s:%s ...", format(hours, "02d"),
+                            format(minutes, "02d"), format(seconds, "02d"))
 
 
 # CODE FOR PROGRESS BAR
@@ -900,6 +918,22 @@ class Meter(Frame):
         self._canv.coords(self._rect, 0, 0, self._canv.winfo_width()*value, self._canv.winfo_height())
         self._canv.itemconfigure(self._text, text=text)
         self._canv.update_idletasks()
+
+# Code for status bar
+class StatusBar(Frame):
+
+    def __init__(self, master):
+        Frame.__init__(self, master)
+        self.label = Label(self, bd=1, relief=SUNKEN, anchor=W)
+        self.label.pack(fill=X)
+
+    def set(self, fmt, *args):
+        self.label.config(text=fmt % args)
+        self.label.update_idletasks()
+
+    def clear(self):
+        self.label.config(text="")
+        self.label.update_idletasks()
 
 if __name__ == '__main__':
     fc = FileChooser()
