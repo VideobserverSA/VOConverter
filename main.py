@@ -685,6 +685,9 @@ class FileChooser(object):
         cut_number = 0
         # start parsing each item
         for child in base.findall('.items/item'):
+
+            self.status_bar.set("Processing item %i", cut_number + 1)
+
             item_type = child.find("type").text
             print("ItemType>> ", item_type)
 
@@ -745,6 +748,7 @@ class FileChooser(object):
 
             #  first check for comments
             if comments is not None and enable_comments == "true":
+                self.status_bar.set("Adding subtitles to item %i", cut_number + 1)
                 has_comments = True
                 sub_thr = EncodeSubtitles(temp_dir=self.temp_dir, cut_number=cut_number, video_path=video_path,
                                           video_info=self.video_info,
@@ -758,6 +762,7 @@ class FileChooser(object):
                     dummy_event.wait(timeout=1)
             else:
                 # just cut in time
+                self.status_bar.set("Fast cutting item %i", cut_number + 1)
                 fast_cut_thr = CutFastCopy(temp_dir=self.temp_dir, cut_number=cut_number, video_path=video_path,
                                            time_start=time_start, duration=duration,
                                            tmp_out=self.temp_dir.name + "\\" + str(cut_number) + "_comments.mp4")
@@ -768,6 +773,7 @@ class FileChooser(object):
 
             # do we add an overlay?
             if has_drawing:
+                self.status_bar.set("Adding drawing to item %i", cut_number + 1)
                 raw_png = base64.b64decode(drawing)
                 f = open(self.temp_dir.name + "\\" + str(cut_number) + "_overlay.png", "wb")
                 f.write(raw_png)
@@ -809,6 +815,7 @@ class FileChooser(object):
                                               input_video=fast_copy_input, tmp_out=tmp_out)
             fast_copy_thr.start()
             while fast_copy_thr.is_alive():
+                self.status_bar.set("Finishing item %i", cut_number + 1)
                 # print("sleeping...")
                 dummy_event = threading.Event()
                 dummy_event.wait(timeout=1)
@@ -820,6 +827,7 @@ class FileChooser(object):
 
             cut_number += 1
 
+        self.status_bar.set("Joining final video")
         # JOIN THE THINGS
         join_args = []
         # path to ffmpeg
