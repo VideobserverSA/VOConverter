@@ -352,7 +352,8 @@ class AddOverlay(threading.Thread):
                 "[a]",
                 "-filter_complex",
                 # "[0:0] setsar=1:1 [in1]; [0:1] [1:0] setsar=1:1 [in2]; [1:1] concat=n=2:v=1:a=1 [v] [a]",
-                "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2]; [in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
+                "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
+                "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
                 self.temp_dir.name + "\\" + str(self.cut_number) + "_start_and_over.mp4"
             ], shell=False)
         except CalledProcessError as cpe:
@@ -382,7 +383,8 @@ class AddOverlay(threading.Thread):
                 "[a]",
                 "-filter_complex",
                 # "[0:0] [0:1] [1:0] [1:1] concat=n=2:v=1:a=1 [v] [a],scale=1270x720,setsar=1:1",
-                "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2]; [in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
+                "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
+                "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
                 self.tmp_out,
             ], shell=False)
         except CalledProcessError as cpe:

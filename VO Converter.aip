@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<DOCUMENT Type="Advanced Installer" CreateVersion="12.2" version="12.2.1" Modules="simple" RootPath="." Language="en" Id="{F18542BE-F241-4936-B574-A0568B2F8711}">
+<DOCUMENT Type="Advanced Installer" CreateVersion="12.2" version="12.3.1" Modules="simple" RootPath="." Language="en" Id="{F18542BE-F241-4936-B574-A0568B2F8711}">
   <COMPONENT cid="caphyon.advinst.msicomp.MsiPropsComponent">
     <ROW Property="AI_BITMAP_DISPLAY_MODE" Value="0"/>
     <ROW Property="ALLUSERS" Value="1" MultiBuildValue="DefaultBuild:2"/>
@@ -9,7 +9,7 @@
     <ROW Property="ProductCode" Value="1033:{058A51B5-AC15-4421-B0E3-9481FD7F7315} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="VO Converter"/>
-    <ROW Property="ProductVersion" Value="1.0.20" Type="32"/>
+    <ROW Property="ProductVersion" Value="1.0.21" Type="32"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND"/>
     <ROW Property="UpgradeCode" Value="{20AFAB45-5019-413E-87F5-F22F4FF2596F}"/>
     <ROW Property="WindowsType9X" MultiBuildValue="DefaultBuild:Windows 9x/ME" ValueLocId="-"/>
