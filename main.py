@@ -597,21 +597,21 @@ class FileChooser(object):
         self.meter = Meter(root, bg="white", fillcolor="light blue")
         self.meter.pack(pady="10", padx="10")
 
-        dest_frame = Frame(root)
-        dest_frame.pack(padx="10", pady="10", fill=X)
+        destination_frame = Frame(root)
+        destination_frame.pack(padx="10", pady="10", fill=X)
 
-        dest_label = Label(dest_frame, text="Destination:")
+        dest_label = Label(destination_frame, text="Destination:")
         dest_label.pack(side=LEFT)
 
-        if self.settings.has_option("dest_path"):
-            self.final_destination_path = self.settings.get("dest_path")
+        if self.settings.has_option("destination_path"):
+            self.final_destination_path = self.settings.get("destination_path")
         else:
             self.final_destination_path = os.path.expanduser("~/Desktop")
 
-        self.dest_path = Label(dest_frame, text=self.final_destination_path)
-        self.dest_path.pack(side=LEFT)
+        self.destination_path = Label(destination_frame, text=self.final_destination_path)
+        self.destination_path.pack(side=LEFT)
 
-        self.dest_btn = Button(dest_frame, text="Choose", command=self.choose_destination)
+        self.dest_btn = Button(destination_frame, text="Choose", command=self.choose_destination)
         self.dest_btn.pack(side=RIGHT)
 
         btn_frame = Frame(root)
@@ -652,7 +652,7 @@ class FileChooser(object):
         # save settings for next time
         self.settings.set("pause", self.pause_duration.get())
         self.settings.set("font_size", self.font_size.get())
-        self.settings.set("dest_path", self.final_destination_path)
+        self.settings.set("destination_path", self.final_destination_path)
 
         self.settings.save()
 
@@ -664,7 +664,7 @@ class FileChooser(object):
     def choose_destination(self):
         fn = filedialog.askdirectory()
         self.final_destination_path = fn
-        self.dest_path.config(text=fn)
+        self.destination_path.config(text=fn)
 
     def get_video_info(self, video_path):
 
