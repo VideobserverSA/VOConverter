@@ -268,6 +268,7 @@ class AddOverlay(threading.Thread):
         except CalledProcessError as cpe:
             print("SOUND OUT", cpe.output)
 
+        start_file = open(self.temp_dir.name + "\\" + str(self.cut_number) + "_start.log", "wb")
         try:
             # cut from the begging to the overlay
             check_call([
@@ -292,7 +293,8 @@ class AddOverlay(threading.Thread):
                 self.temp_dir.name + "\\" + str(self.cut_number) + "_start.mp4"
             ],
                 stderr=STDOUT,
-                shell=False)
+                shell=False,
+                stdout=start_file)
         except CalledProcessError as cpe:
             print("START OUT", cpe.output)
 
@@ -446,7 +448,7 @@ class CutFastCopy(threading.Thread):
 
     def run(self):
 
-        log_path = self.temp_dir.name + "\\" + str(self.cut_number) + ".log"
+        log_path = self.temp_dir.name + "\\" + str(self.cut_number) + "_fast_cut.log"
         log_file = open(log_path, "wb")
 
         out = check_call([
