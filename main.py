@@ -558,7 +558,9 @@ class FileChooser(object):
 
     def __init__(self):
 
-        self.settings = EasySettings("test.conf")
+        settings_path = os.path.expanduser("~/voconverter.conf")
+
+        self.settings = EasySettings(settings_path)
 
         pause_frame = Frame(root)
         pause_frame.pack(fill=X, padx="5")
