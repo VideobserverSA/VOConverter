@@ -480,6 +480,55 @@ class CutFastCopy(threading.Thread):
             shell=False)
 
 
+class CutWithKeyFrames(threading.Thread):
+
+    def __init__(self, temp_dir, cut_number, video_path, time_start, duration, tmp_out):
+
+        super().__init__()
+
+        self.cut_number = cut_number
+        self.video_path = video_path
+        self.time_start = time_start
+        self.duration = duration
+        self.tmp_out = tmp_out
+        self.temp_dir = temp_dir
+
+    def run(self):
+
+        log_path = self.temp_dir.name + "\\" + str(self.cut_number) + "_cut_key_frames.log"
+        log_file = open(log_path, "wb")
+
+        out = check_call([
+            # path to ffmpeg
+            ffmpeg_path,
+            # overwrite
+            "-y",
+            # start time
+            "-ss",
+            str(self.time_start),
+            # duration
+            "-t",
+            str(self.duration),
+            # input file
+            "-i",
+            self.video_path,
+            # codec
+            "-x264opts",
+            "keyint=12:min-keyint=12",
+            "-c:v",
+            "libx264",
+            "-c:a",
+            "aac",
+            "-strict",
+            "-2",
+            # output file
+            self.tmp_out
+        ],
+            stderr=STDOUT,
+            stdout=log_file,
+            shell=False)
+
+
 class EncodeSubtitles(threading.Thread):
 
     def __init__(self, temp_dir, cut_number, video_path, video_info, time_start, duration, comments, tmp_out, font_size):
@@ -804,8 +853,18 @@ class FileChooser(object):
                     # print("sleeping...")
                     dummy_event = threading.Event()
                     dummy_event.wait(timeout=1)
+
+            elif has_drawing:
+                # we need to convert without fast copy so that the further cuts work out right
+                key_thr = CutWithKeyFrames(temp_dir=self.temp_dir, cut_number=cut_number, video_path=video_path,
+                                           time_start=time_start, duration=duration,
+                                           tmp_out=self.temp_dir.name + "\\" + str(cut_number) + "_comments.mp4")
+                key_thr.start()
+                while key_thr.is_alive():
+                    dummy_event = threading.Event()
+                    dummy_event.wait(timeout=1)
             else:
-                # just cut in time
+                # just cut in time since we need no further processing
                 self.status_bar.set("Fast cutting item %i", cut_number + 1)
                 fast_cut_thr = CutFastCopy(temp_dir=self.temp_dir, cut_number=cut_number, video_path=video_path,
                                            time_start=time_start, duration=duration,
@@ -849,7 +908,6 @@ class FileChooser(object):
                     dummy_event.wait(timeout=1)
 
             # lastly we convert to fast copy for the final join
-            fast_copy_input = ""
             if has_drawing:
                 fast_copy_input = self.temp_dir.name + "\\" + str(cut_number) + "_overlay.mp4"
             else:
