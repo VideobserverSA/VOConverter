@@ -14,6 +14,7 @@ import json
 from PIL import Image
 import math
 import base64
+from easysettings import EasySettings
 
 ffmpeg_path = "ffmpeg.exe"
 ffprobe_path = "ffprobe.exe"
@@ -557,6 +558,8 @@ class FileChooser(object):
 
     def __init__(self):
 
+        self.settings = EasySettings("test.conf")
+
         pause_frame = Frame(root)
         pause_frame.pack(fill=X, padx="5")
 
@@ -566,7 +569,11 @@ class FileChooser(object):
         self.pause_duration = Scale(pause_frame, from_=1, to=10, orient=HORIZONTAL, length="180")
         self.pause_duration.pack(side=RIGHT)
         # default value
-        self.pause_duration.set(4)
+        if self.settings.has_option("pause"):
+            pause_val = self.settings.get("pause")
+        else:
+            pause_val = 4
+        self.pause_duration.set(pause_val)
 
         font_frame = Frame(root)
         font_frame.pack(fill=X, padx="5")
@@ -577,10 +584,31 @@ class FileChooser(object):
         self.font_size = Scale(font_frame, from_=10, to=50, orient=HORIZONTAL, length="180")
         self.font_size.pack(side=RIGHT)
         # default value
-        self.font_size.set(30)
+        if self.settings.has_option("font_size"):
+            font_val = self.settings.get("font_size")
+        else:
+            font_val = 30
+        self.font_size.set(font_val)
 
         self.meter = Meter(root, bg="white", fillcolor="light blue")
         self.meter.pack(pady="10", padx="10")
+
+        dest_frame = Frame(root)
+        dest_frame.pack(padx="10", pady="10", fill=X)
+
+        dest_label = Label(dest_frame, text="Destination:")
+        dest_label.pack(side=LEFT)
+
+        if self.settings.has_option("dest_path"):
+            self.final_destination_path = self.settings.get("dest_path")
+        else:
+            self.final_destination_path = os.path.expanduser("~/Desktop")
+
+        self.dest_path = Label(dest_frame, text=self.final_destination_path)
+        self.dest_path.pack(side=LEFT)
+
+        self.dest_btn = Button(dest_frame, text="Choose", command=self.choose_destination)
+        self.dest_btn.pack(side=RIGHT)
 
         btn_frame = Frame(root)
         btn_frame.pack(padx="10", pady="10")
@@ -617,10 +645,22 @@ class FileChooser(object):
 
     def quit_app(self):
 
+        # save settings for next time
+        self.settings.set("pause", self.pause_duration.get())
+        self.settings.set("font_size", self.font_size.get())
+        self.settings.set("dest_path", self.final_destination_path)
+
+        self.settings.save()
+
         # Cleanup
         self.temp_dir.cleanup()
 
         sys.exit(0)
+
+    def choose_destination(self):
+        fn = filedialog.askdirectory()
+        self.final_destination_path = fn
+        self.dest_path.config(text=fn)
 
     def get_video_info(self, video_path):
 
@@ -854,8 +894,7 @@ class FileChooser(object):
         # outfile
         out_filename = self.base_name.replace(".vopl", "")
         # put it on desktop for now
-        desktop_dir = os.path.expanduser("~/Desktop/")
-        join_args.append(desktop_dir + "\\" + out_filename + ".mp4")
+        join_args.append(self.final_destination_path + "\\" + out_filename + ".mp4")
 
         print("JOINARGS>>", ' '.join(join_args))
 
@@ -926,6 +965,7 @@ class Meter(Frame):
         self._canv.coords(self._rect, 0, 0, self._canv.winfo_width()*value, self._canv.winfo_height())
         self._canv.itemconfigure(self._text, text=text)
         self._canv.update_idletasks()
+
 
 # Code for status bar
 class StatusBar(Frame):
