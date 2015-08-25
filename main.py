@@ -29,10 +29,14 @@ class VideoInfo:
     def __init__(self):
         self.width = 0
         self.height = 0
+        self.has_sound = True
 
     def set_w_and_h(self, w, h):
         self.width = w
         self.height = h
+
+    def set_has_sound(self, has_sound):
+        self.has_sound = has_sound
 
 
 class SleepThreaded(threading.Thread):
@@ -330,68 +334,128 @@ class AddOverlay(threading.Thread):
 
         print(" ", " ", " ", " ", " VIDEO TIME: ", self.video_time)
 
-        # and now join the three files
-        # first stitch the start to the overlay
-        try:
-            check_call([
-                ffmpeg_path,
-                # overwrite
-                "-y",
-                # start
-                "-i",
-                self.temp_dir.name + "\\" + str(self.cut_number) + "_start.mp4",
-                # the overlay
-                "-i",
-                self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb_overlay_sound.mp4",
-                # audio codec
-                "-c:a",
-                "aac",
-                "-strict",
-                "-2",
-                # the concat filter
-                "-map",
-                "[v]",
-                "-map",
-                "[a]",
-                "-filter_complex",
-                # "[0:0] setsar=1:1 [in1]; [0:1] [1:0] setsar=1:1 [in2]; [1:1] concat=n=2:v=1:a=1 [v] [a]",
-                "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
-                "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
-                self.temp_dir.name + "\\" + str(self.cut_number) + "_start_and_over.mp4"
-            ], shell=False)
-        except CalledProcessError as cpe:
-            print("CAT OUT", cpe.output)
+        if self.video_info.has_sound:
+            # and now join the three files
+            # first stitch the start to the overlay
+            try:
+                check_call([
+                    ffmpeg_path,
+                    # overwrite
+                    "-y",
+                    # start
+                    "-i",
+                    self.temp_dir.name + "\\" + str(self.cut_number) + "_start.mp4",
+                    # the overlay
+                    "-i",
+                    self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb_overlay_sound.mp4",
+                    # audio codec
+                    "-c:a",
+                    "aac",
+                    "-strict",
+                    "-2",
+                    # the concat filter
+                    "-map",
+                    "[v]",
+                    "-map",
+                    "[a]",
+                    "-filter_complex",
+                    # "[0:0] setsar=1:1 [in1]; [0:1] [1:0] setsar=1:1 [in2]; [1:1] concat=n=2:v=1:a=1 [v] [a]",
+                    "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
+                    "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
+                    self.temp_dir.name + "\\" + str(self.cut_number) + "_start_and_over.mp4"
+                ], shell=False)
+            except CalledProcessError as cpe:
+                print("CAT OUT", cpe.output)
 
-        # and now join the three files
-        try:
-            check_call([
-                ffmpeg_path,
-                # overwrite
-                "-y",
-                # start
-                "-i",
-                self.temp_dir.name + "\\" + str(self.cut_number) + "_start_and_over.mp4",
-                # the overlay
-                "-i",
-                self.temp_dir.name + "\\" + str(self.cut_number) + "_end.mp4",
-                # audio codec
-                "-c:a",
-                "aac",
-                "-strict",
-                "-2",
-                # the concat filter
-                "-map",
-                "[v]",
-                "-map",
-                "[a]",
-                "-filter_complex",
-                # "[0:0] [0:1] [1:0] [1:1] concat=n=2:v=1:a=1 [v] [a],scale=1270x720,setsar=1:1",
-                "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
-                "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
-                self.tmp_out,
-            ], shell=False)
-        except CalledProcessError as cpe:
-            print("CAT OUT", cpe.output)
+            # and now join the three files
+            try:
+                check_call([
+                    ffmpeg_path,
+                    # overwrite
+                    "-y",
+                    # start
+                    "-i",
+                    self.temp_dir.name + "\\" + str(self.cut_number) + "_start_and_over.mp4",
+                    # the overlay
+                    "-i",
+                    self.temp_dir.name + "\\" + str(self.cut_number) + "_end.mp4",
+                    # audio codec
+                    "-c:a",
+                    "aac",
+                    "-strict",
+                    "-2",
+                    # the concat filter
+                    "-map",
+                    "[v]",
+                    "-map",
+                    "[a]",
+                    "-filter_complex",
+                    # "[0:0] [0:1] [1:0] [1:1] concat=n=2:v=1:a=1 [v] [a],scale=1270x720,setsar=1:1",
+                    "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
+                    "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
+                    self.tmp_out,
+                ], shell=False)
+            except CalledProcessError as cpe:
+                print("CAT OUT", cpe.output)
+
+        else:
+            # NO AUDIO, SO DO NOT CONCAT [a] STREAM
+            # and now join the three files
+            # first stitch the start to the overlay
+            try:
+                check_call([
+                    ffmpeg_path,
+                    # overwrite
+                    "-y",
+                    # start
+                    "-i",
+                    self.temp_dir.name + "\\" + str(self.cut_number) + "_start.mp4",
+                    # the overlay
+                    "-i",
+                    self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb_overlay_sound.mp4",
+                    # audio codec
+                    "-c:a",
+                    "aac",
+                    "-strict",
+                    "-2",
+                    # the concat filter
+                    "-map",
+                    "[v]",
+                    "-filter_complex",
+                    "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
+                    "[in1][in2] concat [v]",
+                    self.temp_dir.name + "\\" + str(self.cut_number) + "_start_and_over.mp4"
+                ], shell=False)
+            except CalledProcessError as cpe:
+                print("CAT OUT", cpe.output)
+
+            # and now join the three files
+            try:
+                check_call([
+                    ffmpeg_path,
+                    # overwrite
+                    "-y",
+                    # start
+                    "-i",
+                    self.temp_dir.name + "\\" + str(self.cut_number) + "_start_and_over.mp4",
+                    # the overlay
+                    "-i",
+                    self.temp_dir.name + "\\" + str(self.cut_number) + "_end.mp4",
+                    # audio codec
+                    "-c:a",
+                    "aac",
+                    "-strict",
+                    "-2",
+                    # the concat filter
+                    "-map",
+                    "[v]",
+                    "-filter_complex",
+                    "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
+                    "[in1][in2] concat [v]",
+                    self.tmp_out,
+                ], shell=False)
+            except CalledProcessError as cpe:
+                print("CAT OUT", cpe.output)
 
 
 class ConvertToFastCopy(threading.Thread):
@@ -730,11 +794,17 @@ class FileChooser(object):
 
         info_json = json.loads(out)
 
+        has_sound = False
+
         for stream in info_json["streams"]:
             if stream["codec_type"] == "video":
                 video_info = VideoInfo()
                 video_info.set_w_and_h(stream["width"], stream["height"])
-                return video_info
+            if stream["codec_type"] == "audio":
+                has_sound = True
+
+        video_info.set_has_sound(has_sound)
+        return video_info
 
     def parse_playlist(self, filename):
 
@@ -772,6 +842,8 @@ class FileChooser(object):
         self.video_info = self.get_video_info(video_path)
 
         print("VPath>> ", video_path)
+        print("Resolution>>>", str(self.video_info.width) + "x" + str(self.video_info.height))
+        print("Has Sound>>>", self.video_info.has_sound)
 
         print("")
 
