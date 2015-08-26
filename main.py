@@ -15,6 +15,7 @@ from PIL import Image
 import math
 import base64
 from easysettings import EasySettings
+import configparser
 
 ffmpeg_path = "ffmpeg.exe"
 ffprobe_path = "ffprobe.exe"
@@ -738,7 +739,14 @@ class FileChooser(object):
 
         self.status_bar = StatusBar(root)
         self.status_bar.pack(fill=X)
-        self.status_bar.set("%s", "Open file to start...")
+
+        # get the version from the ini
+        config = configparser.ConfigParser()
+        config.read("version.ini")
+        version = config["Vo Converter"]["version"]
+        date = config["Vo Converter"]["date"]
+        print("VERSION, DATE>>", version, date)
+        self.status_bar.set("Version: %s , date: %s", version, date)
 
         self.temp_dir = tempfile.TemporaryDirectory()
         self.num_items = 0
