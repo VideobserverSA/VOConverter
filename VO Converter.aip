@@ -12,7 +12,7 @@
     <ROW Property="ProductCode" Value="1033:{058A51B5-AC15-4421-B0E3-9481FD7F7315} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="VO Converter"/>
-    <ROW Property="ProductVersion" Value="1.0.26" Type="32"/>
+    <ROW Property="ProductVersion" Value="1.0.30" Type="32"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND"/>
     <ROW Property="UpgradeCode" Value="{20AFAB45-5019-413E-87F5-F22F4FF2596F}"/>
     <ROW Property="WindowsType9X" MultiBuildValue="DefaultBuild:Windows 9x/ME" ValueLocId="-"/>

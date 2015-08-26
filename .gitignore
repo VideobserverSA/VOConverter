@@ -61,6 +61,7 @@ target/
 
 #CXFreeze
 dist/
+build/
 
 # Advanced Installer
 pack_out/
