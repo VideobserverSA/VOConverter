@@ -76,7 +76,7 @@ class GetScreenshot(threading.Thread):
                 "-vframes",
                 "1",
                 self.out_file
-            ], shell=False)
+            ], shell=True)
         except CalledProcessError as cpe:
             print("SCREEN OUT", cpe.output)
 
@@ -115,7 +115,7 @@ class AddSeparator(threading.Thread):
                 "-vf",
                 "scale=" + str(self.video_info.width) + "x" + str(self.video_info.height) + ",setsar=1:1",
                 self.temp_dir.name + "\\" + str(self.cut_number) + "_sep_no_sound.mp4"
-            ], shell=False)
+            ], shell=True)
         except CalledProcessError as cpe:
             print("IMAGE OUT", cpe.output)
 
@@ -142,7 +142,7 @@ class AddSeparator(threading.Thread):
                 "-strict",
                 "-2",
                 self.temp_dir.name + "\\" + str(self.cut_number) + "_sep.mp4"
-            ], shell=False)
+            ], shell=True)
         except CalledProcessError as cpe:
             print("SOUND OUT", cpe.output)
 
@@ -165,7 +165,7 @@ class AddSeparator(threading.Thread):
                 "-filter_complex",
                 "[0:0] [0:1] [1:0] [1:1] concat=n=2:v=1:a=1 [v] [a]",
                 self.tmp_out
-            ], shell=False)
+            ], shell=True)
         except CalledProcessError as cpe:
             print("CAT OUT", cpe.output)
 
@@ -214,7 +214,7 @@ class AddOverlay(threading.Thread):
                 "-vf",
                 "scale=" + str(self.video_info.width) + "x" + str(self.video_info.height) + ",setsar=1:1",
                 self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb.mp4"
-            ], shell=False)
+            ], shell=True)
         except CalledProcessError as cpe:
             print("IMAGE OUT", cpe.output)
 
@@ -241,7 +241,7 @@ class AddOverlay(threading.Thread):
                 # output
                 self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb_overlay.mp4",
 
-            ], shell=False)
+            ], shell=True)
         except CalledProcessError as cpe:
             print("OVERLAY OUT", cpe.output)
 
@@ -269,7 +269,7 @@ class AddOverlay(threading.Thread):
                 "-strict",
                 "-2",
                 self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb_overlay_sound.mp4"
-            ], shell=False)
+            ], shell=True)
         except CalledProcessError as cpe:
             print("SOUND OUT", cpe.output)
 
@@ -298,7 +298,7 @@ class AddOverlay(threading.Thread):
                 self.temp_dir.name + "\\" + str(self.cut_number) + "_start.mp4"
             ],
                 stderr=STDOUT,
-                shell=False,
+                shell=True,
                 stdout=start_file)
         except CalledProcessError as cpe:
             print("START OUT", cpe.output)
@@ -331,7 +331,7 @@ class AddOverlay(threading.Thread):
             self.temp_dir.name + "\\" + str(self.cut_number) + "_end.mp4"
         ],
             stderr=STDOUT,
-            shell=False)
+            shell=True)
 
         print(" ", " ", " ", " ", " VIDEO TIME: ", self.video_time)
 
@@ -364,7 +364,7 @@ class AddOverlay(threading.Thread):
                     "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
                     "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
                     self.temp_dir.name + "\\" + str(self.cut_number) + "_start_and_over.mp4"
-                ], shell=False)
+                ], shell=True)
             except CalledProcessError as cpe:
                 print("CAT OUT", cpe.output)
 
@@ -395,7 +395,7 @@ class AddOverlay(threading.Thread):
                     "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
                     "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
                     self.tmp_out,
-                ], shell=False)
+                ], shell=True)
             except CalledProcessError as cpe:
                 print("CAT OUT", cpe.output)
 
@@ -426,7 +426,7 @@ class AddOverlay(threading.Thread):
                     "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
                     "[in1][in2] concat [v]",
                     self.temp_dir.name + "\\" + str(self.cut_number) + "_start_and_over.mp4"
-                ], shell=False)
+                ], shell=True)
             except CalledProcessError as cpe:
                 print("CAT OUT", cpe.output)
 
@@ -454,7 +454,7 @@ class AddOverlay(threading.Thread):
                     "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
                     "[in1][in2] concat [v]",
                     self.tmp_out,
-                ], shell=False)
+                ], shell=True)
             except CalledProcessError as cpe:
                 print("CAT OUT", cpe.output)
 
@@ -495,7 +495,7 @@ class ConvertToFastCopy(threading.Thread):
             self.tmp_out
         ],  stderr=STDOUT,
             stdout=log_file,
-            shell=False)
+            shell=True)
 
 
 class CutFastCopy(threading.Thread):
@@ -542,7 +542,8 @@ class CutFastCopy(threading.Thread):
         ],
             stderr=STDOUT,
             stdout=log_file,
-            shell=False)
+            shell=True
+            )
 
 
 class CutWithKeyFrames(threading.Thread):
@@ -591,7 +592,7 @@ class CutWithKeyFrames(threading.Thread):
         ],
             stderr=STDOUT,
             stdout=log_file,
-            shell=False)
+            shell=True)
 
 
 class EncodeSubtitles(threading.Thread):
@@ -661,7 +662,7 @@ class EncodeSubtitles(threading.Thread):
                 "ass=" + "'" + escaped_ass_path + "'",
                 self.tmp_out
             ],
-                shell=False,
+                shell=True,
                 universal_newlines=True,
                 stderr=STDOUT,
                 stdout=ass_log_file
@@ -798,7 +799,7 @@ class FileChooser(object):
             "-show_format",
             "-show_streams",
             video_path
-        ], shell=False, universal_newlines=True)
+        ], shell=True, universal_newlines=True)
 
         info_json = json.loads(out)
 
@@ -1023,6 +1024,7 @@ class FileChooser(object):
         for x in range(0, cut_number):
             concat += self.temp_dir.name + "\\" + str(x) + ".mp4" + "|"
         concat = concat[:-1]
+        concat += ""
         join_args.append(concat)
 
         # fast copy concatneation
@@ -1036,7 +1038,7 @@ class FileChooser(object):
         # outfile
         out_filename = self.base_name.replace(".vopl", "")
         # put it on desktop for now
-        join_args.append(self.final_destination_path + "\\" + out_filename + ".mp4")
+        join_args.append("" + self.final_destination_path + "\\" + out_filename + ".mp4" + "")
 
         print("JOINARGS>>", ' '.join(join_args))
 
