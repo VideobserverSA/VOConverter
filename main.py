@@ -76,7 +76,8 @@ class GetScreenshot(threading.Thread):
                 "-vframes",
                 "1",
                 self.out_file
-            ], shell=True)
+            ], stderr=STDOUT,
+                shell=True)
         except CalledProcessError as cpe:
             print("SCREEN OUT", cpe.output)
 
@@ -115,7 +116,8 @@ class AddSeparator(threading.Thread):
                 "-vf",
                 "scale=" + str(self.video_info.width) + "x" + str(self.video_info.height) + ",setsar=1:1",
                 self.temp_dir.name + "\\" + str(self.cut_number) + "_sep_no_sound.mp4"
-            ], shell=True)
+            ], stderr=STDOUT,
+                shell=True)
         except CalledProcessError as cpe:
             print("IMAGE OUT", cpe.output)
 
@@ -142,7 +144,8 @@ class AddSeparator(threading.Thread):
                 "-strict",
                 "-2",
                 self.temp_dir.name + "\\" + str(self.cut_number) + "_sep.mp4"
-            ], shell=True)
+            ], stderr=STDOUT,
+                shell=True)
         except CalledProcessError as cpe:
             print("SOUND OUT", cpe.output)
 
@@ -165,7 +168,8 @@ class AddSeparator(threading.Thread):
                 "-filter_complex",
                 "[0:0] [0:1] [1:0] [1:1] concat=n=2:v=1:a=1 [v] [a]",
                 self.tmp_out
-            ], shell=True)
+            ], stderr=STDOUT,
+                shell=True)
         except CalledProcessError as cpe:
             print("CAT OUT", cpe.output)
 
@@ -214,7 +218,8 @@ class AddOverlay(threading.Thread):
                 "-vf",
                 "scale=" + str(self.video_info.width) + "x" + str(self.video_info.height) + ",setsar=1:1",
                 self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb.mp4"
-            ], shell=True)
+            ], stderr=STDOUT,
+                shell=True)
         except CalledProcessError as cpe:
             print("IMAGE OUT", cpe.output)
 
@@ -241,7 +246,8 @@ class AddOverlay(threading.Thread):
                 # output
                 self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb_overlay.mp4",
 
-            ], shell=True)
+            ], stderr=STDOUT,
+                shell=True)
         except CalledProcessError as cpe:
             print("OVERLAY OUT", cpe.output)
 
@@ -269,11 +275,12 @@ class AddOverlay(threading.Thread):
                 "-strict",
                 "-2",
                 self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb_overlay_sound.mp4"
-            ], shell=True)
+            ], stderr=STDOUT,
+                shell=True)
         except CalledProcessError as cpe:
             print("SOUND OUT", cpe.output)
 
-        start_file = open(self.temp_dir.name + "\\" + str(self.cut_number) + "_start.log", "wb")
+        # start_file = open(self.temp_dir.name + "\\" + str(self.cut_number) + "_start.log", "wb")
         try:
             # cut from the begging to the overlay
             check_call([
@@ -298,8 +305,7 @@ class AddOverlay(threading.Thread):
                 self.temp_dir.name + "\\" + str(self.cut_number) + "_start.mp4"
             ],
                 stderr=STDOUT,
-                shell=True,
-                stdout=start_file)
+                shell=True)
         except CalledProcessError as cpe:
             print("START OUT", cpe.output)
 
@@ -364,7 +370,8 @@ class AddOverlay(threading.Thread):
                     "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
                     "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
                     self.temp_dir.name + "\\" + str(self.cut_number) + "_start_and_over.mp4"
-                ], shell=True)
+                ], stderr=STDOUT,
+                    shell=True)
             except CalledProcessError as cpe:
                 print("CAT OUT", cpe.output)
 
@@ -395,7 +402,8 @@ class AddOverlay(threading.Thread):
                     "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
                     "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
                     self.tmp_out,
-                ], shell=True)
+                ], stderr=STDOUT,
+                    shell=True)
             except CalledProcessError as cpe:
                 print("CAT OUT", cpe.output)
 
@@ -426,7 +434,8 @@ class AddOverlay(threading.Thread):
                     "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
                     "[in1][in2] concat [v]",
                     self.temp_dir.name + "\\" + str(self.cut_number) + "_start_and_over.mp4"
-                ], shell=True)
+                ], stderr=STDOUT,
+                    shell=True)
             except CalledProcessError as cpe:
                 print("CAT OUT", cpe.output)
 
@@ -454,7 +463,8 @@ class AddOverlay(threading.Thread):
                     "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
                     "[in1][in2] concat [v]",
                     self.tmp_out,
-                ], shell=True)
+                ], stderr=STDOUT,
+                    shell=True)
             except CalledProcessError as cpe:
                 print("CAT OUT", cpe.output)
 
@@ -472,7 +482,7 @@ class ConvertToFastCopy(threading.Thread):
 
     def run(self):
 
-        log_file = open(self.temp_dir.name + "\\" + str(self.cut_number) + "_fast_copy.log", "wb")
+        # log_file = open(self.temp_dir.name + "\\" + str(self.cut_number) + "_fast_copy.log", "wb")
 
         out = check_call([
             # path to ffmpeg
@@ -494,7 +504,6 @@ class ConvertToFastCopy(threading.Thread):
             # output file
             self.tmp_out
         ],  stderr=STDOUT,
-            stdout=log_file,
             shell=True)
 
 
@@ -513,8 +522,8 @@ class CutFastCopy(threading.Thread):
 
     def run(self):
 
-        log_path = self.temp_dir.name + "\\" + str(self.cut_number) + "_fast_cut.log"
-        log_file = open(log_path, "wb")
+        # log_path = self.temp_dir.name + "\\" + str(self.cut_number) + "_fast_cut.log"
+        # log_file = open(log_path, "wb")
 
         out = check_call([
             # path to ffmpeg
@@ -541,7 +550,6 @@ class CutFastCopy(threading.Thread):
             self.tmp_out
         ],
             stderr=STDOUT,
-            stdout=log_file,
             shell=True
             )
 
@@ -561,8 +569,8 @@ class CutWithKeyFrames(threading.Thread):
 
     def run(self):
 
-        log_path = self.temp_dir.name + "\\" + str(self.cut_number) + "_cut_key_frames.log"
-        log_file = open(log_path, "wb")
+        # log_path = self.temp_dir.name + "\\" + str(self.cut_number) + "_cut_key_frames.log"
+        # log_file = open(log_path, "wb")
 
         out = check_call([
             # path to ffmpeg
@@ -591,7 +599,6 @@ class CutWithKeyFrames(threading.Thread):
             self.tmp_out
         ],
             stderr=STDOUT,
-            stdout=log_file,
             shell=True)
 
 
@@ -614,8 +621,8 @@ class EncodeSubtitles(threading.Thread):
     def run(self):
 
         # write srt file
-        ass_log_path = self.temp_dir.name + "\\" + str(self.cut_number) + ".ass.log"
-        ass_log_file = open(ass_log_path, "wb")
+        # ass_log_path = self.temp_dir.name + "\\" + str(self.cut_number) + ".ass.log"
+        # ass_log_file = open(ass_log_path, "wb")
 
         ass_contents = "[Script Info]\n"
         ass_contents += "PlayResY: 600\n"
@@ -665,7 +672,6 @@ class EncodeSubtitles(threading.Thread):
                 shell=True,
                 universal_newlines=True,
                 stderr=STDOUT,
-                stdout=ass_log_file
             )
         except CalledProcessError as cpe:
             print("SUB ASS OUT", cpe.output)
@@ -759,6 +765,8 @@ class FileChooser(object):
         self.start_time = ""
         self.end_time = ""
 
+        self.final_path = ""
+
     def open_dialog(self):
 
         initial_dir = os.path.expanduser("~/Documents/VideoObserver/Playlist")
@@ -799,7 +807,7 @@ class FileChooser(object):
             "-show_format",
             "-show_streams",
             video_path
-        ], shell=True, universal_newlines=True)
+        ], stderr=STDOUT, shell=True, universal_newlines=True)
 
         info_json = json.loads(out)
 
@@ -1040,13 +1048,15 @@ class FileChooser(object):
         # put it on desktop for now
         join_args.append("" + self.final_destination_path + "\\" + out_filename + ".mp4" + "")
 
+        self.final_path = self.final_destination_path + "\\" + out_filename + ".mp4"
+
         print("JOINARGS>>", ' '.join(join_args))
 
-        join_log_path = self.temp_dir.name + "\\" + "join.log"
-        join_log_file = open(join_log_path, "wb")
+        # join_log_path = self.temp_dir.name + "\\" + "join.log"
+        # join_log_file = open(join_log_path, "wb")
 
         try:
-            out = check_call(join_args, stderr=STDOUT, stdout=join_log_file, shell=False)
+            out = check_call(join_args, stderr=STDOUT, shell=False)
         except CalledProcessError as cpe:
             print("ERROR>>", cpe.output)
 
@@ -1061,6 +1071,30 @@ class FileChooser(object):
 
         self.status_bar.set("Done in %s:%s:%s ...", format(hours, "02d"),
                             format(minutes, "02d"), format(seconds, "02d"))
+
+        print("")
+        print("")
+        print("")
+        print("")
+        print("")
+        print("Done in", format(hours, "02d"), ":", format(minutes, "02d"), ":", format(seconds, "02d"))
+
+        done_pop = Toplevel(padx=50, pady=50)
+        done_pop.title("Done...")
+        done_pop.iconbitmap("icon.ico")
+
+        done_msg = Message(done_pop, text="Playlist done...")
+        done_msg.pack()
+
+        done_btn = Button(done_pop, text="Ok", command=done_pop.destroy)
+        done_btn.pack()
+
+        open_btn = Button(done_pop, text="Open Video", command=self.open_file_with_app)
+        open_btn.pack()
+
+    def open_file_with_app(self):
+        # os.system("start " + "\"" + self.final_path + "\"")
+        os.startfile(self.final_path)
 
 
 # CODE FOR PROGRESS BAR
