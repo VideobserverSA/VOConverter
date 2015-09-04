@@ -16,12 +16,23 @@ import math
 import base64
 from easysettings import EasySettings
 import configparser
+import gettext
+import locale
+
+# current_locale = 'en'
+current_locale = locale.getdefaultlocale()[0]
+locale_path = 'lang/'
+language = gettext.translation('voconv', locale_path, [current_locale])
+language.install()
+
+# so that we can write shorthands
+t = language.gettext
 
 ffmpeg_path = "ffmpeg.exe"
 ffprobe_path = "ffprobe.exe"
 
 root = Tk()
-root.title("Vo Converter")
+root.title(t("Vo Converter"))
 root.iconbitmap("icon.ico")
 
 
@@ -688,7 +699,7 @@ class FileChooser(object):
         pause_frame = Frame(root)
         pause_frame.pack(fill=X, padx="5")
 
-        pause_label = Label(pause_frame, text="Drawings Pause Time")
+        pause_label = Label(pause_frame, text=t("Drawings Pause Time"))
         pause_label.pack(side=LEFT)
 
         self.pause_duration = Scale(pause_frame, from_=1, to=10, orient=HORIZONTAL, length="180")
@@ -703,8 +714,16 @@ class FileChooser(object):
         font_frame = Frame(root)
         font_frame.pack(fill=X, padx="5")
 
-        font_size_label = Label(font_frame, text="Font Size")
+        font_size_label = Label(font_frame, text=t("Font Size"))
         font_size_label.pack(side=LEFT)
+
+        slow_and_better_frame = Frame(root)
+        slow_and_better_frame.pack(fill=X, padx=5)
+
+        self.slow_and_better = IntVar(value=0)
+        slow_and_better_cb = Checkbutton(slow_and_better_frame, text=t("Slow but better"),
+                                         variable=self.slow_and_better)
+        slow_and_better_cb.pack(side=LEFT)
 
         self.font_size = Scale(font_frame, from_=10, to=50, orient=HORIZONTAL, length="180")
         self.font_size.pack(side=RIGHT)
@@ -721,7 +740,7 @@ class FileChooser(object):
         destination_frame = Frame(root)
         destination_frame.pack(padx="10", pady="10", fill=X)
 
-        dest_label = Label(destination_frame, text="Destination:")
+        dest_label = Label(destination_frame, text=t("Destination:"))
         dest_label.pack(side=LEFT)
 
         if self.settings.has_option("destination_path"):
@@ -732,16 +751,16 @@ class FileChooser(object):
         self.destination_path = Label(destination_frame, text=self.final_destination_path)
         self.destination_path.pack(side=LEFT)
 
-        self.dest_btn = Button(destination_frame, text="Choose", command=self.choose_destination)
+        self.dest_btn = Button(destination_frame, text=t("Choose"), command=self.choose_destination)
         self.dest_btn.pack(side=RIGHT)
 
         btn_frame = Frame(root)
         btn_frame.pack(padx="10", pady="10")
 
-        btn = Button(btn_frame, text="Open File", command=self.open_dialog)
+        btn = Button(btn_frame, text=t("Open File"), command=self.open_dialog)
         btn.pack(side=LEFT, padx="10")
 
-        another = Button(btn_frame, text="Quit", command=self.quit_app)
+        another = Button(btn_frame, text=t("Quit"), command=self.quit_app)
         another.pack(side=LEFT, padx="10")
 
         self.status_bar = StatusBar(root)
@@ -753,7 +772,7 @@ class FileChooser(object):
         version = config["Vo Converter"]["version"]
         date = config["Vo Converter"]["date"]
         print("VERSION, DATE>>", version, date)
-        self.status_bar.set("Version: %s , date: %s", version, date)
+        self.status_bar.set(t("Version: %s , date: %s"), version, date)
 
         self.temp_dir = tempfile.TemporaryDirectory()
         self.num_items = 0
@@ -771,8 +790,8 @@ class FileChooser(object):
 
         initial_dir = os.path.expanduser("~/Documents/VideoObserver/Playlist")
 
-        fn = filedialog.askopenfilename(filetypes=(("VO Playlist", "*.vopl"),
-                                                   ("All Files", "*.*")),
+        fn = filedialog.askopenfilename(filetypes=((t("VO Playlist"), "*.vopl"),
+                                                   (t("All Files"), "*.*")),
                                         initialdir=initial_dir
                                         )
         self.parse_playlist(filename=fn)
@@ -829,7 +848,7 @@ class FileChooser(object):
         self.start_time = time.time()
 
         # to keep the cut files
-        self.status_bar.set("%s", "Processing...")
+        self.status_bar.set("%s", t("Processing..."))
 
         # we have a name so make sure we create the dir
         if not os.path.exists(self.temp_dir.name):
@@ -851,7 +870,7 @@ class FileChooser(object):
         # we say that the join is the last step
         play_len += 1
         self.num_items = play_len
-        self.meter.set(0.0, "Converting: " + self.base_name + " " + "0%")
+        self.meter.set(0.0, t("Converting: ") + self.base_name + " " + "0%")
 
         # now if we have the file:/// present we remove it
         video_path = video_path.replace("file:///", "")
@@ -862,13 +881,15 @@ class FileChooser(object):
         print("Resolution>>>", str(self.video_info.width) + "x" + str(self.video_info.height))
         print("Has Sound>>>", self.video_info.has_sound)
 
+        print("SLOW AND BETTER>>", self.slow_and_better.get() == 1)
+
         print("")
 
         cut_number = 0
         # start parsing each item
         for child in base.findall('.items/item'):
 
-            self.status_bar.set("Processing item %i", cut_number + 1)
+            self.status_bar.set(t("Processing item %i"), cut_number + 1)
 
             item_type = child.find("type").text
             print("ItemType>> ", item_type)
@@ -929,8 +950,13 @@ class FileChooser(object):
             # now we see what we need to do...
 
             #  first check for comments
-            if comments is not None and enable_comments == "true":
-                self.status_bar.set("Adding subtitles to item %i", cut_number + 1)
+            if (comments is not None and enable_comments == "true") or self.slow_and_better.get() == 1:
+                if self.slow_and_better.get() == 1 and comments is None:
+                    comments = " "
+                    self.status_bar.set(t("Better converting %i"), cut_number + 1)
+                else:
+                    self.status_bar.set(t("Adding subtitles to item %i"), cut_number + 1)
+
                 has_comments = True
                 sub_thr = EncodeSubtitles(temp_dir=self.temp_dir, cut_number=cut_number, video_path=video_path,
                                           video_info=self.video_info,
@@ -954,7 +980,7 @@ class FileChooser(object):
                     dummy_event.wait(timeout=1)
             else:
                 # just cut in time since we need no further processing
-                self.status_bar.set("Fast cutting item %i", cut_number + 1)
+                self.status_bar.set(t("Fast cutting item %i"), cut_number + 1)
                 fast_cut_thr = CutFastCopy(temp_dir=self.temp_dir, cut_number=cut_number, video_path=video_path,
                                            time_start=time_start, duration=duration,
                                            tmp_out=self.temp_dir.name + "\\" + str(cut_number) + "_comments.mp4")
@@ -965,7 +991,7 @@ class FileChooser(object):
 
             # do we add an overlay?
             if has_drawing:
-                self.status_bar.set("Adding drawing to item %i", cut_number + 1)
+                self.status_bar.set(t("Adding drawing to item %i"), cut_number + 1)
                 raw_png = base64.b64decode(drawing)
                 f = open(self.temp_dir.name + "\\" + str(cut_number) + "_overlay.png", "wb")
                 f.write(raw_png)
@@ -1006,7 +1032,7 @@ class FileChooser(object):
                                               input_video=fast_copy_input, tmp_out=tmp_out)
             fast_copy_thr.start()
             while fast_copy_thr.is_alive():
-                self.status_bar.set("Finishing item %i", cut_number + 1)
+                self.status_bar.set(t("Finishing item %i"), cut_number + 1)
                 # print("sleeping...")
                 dummy_event = threading.Event()
                 dummy_event.wait(timeout=1)
@@ -1014,11 +1040,11 @@ class FileChooser(object):
             # calc progress
             progress = cut_number / self.num_items
             progress_str = str(math.ceil(progress * 100))
-            self.meter.set(progress, "Converting: " + self.base_name + " " + progress_str + "%")
+            self.meter.set(progress, t("Converting: ") + self.base_name + " " + progress_str + "%")
 
             cut_number += 1
 
-        self.status_bar.set("Joining final video")
+        self.status_bar.set(t("Joining final video"))
         # JOIN THE THINGS
         join_args = []
         # path to ffmpeg
@@ -1060,7 +1086,7 @@ class FileChooser(object):
         except CalledProcessError as cpe:
             print("ERROR>>", cpe.output)
 
-        self.meter.set(1, "Done: " + self.base_name + " " + "100" + "%")
+        self.meter.set(1, t("Done: ") + self.base_name + " " + "100" + "%")
 
         self.end_time = time.time()
         time_delta = self.end_time - self.start_time
@@ -1069,7 +1095,7 @@ class FileChooser(object):
         minutes = int(time_delta / 60)
         hours = int(time_delta / (60 * 60))
 
-        self.status_bar.set("Done in %s:%s:%s ...", format(hours, "02d"),
+        self.status_bar.set(t("Done in %s:%s:%s ..."), format(hours, "02d"),
                             format(minutes, "02d"), format(seconds, "02d"))
 
         print("")
@@ -1077,19 +1103,19 @@ class FileChooser(object):
         print("")
         print("")
         print("")
-        print("Done in", format(hours, "02d"), ":", format(minutes, "02d"), ":", format(seconds, "02d"))
+        print(t("Done in"), format(hours, "02d"), ":", format(minutes, "02d"), ":", format(seconds, "02d"))
 
-        done_pop = Toplevel(padx=50, pady=50)
-        done_pop.title("Done...")
+        done_pop = Toplevel(padx=20, pady=20)
+        done_pop.title(t("Done..."))
         done_pop.iconbitmap("icon.ico")
 
-        done_msg = Message(done_pop, text="Playlist done...")
+        done_msg = Message(done_pop, text=t("Playlist done..."))
         done_msg.pack()
 
-        done_btn = Button(done_pop, text="Ok", command=done_pop.destroy)
+        done_btn = Button(done_pop, text=t("Ok"), command=done_pop.destroy)
         done_btn.pack()
 
-        open_btn = Button(done_pop, text="Open Video", command=self.open_file_with_app)
+        open_btn = Button(done_pop, text=t("Open Video"), command=self.open_file_with_app)
         open_btn.pack()
 
     def open_file_with_app(self):

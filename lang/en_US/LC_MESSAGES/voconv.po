@@ -1,0 +1,123 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Vo Converter\n"
+"POT-Creation-Date: 2015-09-02 17:28+0100\n"
+"PO-Revision-Date: 2015-09-02 18:08+0100\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 1.8.4\n"
+"X-Poedit-Basepath: .\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Poedit-KeywordsList: t:1;t:1,2\n"
+"X-Poedit-SearchPath-0: main.py\n"
+
+#: main.py:28
+msgid "Vo Converter"
+msgstr "FDX"
+
+#: main.py:695
+msgid "Drawings Pause Time"
+msgstr ""
+
+#: main.py:710
+msgid "Font Size"
+msgstr ""
+
+#: main.py:728
+msgid "Destination:"
+msgstr ""
+
+#: main.py:739
+msgid "Choose"
+msgstr ""
+
+#: main.py:745
+msgid "Open File"
+msgstr ""
+
+#: main.py:748
+msgid "Quit"
+msgstr ""
+
+#: main.py:760
+#, python-format
+msgid "Version: %s , date: %s"
+msgstr "Cena : %s , coisa: %s"
+
+#: main.py:778
+msgid "VO Playlist"
+msgstr ""
+
+#: main.py:779
+msgid "All Files"
+msgstr ""
+
+#: main.py:836
+msgid "Processing..."
+msgstr ""
+
+#: main.py:858 main.py:1021
+msgid "Converting: "
+msgstr ""
+
+#: main.py:875
+#, python-format
+msgid "Processing item %i"
+msgstr ""
+
+#: main.py:937
+#, python-format
+msgid "Adding subtitles to item %i"
+msgstr ""
+
+#: main.py:961
+#, python-format
+msgid "Fast cutting item %i"
+msgstr ""
+
+#: main.py:972
+#, python-format
+msgid "Adding drawing to item %i"
+msgstr ""
+
+#: main.py:1013
+#, python-format
+msgid "Finishing item %i"
+msgstr ""
+
+#: main.py:1025
+msgid "Joining final video"
+msgstr ""
+
+#: main.py:1067
+msgid "Done: "
+msgstr ""
+
+#: main.py:1076
+#, python-format
+msgid "Done in %s:%s:%s ..."
+msgstr ""
+
+#: main.py:1084
+msgid "Done in"
+msgstr ""
+
+#: main.py:1087
+msgid "Done..."
+msgstr ""
+
+#: main.py:1090
+msgid "Playlist done..."
+msgstr ""
+
+#: main.py:1093
+msgid "Ok"
+msgstr ""
+
+#: main.py:1096
+msgid "Open Video"
+msgstr ""
