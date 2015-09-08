@@ -1009,10 +1009,16 @@ class FileChooser(object):
                 pil_composite = Image.alpha_composite(pil_jpeg_converted, pil_png)
                 pil_composite.save(self.temp_dir.name + "\\" + str(cut_number) + "_composite.png", "PNG")
 
+                # sanity check so that if we have time after the end of the clop the conversion still works
+                # more or less that is...
+                video_time = float(drawing_time) - time_start
+                if video_time > duration:
+                    video_time = duration - 1
+
                 overlay_thr = AddOverlay(temp_dir=self.temp_dir, cut_number=cut_number,
                                          input_video=self.temp_dir.name + "\\" + str(cut_number) + "_comments.mp4",
                                          video_info=self.video_info,
-                                         video_time=float(drawing_time) - time_start,
+                                         video_time=video_time,
                                          tmp_out=self.temp_dir.name + "\\" + str(cut_number) + "_overlay.mp4",
                                          image_path=self.temp_dir.name + "\\" + str(cut_number) + "_composite.png",
                                          pause_time=self.pause_duration.get())
