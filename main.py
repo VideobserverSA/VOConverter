@@ -185,6 +185,61 @@ class AddSeparator(threading.Thread):
             print("CAT OUT", cpe.output)
 
 
+class BurnLogo(threading.Thread):
+
+    def __init__(self, temp_dir, cut_number, input_video, time_start, duration, tmp_out, video_info):
+
+        super().__init__()
+
+        self.temp_dir = temp_dir
+        self.cut_number = cut_number
+        self.input_video = input_video
+        self.time_start = time_start
+        self.duration = duration
+        self.tmp_out = tmp_out
+        self.video_info = video_info
+
+    def run(self):
+
+        # video height - image height - 20 padding
+        bottom = self.video_info.height - 22 - 20
+        left = 20
+
+        # add the overlay to the pause image
+        try:
+            check_call([
+                ffmpeg_path,
+                # overwrite
+                "-y",
+                # start time
+                "-ss",
+                str(self.time_start),
+                # video input
+                "-i",
+                self.input_video,
+                # image input
+                "-i",
+                "watermark.png",
+                # filter
+                "-filter_complex",
+                "[0:v][1:v] overlay=" + str(left) + ":" + str(bottom),
+                "-pix_fmt",
+                "yuv420p",
+                # pass the audio
+                "-c:a",
+                "copy",
+                # duration
+                "-t",
+                str(self.duration),
+                # output
+                self.tmp_out
+
+            ], stderr=STDOUT,
+                shell=True)
+        except CalledProcessError as cpe:
+            print("BURN LOGO", cpe.output)
+
+
 class AddOverlay(threading.Thread):
 
     def __init__(self, temp_dir, cut_number, input_video, video_info, video_time, image_path, tmp_out, pause_time):
@@ -952,22 +1007,31 @@ class FileChooser(object):
             #  first check for comments
             if (comments is not None and enable_comments == "true") or self.slow_and_better.get() == 1:
                 if self.slow_and_better.get() == 1 and comments is None:
-                    comments = " "
                     self.status_bar.set(t("Better converting %i"), cut_number + 1)
+
+                    burn_thr = BurnLogo(temp_dir=self.temp_dir, cut_number=cut_number, input_video=video_path,
+                                        time_start=time_start, duration=duration,
+                                        tmp_out=self.temp_dir.name + "\\" + str(cut_number) + "_comments.mp4",
+                                        video_info=self.video_info)
+                    burn_thr.start()
+                    while burn_thr.is_alive():
+                        dummy_event = threading.Event()
+                        dummy_event.wait(timeout=1)
+
                 else:
                     self.status_bar.set(t("Adding subtitles to item %i"), cut_number + 1)
 
-                has_comments = True
-                sub_thr = EncodeSubtitles(temp_dir=self.temp_dir, cut_number=cut_number, video_path=video_path,
-                                          video_info=self.video_info,
-                                          time_start=time_start, duration=duration, comments=comments,
-                                          tmp_out=self.temp_dir.name + "\\" + str(cut_number) + "_comments.mp4",
-                                          font_size=self.font_size.get())
-                sub_thr.start()
-                while sub_thr.is_alive():
-                    # print("sleeping...")
-                    dummy_event = threading.Event()
-                    dummy_event.wait(timeout=1)
+                    has_comments = True
+                    sub_thr = EncodeSubtitles(temp_dir=self.temp_dir, cut_number=cut_number, video_path=video_path,
+                                              video_info=self.video_info,
+                                              time_start=time_start, duration=duration, comments=comments,
+                                              tmp_out=self.temp_dir.name + "\\" + str(cut_number) + "_comments.mp4",
+                                              font_size=self.font_size.get())
+                    sub_thr.start()
+                    while sub_thr.is_alive():
+                        # print("sleeping...")
+                        dummy_event = threading.Event()
+                        dummy_event.wait(timeout=1)
 
             elif has_drawing:
                 # we need to convert without fast copy so that the further cuts work out right
