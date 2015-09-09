@@ -257,6 +257,10 @@ class AddOverlay(threading.Thread):
 
     def run(self):
 
+        # video height - image height - 20 padding
+        bottom = self.video_info.height - 22 - 20
+        left = 20
+
         # lets resize the image
         ori_img = Image.open(self.image_path)
         res_img = ori_img.resize((self.video_info.width, self.video_info.height), Image.ANTIALIAS)
@@ -301,9 +305,12 @@ class AddOverlay(threading.Thread):
                 # image input
                 "-i",
                 self.temp_dir.name + "\\" + str(self.cut_number) + "_overlay_res.png",
+                # logo
+                "-i",
+                "watermark.png",
                 # filter
                 "-filter_complex",
-                "[0:v][1:v] overlay=0:0",
+                "overlay [tmp]; [tmp] overlay=" + str(left) + ":" + str(bottom),
                 "-pix_fmt",
                 "yuv420p",
                 # pass the audio
@@ -357,16 +364,20 @@ class AddOverlay(threading.Thread):
                 # input file
                 "-i",
                 self.input_video,
+                # watermark
+                "-i",
+                "watermark.png",
                 # duration
                 "-t",
                 str(max(self.video_time, 1)),
-                # codec
-                "-c",
+                # filter
+                "-filter_complex",
+                "[0:v][1:v] overlay=" + str(left) + ":" + str(bottom),
+                "-pix_fmt",
+                "yuv420p",
+                # pass the audio
+                "-c:a",
                 "copy",
-                "-bsf:v",
-                "h264_mp4toannexb",
-                "-f",
-                "mpegts",
                 # output file
                 self.temp_dir.name + "\\" + str(self.cut_number) + "_start.mp4"
             ],
@@ -384,21 +395,20 @@ class AddOverlay(threading.Thread):
             # input file
             "-i",
             self.input_video,
+            # watermark
+            "-i",
+            "watermark.png",
             # start time
             "-ss",
             str(max(self.video_time, 1)),
-            # audio codec options
+            # filter
+            "-filter_complex",
+            "[0:v][1:v] overlay=" + str(left) + ":" + str(bottom),
+            "-pix_fmt",
+            "yuv420p",
+            # pass the audio
             "-c:a",
             "copy",
-            "-bsf:a",
-            "aac_adtstoasc",
-            # codec
-            # "-c",
-            # "copy",
-            # "-bsf:v",
-            # "h264_mp4toannexb",
-            # "-f",
-            # "mpegts",
             # output file
             self.temp_dir.name + "\\" + str(self.cut_number) + "_end.mp4"
         ],
@@ -690,6 +700,10 @@ class EncodeSubtitles(threading.Thread):
         # ass_log_path = self.temp_dir.name + "\\" + str(self.cut_number) + ".ass.log"
         # ass_log_file = open(ass_log_path, "wb")
 
+        # video height - image height - 20 padding
+        bottom = self.video_info.height - 22 - 20
+        left = 20
+
         ass_contents = "[Script Info]\n"
         ass_contents += "PlayResY: 600\n"
         ass_contents += "\n"
@@ -733,6 +747,37 @@ class EncodeSubtitles(threading.Thread):
                 "copy",
                 "-vf",
                 "ass=" + "'" + escaped_ass_path + "'",
+                # self.tmp_out
+                self.temp_dir.name + "\\" + str(self.cut_number) + "_no_water.mp4"
+            ],
+                shell=True,
+                universal_newlines=True,
+                stderr=STDOUT,
+            )
+        except CalledProcessError as cpe:
+            print("SUB ASS OUT", cpe.output)
+
+        try:
+            check_call([
+                ffmpeg_path,
+                # overwrite
+                "-y",
+                # start time
+                # input file
+                "-i",
+                self.temp_dir.name + "\\" + str(self.cut_number) + "_no_water.mp4",
+                # watermark
+                "-i",
+                "watermark.png",
+                # filter
+                "-filter_complex",
+                "[0:v][1:v] overlay=" + str(left) + ":" + str(bottom),
+                "-pix_fmt",
+                "yuv420p",
+                # pass the audio
+                "-c:a",
+                "copy",
+                # self.tmp_out
                 self.tmp_out
             ],
                 shell=True,
