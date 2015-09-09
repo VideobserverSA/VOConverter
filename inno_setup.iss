@@ -39,7 +39,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 Source: "C:\Users\Rui\PycharmProjects\VOConverter\dist\voconverter.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\Rui\PycharmProjects\VOConverter\dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "C:\Users\Rui\PycharmProjects\VOConverter\dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; AfterInstall: UpdateLanguage
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
@@ -54,7 +54,7 @@ Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: 
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
 [Code]
-function PrepareToInstall(var NeedsRestart: Boolean): String;
+procedure UpdateLanguage();
 var
   CurrentLang:String;
   Locale:String;
