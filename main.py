@@ -20,7 +20,13 @@ import gettext
 import locale
 
 # current_locale = 'en'
-current_locale = locale.getdefaultlocale()[0]
+
+lang_conf = configparser.ConfigParser()
+lang_conf.read("lang.ini")
+
+current_locale = lang_conf["Language"]["Default Locale"]
+# current_locale = locale.getdefaultlocale()[0]
+
 locale_path = 'lang/'
 language = gettext.translation('voconv', locale_path, [current_locale])
 language.install()
