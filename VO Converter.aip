@@ -12,7 +12,7 @@
     <ROW Property="ProductCode" Value="1033:{058A51B5-AC15-4421-B0E3-9481FD7F7315} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="VO Converter"/>
-    <ROW Property="ProductVersion" Value="1.0.38" Type="32"/>
+    <ROW Property="ProductVersion" Value="1.0.40" Type="32"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND"/>
     <ROW Property="UpgradeCode" Value="{20AFAB45-5019-413E-87F5-F22F4FF2596F}"/>
     <ROW Property="WindowsType9X" MultiBuildValue="DefaultBuild:Windows 9x/ME" ValueLocId="-"/>
@@ -1105,6 +1105,7 @@
     <ROW File="unicodeout.tcl" Component_="anilabel.tcl" FileName="UNICOD~1.TCL|unicodeout.tcl" Attributes="0" SourcePath="dist\tk\demos\unicodeout.tcl" SelfReg="false" NextFile="vscale.tcl"/>
     <ROW File="unsupported.tcl" Component_="bgerror.tcl" FileName="UNSUPP~1.TCL|unsupported.tcl" Attributes="0" SourcePath="dist\tk\unsupported.tcl" SelfReg="false" NextFile="xmfbox.tcl"/>
     <ROW File="utils.tcl" Component_="altTheme.tcl" FileName="utils.tcl" Attributes="0" SourcePath="dist\tk\ttk\utils.tcl" SelfReg="false" NextFile="vistaTheme.tcl"/>
+    <ROW File="version.ini" Component_="_bz2.pyd" FileName="version.ini" Attributes="0" SourcePath="version.ini" SelfReg="false"/>
     <ROW File="vi.msg" Component_="af.msg" FileName="vi.msg" Attributes="0" SourcePath="dist\tcl\msgs\vi.msg" SelfReg="false" NextFile="zh.msg"/>
     <ROW File="vistaTheme.tcl" Component_="altTheme.tcl" FileName="VISTAT~1.TCL|vistaTheme.tcl" Attributes="0" SourcePath="dist\tk\ttk\vistaTheme.tcl" SelfReg="false" NextFile="winTheme.tcl"/>
     <ROW File="voconv.mo" Component_="voconv.mo" FileName="voconv.mo" Attributes="0" SourcePath="dist\lang\en_US\LC_MESSAGES\voconv.mo" SelfReg="false" NextFile="voconv.po"/>
@@ -1113,7 +1114,7 @@
     <ROW File="voconv.po_1" Component_="voconv.mo_1" FileName="voconv.po" Attributes="0" SourcePath="dist\lang\pt_PT\LC_MESSAGES\voconv.po" SelfReg="false" NextFile="watermark.png"/>
     <ROW File="voconverter.exe" Component_="voconverter.exe" FileName="VOCONV~1.EXE|voconverter.exe" Attributes="0" SourcePath="dist\voconverter.exe" SelfReg="false" NextFile="fonts.conf" DigSign="true"/>
     <ROW File="vscale.tcl" Component_="anilabel.tcl" FileName="vscale.tcl" Attributes="0" SourcePath="dist\tk\demos\vscale.tcl" SelfReg="false" NextFile="widget"/>
-    <ROW File="watermark.png" Component_="_bz2.pyd" FileName="WATERM~1.PNG|watermark.png" Attributes="0" SourcePath="watermark.png" SelfReg="false"/>
+    <ROW File="watermark.png" Component_="_bz2.pyd" FileName="WATERM~1.PNG|watermark.png" Attributes="0" SourcePath="watermark.png" SelfReg="false" NextFile="version.ini"/>
     <ROW File="widget" Component_="anilabel.tcl" FileName="widget" Attributes="0" SourcePath="dist\tk\demos\widget" SelfReg="false" NextFile="dialog.tcl"/>
     <ROW File="winTheme.tcl" Component_="altTheme.tcl" FileName="winTheme.tcl" Attributes="0" SourcePath="dist\tk\ttk\winTheme.tcl" SelfReg="false" NextFile="xpTheme.tcl"/>
     <ROW File="word.tcl" Component_="auto.tcl" FileName="word.tcl" Attributes="0" SourcePath="dist\tcl\word.tcl" SelfReg="false" NextFile="bgerror.tcl"/>

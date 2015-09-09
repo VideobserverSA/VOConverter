@@ -65,3 +65,6 @@ build/
 
 # Advanced Installer
 pack_out/
+
+# inno setip
+inno setup/
