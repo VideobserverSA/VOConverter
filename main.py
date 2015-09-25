@@ -18,6 +18,9 @@ from easysettings import EasySettings
 import configparser
 import gettext
 import locale
+import urllib.request
+import urllib.error
+from distutils.version import  LooseVersion
 
 # current_locale = 'en'
 
@@ -55,6 +58,53 @@ class VideoInfo:
 
     def set_has_sound(self, has_sound):
         self.has_sound = has_sound
+
+
+class CheckForUpdate(threading.Thread):
+
+    def __init__(self, current_version, tmp_dir):
+        super().__init__()
+        self.current_version = current_version
+        self.download_url = ''
+        self.tmp_dir = tmp_dir
+
+    def download_upgrade(self):
+        print("downloading upgrade from: " + self.download_url)
+        voconv_filename = self.tmp_dir.name + '\\' + 'vo_converter_install.exe'
+        urllib.request.urlretrieve(url=self.download_url, filename=voconv_filename)
+        os.startfile(voconv_filename)
+        sys.exit(0)
+
+    def run(self):
+        try:
+            # grab the file from server
+            with urllib.request.urlopen("https://staging.videobserver.com/app/converter_version.json") as version_file:
+                version_json = json.loads(version_file.read().decode('utf-8'))
+                if LooseVersion(self.current_version) < LooseVersion(version_json['version']):
+                    self.download_url = version_json['url']
+                    print('Upgrade found on server... ' + version_json['version'])
+
+                    # create a window
+                    upgrade_pop = Toplevel(padx=20, pady=20)
+                    upgrade_pop.title(t("Upgrade"))
+                    upgrade_pop.iconbitmap("icon.ico")
+
+                    upgrade_message = Label(upgrade_pop, text=t("There is a new version available for download. Do you wish to:"))
+                    upgrade_message.pack()
+
+                    btn_frame = Frame(upgrade_pop)
+                    btn_frame.pack(padx=10, pady=10)
+
+                    close_btn = Button(btn_frame, text=t("Close"), command=upgrade_pop.destroy)
+                    close_btn.pack(side=LEFT, padx=20)
+
+                    download_btn = Button(btn_frame, text=t("Download"), command=self.download_upgrade)
+                    download_btn.pack(side=LEFT, padx=20)
+                else:
+                    print('Current version installed')
+
+        except urllib.error.URLError as ue:
+            print('Could not reach server to check version... ' + str(ue.reason))
 
 
 class SleepThreaded(threading.Thread):
@@ -891,6 +941,9 @@ class FileChooser(object):
         self.end_time = ""
 
         self.final_path = ""
+
+        version_thr = CheckForUpdate(version, self.temp_dir)
+        version_thr.start()
 
     def open_dialog(self):
 

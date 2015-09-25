@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Vo Converter\n"
-"POT-Creation-Date: 2015-09-02 17:38+0100\n"
-"PO-Revision-Date: 2015-09-04 16:32+0100\n"
+"POT-Creation-Date: 2015-09-25 17:47+0100\n"
+"PO-Revision-Date: 2015-09-25 17:47+0100\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: pt\n"
@@ -10,114 +10,142 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: Poedit 1.8.4\n"
-"X-Poedit-Basepath: ..\n"
+"X-Poedit-Basepath: ../../..\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Poedit-KeywordsList: t:1;t:1,2\n"
 "X-Poedit-SearchPath-0: main.py\n"
 
-#: main.py:33
+#: main.py:44
 msgid "Vo Converter"
 msgstr "Vo Converter"
 
-#: main.py:700
+#: main.py:83
+msgid "Upgrade"
+msgstr "Actualizacção"
+
+#: main.py:86
+msgid "There is a new version available for download. Do you wish to:"
+msgstr "Existe uma nova versão disponível no servidor. Deseja:"
+
+#: main.py:92
+msgid "Ignore"
+msgstr "Ignorar"
+
+#: main.py:95
+msgid "Download"
+msgstr "Descarregar"
+
+#: main.py:850
 msgid "Drawings Pause Time"
 msgstr "Pausa do Desenho"
 
-#: main.py:715
+#: main.py:865
 msgid "Font Size"
 msgstr "Tamanho da Letra"
 
-#: main.py:733
+#: main.py:872
+msgid "Slow but better"
+msgstr ""
+
+#: main.py:891
 msgid "Destination:"
 msgstr "Destino:"
 
-#: main.py:744
+#: main.py:902
 msgid "Choose"
 msgstr "Escolher"
 
-#: main.py:750
+#: main.py:908
 msgid "Open File"
 msgstr "Abrir Ficheiro"
 
-#: main.py:753
+#: main.py:911
 msgid "Quit"
 msgstr "Sair"
 
-#: main.py:765
+#: main.py:923
 #, python-format
 msgid "Version: %s , date: %s"
 msgstr "Versão: %s, data: %s"
 
-#: main.py:783
+#: main.py:944
 msgid "VO Playlist"
 msgstr "Playlist VO"
 
-#: main.py:784
+#: main.py:945
 msgid "All Files"
 msgstr "Todos os Ficheiros"
 
-#: main.py:841
+#: main.py:1002
 msgid "Processing..."
 msgstr "A Processar..."
 
-#: main.py:863 main.py:1026
+#: main.py:1024 main.py:1209
 msgid "Converting: "
 msgstr "A converter:"
 
-#: main.py:880
+#: main.py:1043
 #, python-format
 msgid "Processing item %i"
 msgstr "A processar item %i"
 
-#: main.py:942
+#: main.py:1106
+#, python-format
+msgid "Better converting %i"
+msgstr ""
+
+#: main.py:1118
 #, python-format
 msgid "Adding subtitles to item %i"
 msgstr "A adicionar legendas ao item %i"
 
-#: main.py:966
+#: main.py:1143
 #, python-format
 msgid "Fast cutting item %i"
 msgstr "A cortar o item %i"
 
-#: main.py:977
+#: main.py:1154
 #, python-format
 msgid "Adding drawing to item %i"
 msgstr "Adicionar desenho ao item %i"
 
-#: main.py:1018
+#: main.py:1201
 #, python-format
 msgid "Finishing item %i"
 msgstr "A acabar item %i"
 
-#: main.py:1030
+#: main.py:1213
 msgid "Joining final video"
 msgstr "A criar o vídeo final"
 
-#: main.py:1072
+#: main.py:1255
 msgid "Done: "
 msgstr "Completo:"
 
-#: main.py:1081
+#: main.py:1264
 #, python-format
 msgid "Done in %s:%s:%s ..."
 msgstr "Completo em %s:%s:%s ..."
 
-#: main.py:1089
+#: main.py:1272
 msgid "Done in"
 msgstr "Completo em"
 
-#: main.py:1092
+#: main.py:1275
 msgid "Done..."
 msgstr "Completo..."
 
-#: main.py:1095
+#: main.py:1278
 msgid "Playlist done..."
 msgstr "Playlist completa..."
 
-#: main.py:1098
+#: main.py:1281
 msgid "Ok"
 msgstr "Ok"
 
-#: main.py:1101
+#: main.py:1284
 msgid "Open Video"
 msgstr "Abrir Video"
+
+#~ msgid "There is a new version available for download.                                                                  Do you wish to:"
+#~ msgstr "Existe uma nova versão disponível no servidor.                                                            Deseja:"
