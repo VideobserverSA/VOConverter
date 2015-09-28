@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Vo Converter\n"
-"POT-Creation-Date: 2015-09-25 17:47+0100\n"
-"PO-Revision-Date: 2015-09-25 17:47+0100\n"
+"POT-Creation-Date: 2015-09-28 19:09+0100\n"
+"PO-Revision-Date: 2015-09-28 19:09+0100\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: pt\n"
@@ -15,137 +15,151 @@ msgstr ""
 "X-Poedit-KeywordsList: t:1;t:1,2\n"
 "X-Poedit-SearchPath-0: main.py\n"
 
-#: main.py:44
+#: main.py:43
 msgid "Vo Converter"
 msgstr "Vo Converter"
 
-#: main.py:83
+#: main.py:88
 msgid "Upgrade"
 msgstr "Actualizacção"
 
-#: main.py:86
+#: main.py:91
 msgid "There is a new version available for download. Do you wish to:"
 msgstr "Existe uma nova versão disponível no servidor. Deseja:"
 
-#: main.py:92
-msgid "Ignore"
-msgstr "Ignorar"
+#: main.py:97
+msgid "Ignore this time"
+msgstr "Ignorar desta vez"
 
-#: main.py:95
+#: main.py:100
 msgid "Download"
 msgstr "Descarregar"
 
-#: main.py:850
+#: main.py:857
 msgid "Drawings Pause Time"
 msgstr "Pausa do Desenho"
 
-#: main.py:865
+#: main.py:872
 msgid "Font Size"
 msgstr "Tamanho da Letra"
 
-#: main.py:872
+#: main.py:879
 msgid "Slow but better"
 msgstr ""
 
-#: main.py:891
+#: main.py:898
 msgid "Destination:"
 msgstr "Destino:"
 
-#: main.py:902
+#: main.py:909
 msgid "Choose"
 msgstr "Escolher"
 
-#: main.py:908
+#: main.py:915
 msgid "Open File"
 msgstr "Abrir Ficheiro"
 
-#: main.py:911
+#: main.py:918
 msgid "Quit"
 msgstr "Sair"
 
-#: main.py:923
+#: main.py:930
 #, python-format
 msgid "Version: %s , date: %s"
 msgstr "Versão: %s, data: %s"
 
-#: main.py:944
+#: main.py:951
 msgid "VO Playlist"
 msgstr "Playlist VO"
 
-#: main.py:945
+#: main.py:952
 msgid "All Files"
 msgstr "Todos os Ficheiros"
 
-#: main.py:1002
+#: main.py:992
+msgid "Error"
+msgstr "Erro"
+
+#: main.py:995
+msgid "The directory you selected is not valid. Write error."
+msgstr "O diretório selecionado não é válido. Erro de escrita."
+
+#: main.py:998 main.py:1313
+msgid "Ok"
+msgstr "Ok"
+
+#: main.py:1034
 msgid "Processing..."
 msgstr "A Processar..."
 
-#: main.py:1024 main.py:1209
+#: main.py:1056 main.py:1241
 msgid "Converting: "
 msgstr "A converter:"
 
-#: main.py:1043
+#: main.py:1075
 #, python-format
 msgid "Processing item %i"
 msgstr "A processar item %i"
 
-#: main.py:1106
+#: main.py:1138
 #, python-format
 msgid "Better converting %i"
 msgstr ""
 
-#: main.py:1118
+#: main.py:1150
 #, python-format
 msgid "Adding subtitles to item %i"
 msgstr "A adicionar legendas ao item %i"
 
-#: main.py:1143
+#: main.py:1175
 #, python-format
 msgid "Fast cutting item %i"
 msgstr "A cortar o item %i"
 
-#: main.py:1154
+#: main.py:1186
 #, python-format
 msgid "Adding drawing to item %i"
 msgstr "Adicionar desenho ao item %i"
 
-#: main.py:1201
+#: main.py:1233
 #, python-format
 msgid "Finishing item %i"
 msgstr "A acabar item %i"
 
-#: main.py:1213
+#: main.py:1245
 msgid "Joining final video"
 msgstr "A criar o vídeo final"
 
-#: main.py:1255
+#: main.py:1287
 msgid "Done: "
 msgstr "Completo:"
 
-#: main.py:1264
+#: main.py:1296
 #, python-format
 msgid "Done in %s:%s:%s ..."
 msgstr "Completo em %s:%s:%s ..."
 
-#: main.py:1272
+#: main.py:1304
 msgid "Done in"
 msgstr "Completo em"
 
-#: main.py:1275
+#: main.py:1307
 msgid "Done..."
 msgstr "Completo..."
 
-#: main.py:1278
+#: main.py:1310
 msgid "Playlist done..."
 msgstr "Playlist completa..."
 
-#: main.py:1281
-msgid "Ok"
-msgstr "Ok"
-
-#: main.py:1284
+#: main.py:1316
 msgid "Open Video"
 msgstr "Abrir Video"
+
+#~ msgid "Close"
+#~ msgstr "Ignorar desta vez"
+
+#~ msgid "Ignore"
+#~ msgstr "Ignorar"
 
 #~ msgid "There is a new version available for download.                                                                  Do you wish to:"
 #~ msgstr "Existe uma nova versão disponível no servidor.                                                            Deseja:"

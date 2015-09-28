@@ -1,5 +1,3 @@
-__author__ = 'Rui'
-
 from tkinter import *
 from tkinter import filedialog
 import xml.etree.ElementTree as xmlParser
@@ -17,10 +15,11 @@ import base64
 from easysettings import EasySettings
 import configparser
 import gettext
-import locale
 import urllib.request
 import urllib.error
 from distutils.version import  LooseVersion
+
+__author__ = 'Rui'
 
 # current_locale = 'en'
 
@@ -95,7 +94,7 @@ class CheckForUpdate(threading.Thread):
                     btn_frame = Frame(upgrade_pop)
                     btn_frame.pack(padx=10, pady=10)
 
-                    close_btn = Button(btn_frame, text=t("Close"), command=upgrade_pop.destroy)
+                    close_btn = Button(btn_frame, text=t("Ignore this time"), command=upgrade_pop.destroy)
                     close_btn.pack(side=LEFT, padx=20)
 
                     download_btn = Button(btn_frame, text=t("Download"), command=self.download_upgrade)
@@ -970,9 +969,34 @@ class FileChooser(object):
         sys.exit(0)
 
     def choose_destination(self):
-        fn = filedialog.askdirectory()
-        self.final_destination_path = fn
-        self.destination_path.config(text=fn)
+        # get dir from user, using the saved dir as the starting point
+        fn = filedialog.askdirectory(initialdir=self.final_destination_path)
+
+        # if fn is the empty string the user pressed cancel, so no need to do the checks
+        if fn != '':
+            # check if the directory exists and is writable
+            try:
+                file = fn + '/test_write.txt'
+                test = open(file, 'w')
+                # if we get here the file is writable or we would be in the except block
+                # so cleanup
+                test.close()
+                os.remove(file)
+                # and this means we can save the directory
+                self.final_destination_path = fn
+                self.destination_path.config(text=fn)
+            except IOError as ioe:
+                print('directory not writable: ' + str(ioe))
+                # so we better popup a warning
+                warn_pop = Toplevel(padx=20, pady=20)
+                warn_pop.title(t("Error"))
+                warn_pop.iconbitmap("icon.ico")
+
+                warn_msg = Label(warn_pop, text=t("The directory you selected is not valid. Write error.") + " " + fn)
+                warn_msg.pack()
+
+                warn_btn = Button(warn_pop, text=t("Ok"), command=warn_pop.destroy)
+                warn_btn.pack()
 
     def get_video_info(self, video_path):
 
@@ -991,9 +1015,9 @@ class FileChooser(object):
 
         has_sound = False
 
+        video_info = VideoInfo()
         for stream in info_json["streams"]:
             if stream["codec_type"] == "video":
-                video_info = VideoInfo()
                 video_info.set_w_and_h(stream["width"], stream["height"])
             if stream["codec_type"] == "audio":
                 has_sound = True
