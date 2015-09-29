@@ -17,7 +17,7 @@ import configparser
 import gettext
 import urllib.request
 import urllib.error
-from distutils.version import  LooseVersion
+from distutils.version import LooseVersion
 
 __author__ = 'Rui'
 
@@ -77,7 +77,7 @@ class CheckForUpdate(threading.Thread):
     def run(self):
         try:
             # grab the file from server
-            with urllib.request.urlopen("https://staging.videobserver.com/app/converter_version.json") as version_file:
+            with urllib.request.urlopen("http://staging.videobserver.com/app/converter_version.json") as version_file:
                 version_json = json.loads(version_file.read().decode('utf-8'))
                 if LooseVersion(self.current_version) < LooseVersion(version_json['version']):
                     self.download_url = version_json['url']

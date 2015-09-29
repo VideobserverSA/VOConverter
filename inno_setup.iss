@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Vo Converter"
-#define MyAppVersion "1.0.42"
+#define MyAppVersion "1.0.44"
 #define MyAppPublisher "Videobserver SA"
 #define MyAppURL "http://www.videobserver.com"
 #define MyAppExeName "voconverter.exe"
