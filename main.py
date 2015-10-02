@@ -1027,6 +1027,21 @@ class FileChooser(object):
 
     def parse_playlist(self, filename):
 
+        tree = xmlParser.parse(filename)
+        base = tree.getroot()
+
+        # if the file name has spaces we end up with %20 in the url
+        video_path = urllib.parse.unquote(base.get("video_path"))
+
+        # first we check for the file existence
+        if not os.path.isfile(video_path):
+            # then we need to ask the user for a new file
+            fn = filedialog.askopenfile(mode='r', title=t("Video file not found, please select another"))
+            if fn is not None:
+                video_path = fn.name
+            else:
+                return
+
         # record start time
         self.start_time = time.time()
 
@@ -1037,11 +1052,7 @@ class FileChooser(object):
         if not os.path.exists(self.temp_dir.name):
             os.makedirs(self.temp_dir.name)
 
-        print("INfile>> ", filename)
-        tree = xmlParser.parse(filename)
-        base = tree.getroot()
-        # if the file name has spaces we end up with %20 in the url
-        video_path = urllib.parse.unquote(base.get("video_path"))
+        #sys.stdout.write(filename)
 
         self.base_name = base.get("name")
         if self.base_name is None:
@@ -1274,7 +1285,7 @@ class FileChooser(object):
 
         self.final_path = self.final_destination_path + "\\" + out_filename + ".mp4"
 
-        print("JOINARGS>>", ' '.join(join_args))
+        # sys.stdout.write("JOINARGS>>" + ' '.join(join_args))
 
         # join_log_path = self.temp_dir.name + "\\" + "join.log"
         # join_log_file = open(join_log_path, "wb")
@@ -1307,7 +1318,7 @@ class FileChooser(object):
         done_pop.title(t("Done..."))
         done_pop.iconbitmap("icon.ico")
 
-        done_msg = Message(done_pop, text=t("Playlist done..."))
+        done_msg = Label(done_pop, text=t("Playlist done..."))
         done_msg.pack()
 
         done_btn = Button(done_pop, text=t("Ok"), command=done_pop.destroy)

@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Vo Converter\n"
-"POT-Creation-Date: 2015-09-28 19:09+0100\n"
-"PO-Revision-Date: 2015-09-28 19:09+0100\n"
+"POT-Creation-Date: 2015-10-02 17:24+0100\n"
+"PO-Revision-Date: 2015-10-02 17:25+0100\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: pt\n"
@@ -84,74 +84,78 @@ msgstr "Erro"
 msgid "The directory you selected is not valid. Write error."
 msgstr "O diretório selecionado não é válido. Erro de escrita."
 
-#: main.py:998 main.py:1313
+#: main.py:998 main.py:1321
 msgid "Ok"
 msgstr "Ok"
 
-#: main.py:1034
+#: main.py:1039
+msgid "Video file not found, please select another"
+msgstr "Ficheiro de vídeo não encontrado, por favor escolha outro."
+
+#: main.py:1046
 msgid "Processing..."
 msgstr "A Processar..."
 
-#: main.py:1056 main.py:1241
+#: main.py:1064 main.py:1249
 msgid "Converting: "
 msgstr "A converter:"
 
-#: main.py:1075
+#: main.py:1083
 #, python-format
 msgid "Processing item %i"
 msgstr "A processar item %i"
 
-#: main.py:1138
+#: main.py:1146
 #, python-format
 msgid "Better converting %i"
 msgstr ""
 
-#: main.py:1150
+#: main.py:1158
 #, python-format
 msgid "Adding subtitles to item %i"
 msgstr "A adicionar legendas ao item %i"
 
-#: main.py:1175
+#: main.py:1183
 #, python-format
 msgid "Fast cutting item %i"
 msgstr "A cortar o item %i"
 
-#: main.py:1186
+#: main.py:1194
 #, python-format
 msgid "Adding drawing to item %i"
 msgstr "Adicionar desenho ao item %i"
 
-#: main.py:1233
+#: main.py:1241
 #, python-format
 msgid "Finishing item %i"
 msgstr "A acabar item %i"
 
-#: main.py:1245
+#: main.py:1253
 msgid "Joining final video"
 msgstr "A criar o vídeo final"
 
-#: main.py:1287
+#: main.py:1295
 msgid "Done: "
 msgstr "Completo:"
 
-#: main.py:1296
+#: main.py:1304
 #, python-format
 msgid "Done in %s:%s:%s ..."
 msgstr "Completo em %s:%s:%s ..."
 
-#: main.py:1304
+#: main.py:1312
 msgid "Done in"
 msgstr "Completo em"
 
-#: main.py:1307
+#: main.py:1315
 msgid "Done..."
 msgstr "Completo..."
 
-#: main.py:1310
+#: main.py:1318
 msgid "Playlist done..."
 msgstr "Playlist completa..."
 
-#: main.py:1316
+#: main.py:1324
 msgid "Open Video"
 msgstr "Abrir Video"
 
