@@ -18,7 +18,6 @@ import gettext
 import urllib.request
 import urllib.error
 from distutils.version import LooseVersion
-import sys
 
 __author__ = 'Rui'
 
@@ -1038,6 +1037,12 @@ class FileChooser(object):
         # if the file name has spaces we end up with %20 in the url
         video_path = urllib.parse.unquote(base.get("video_path"))
 
+        if sys.platform == "darwin":
+            # now if we have the file:/// present we remove it
+            video_path = video_path.replace("file://", "")
+        else:
+            video_path = video_path.replace("file:///", "")
+
         # first we check for the file existence
         if not os.path.isfile(video_path):
             # then we need to ask the user for a new file
@@ -1070,9 +1075,6 @@ class FileChooser(object):
         play_len += 1
         self.num_items = play_len
         self.meter.set(0.0, t("Converting: ") + self.base_name + " " + "0%")
-
-        # now if we have the file:/// present we remove it
-        video_path = video_path.replace("file:///", "")
 
         self.video_info = self.get_video_info(video_path)
 
