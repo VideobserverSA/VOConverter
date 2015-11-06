@@ -59,6 +59,15 @@ class VideoInfo:
         self.has_sound = has_sound
 
 
+class Drawing:
+
+    def __init__(self, uid, screenshot, bitmap, drawing_time):
+        self.uid = uid
+        self.screenshot = screenshot
+        self.bitmap = bitmap
+        self.drawing_time = drawing_time
+
+
 class CheckForUpdate(threading.Thread):
 
     def __init__(self, current_version, tmp_dir):
@@ -312,9 +321,317 @@ class AddOverlay(threading.Thread):
 
     def run(self):
 
+        # this is the logo position to burn
         # video height - image height - 20 padding
         bottom = self.video_info.height - 22 - 20
         left = 20
+
+        # lets resize the image
+        ori_img = Image.open(self.image_path)
+        res_img = ori_img.resize((self.video_info.width, self.video_info.height), Image.ANTIALIAS)
+        res_img.save(self.temp_dir.name + "\\" + str(self.cut_number) + "_overlay_res.png")
+
+        # create the pause image
+        try:
+            check_call([
+                ffmpeg_path,
+                "-y",
+                "-loop",
+                "1",
+                # video stream
+                "-i",
+                self.temp_dir.name + "\\" + str(self.cut_number) + "_overlay_res.png",
+                # we have the full image no need to get the screenshot
+                # self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb.png",
+                "-c:v",
+                "libx264",
+                # duration
+                "-t",
+                str(self.pause_time),
+                "-pix_fmt",
+                "yuv444p",
+                "-vf",
+                "scale=" + str(self.video_info.width) + "x" + str(self.video_info.height) + ",setsar=1:1",
+                self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb.mp4"
+            ], stderr=STDOUT,
+                shell=True)
+        except CalledProcessError as cpe:
+            print("IMAGE OUT", cpe.output)
+
+        # add the overlay to the pause image
+        try:
+            check_call([
+                ffmpeg_path,
+                # overwrite
+                "-y",
+                # video input
+                "-i",
+                self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb.mp4",
+                # image input
+                "-i",
+                self.temp_dir.name + "\\" + str(self.cut_number) + "_overlay_res.png",
+                # logo
+                "-i",
+                "watermark.png",
+                # filter
+                "-filter_complex",
+                "overlay [tmp]; [tmp] overlay=" + str(left) + ":" + str(bottom),
+                "-pix_fmt",
+                "yuv420p",
+                # pass the audio
+                "-c:a",
+                "copy",
+                # output
+                self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb_overlay.mp4",
+
+            ], stderr=STDOUT,
+                shell=True)
+        except CalledProcessError as cpe:
+            print("OVERLAY OUT", cpe.output)
+
+        # add sound track to pause overlay
+        try:
+            check_call([
+                ffmpeg_path,
+                "-y",
+                # sound stream
+                "-ar",
+                "48000",
+                "-ac",
+                "2",
+                "-f",
+                "s16le",
+                "-i",
+                "silence.wav",
+                "-i",
+                self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb_overlay.mp4",
+                "-shortest",
+                "-c:v",
+                "copy",
+                "-c:a",
+                "aac",
+                "-strict",
+                "-2",
+                self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb_overlay_sound.mp4"
+            ], stderr=STDOUT,
+                shell=True)
+        except CalledProcessError as cpe:
+            print("SOUND OUT", cpe.output)
+
+        # start_file = open(self.temp_dir.name + "\\" + str(self.cut_number) + "_start.log", "wb")
+        try:
+            # cut from the begging to the overlay
+            check_call([
+                # path to ffmpeg
+                ffmpeg_path,
+                # overwrite
+                "-y",
+                # input file
+                "-i",
+                self.input_video,
+                # watermark
+                "-i",
+                "watermark.png",
+                # duration
+                "-t",
+                str(max(self.video_time, 1)),
+                # filter
+                "-filter_complex",
+                "[0:v][1:v] overlay=" + str(left) + ":" + str(bottom),
+                "-pix_fmt",
+                "yuv420p",
+                # pass the audio
+                "-c:a",
+                "copy",
+                # output file
+                self.temp_dir.name + "\\" + str(self.cut_number) + "_start.mp4"
+            ],
+                stderr=STDOUT,
+                shell=True)
+        except CalledProcessError as cpe:
+            print("START OUT", cpe.output)
+
+        # cut from the pause to the end
+        check_call([
+            # path to ffmpeg
+            ffmpeg_path,
+            # overwrite
+            "-y",
+            # input file
+            "-i",
+            self.input_video,
+            # watermark
+            "-i",
+            "watermark.png",
+            # start time
+            "-ss",
+            str(max(self.video_time, 1)),
+            # filter
+            "-filter_complex",
+            "[0:v][1:v] overlay=" + str(left) + ":" + str(bottom),
+            "-pix_fmt",
+            "yuv420p",
+            # pass the audio
+            "-c:a",
+            "copy",
+            # output file
+            self.temp_dir.name + "\\" + str(self.cut_number) + "_end.mp4"
+        ],
+            stderr=STDOUT,
+            shell=True)
+
+        print(" ", " ", " ", " ", " VIDEO TIME: ", self.video_time)
+
+        if self.video_info.has_sound:
+            # and now join the three files
+            # first stitch the start to the overlay
+            try:
+                check_call([
+                    ffmpeg_path,
+                    # overwrite
+                    "-y",
+                    # start
+                    "-i",
+                    self.temp_dir.name + "\\" + str(self.cut_number) + "_start.mp4",
+                    # the overlay
+                    "-i",
+                    self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb_overlay_sound.mp4",
+                    # audio codec
+                    "-c:a",
+                    "aac",
+                    "-strict",
+                    "-2",
+                    # the concat filter
+                    "-map",
+                    "[v]",
+                    "-map",
+                    "[a]",
+                    "-filter_complex",
+                    # "[0:0] setsar=1:1 [in1]; [0:1] [1:0] setsar=1:1 [in2]; [1:1] concat=n=2:v=1:a=1 [v] [a]",
+                    "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
+                    "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
+                    self.temp_dir.name + "\\" + str(self.cut_number) + "_start_and_over.mp4"
+                ], stderr=STDOUT,
+                    shell=True)
+            except CalledProcessError as cpe:
+                print("CAT OUT", cpe.output)
+
+            # and now join the three files
+            try:
+                check_call([
+                    ffmpeg_path,
+                    # overwrite
+                    "-y",
+                    # start
+                    "-i",
+                    self.temp_dir.name + "\\" + str(self.cut_number) + "_start_and_over.mp4",
+                    # the overlay
+                    "-i",
+                    self.temp_dir.name + "\\" + str(self.cut_number) + "_end.mp4",
+                    # audio codec
+                    "-c:a",
+                    "aac",
+                    "-strict",
+                    "-2",
+                    # the concat filter
+                    "-map",
+                    "[v]",
+                    "-map",
+                    "[a]",
+                    "-filter_complex",
+                    # "[0:0] [0:1] [1:0] [1:1] concat=n=2:v=1:a=1 [v] [a],scale=1270x720,setsar=1:1",
+                    "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
+                    "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
+                    self.tmp_out,
+                ], stderr=STDOUT,
+                    shell=True)
+            except CalledProcessError as cpe:
+                print("CAT OUT", cpe.output)
+
+        else:
+            # NO AUDIO, SO DO NOT CONCAT [a] STREAM
+            # and now join the three files
+            # first stitch the start to the overlay
+            try:
+                check_call([
+                    ffmpeg_path,
+                    # overwrite
+                    "-y",
+                    # start
+                    "-i",
+                    self.temp_dir.name + "\\" + str(self.cut_number) + "_start.mp4",
+                    # the overlay
+                    "-i",
+                    self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb_overlay_sound.mp4",
+                    # audio codec
+                    "-c:a",
+                    "aac",
+                    "-strict",
+                    "-2",
+                    # the concat filter
+                    "-map",
+                    "[v]",
+                    "-filter_complex",
+                    "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
+                    "[in1][in2] concat [v]",
+                    self.temp_dir.name + "\\" + str(self.cut_number) + "_start_and_over.mp4"
+                ], stderr=STDOUT,
+                    shell=True)
+            except CalledProcessError as cpe:
+                print("CAT OUT", cpe.output)
+
+            # and now join the three files
+            try:
+                check_call([
+                    ffmpeg_path,
+                    # overwrite
+                    "-y",
+                    # start
+                    "-i",
+                    self.temp_dir.name + "\\" + str(self.cut_number) + "_start_and_over.mp4",
+                    # the overlay
+                    "-i",
+                    self.temp_dir.name + "\\" + str(self.cut_number) + "_end.mp4",
+                    # audio codec
+                    "-c:a",
+                    "aac",
+                    "-strict",
+                    "-2",
+                    # the concat filter
+                    "-map",
+                    "[v]",
+                    "-filter_complex",
+                    "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
+                    "[in1][in2] concat [v]",
+                    self.tmp_out,
+                ], stderr=STDOUT,
+                    shell=True)
+            except CalledProcessError as cpe:
+                print("CAT OUT", cpe.output)
+
+
+class AddMultipleDrawings(threading.Thread):
+
+    def __init__(self, temp_dir, cut_number, input_video, video_info, tmp_out, drawings):
+
+        super().__init__()
+
+        self.cut_number = cut_number
+        self.input_video = input_video
+        self.tmp_out = tmp_out
+        self.temp_dir = temp_dir
+        self.video_info = video_info
+        self.drawings = drawings
+
+    def run(self):
+
+        # this is the logo position to burn
+        # video height - image height - 20 padding
+        bottom = self.video_info.height - 22 - 20
+        left = 20
+
+        for drawing in self.drawings:
+            pass
 
         # lets resize the image
         ori_img = Image.open(self.image_path)
@@ -1099,6 +1416,9 @@ class FileChooser(object):
             drawing_time = ""
             screenshot = ""
 
+            has_multiple_drawings = False
+            multiple_drawings = []
+
             if item_type == "ga":
                 time_start = int(float(child.find("game_action").find("video_time_start").text))
                 time_end = int(float(child.find("game_action").find("video_time_end").text))
@@ -1106,6 +1426,7 @@ class FileChooser(object):
                 ec = child.find("game_action").find("comments_enabled")
                 if ec is not None:
                     enable_comments = ec.text
+                # one drawing only for backwards compatibility
                 drw = child.find("game_action").find("drawing")
                 if drw is not None:
                     drawing = drw.find("bitmap").text
@@ -1126,6 +1447,19 @@ class FileChooser(object):
                     drawing_time = drw.find("time").text
                     screenshot = drw.find("screenshot").text
                     has_drawing = True
+                # multiple drawings going forward
+                temp_multiple_drawings = child.find("action_cue").find("drawings")
+                if temp_multiple_drawings is not None:
+                    has_multiple_drawings = True
+                    # loop the drawings and add to array
+                    for temp_drawing in temp_multiple_drawings:
+                        temp_uid = temp_drawing.find("uid").text
+                        temp_screenshot = temp_drawing.find("screenshot").text
+                        temp_bitmap = temp_drawing.find("bitmap").text
+                        temp_time = float(temp_drawing.find("time").text)
+                        the_drawing = Drawing(uid=temp_uid, screenshot=temp_screenshot,
+                                              bitmap=temp_bitmap, drawing_time=temp_time)
+                        multiple_drawings.append(the_drawing)
 
             # add some padding
             # time_start += 2
@@ -1172,7 +1506,7 @@ class FileChooser(object):
                         dummy_event = threading.Event()
                         dummy_event.wait(timeout=1)
 
-            elif has_drawing:
+            elif has_drawing or has_multiple_drawings:
                 # we need to convert without fast copy so that the further cuts work out right
                 key_thr = CutWithKeyFrames(temp_dir=self.temp_dir, cut_number=cut_number, video_path=video_path,
                                            time_start=time_start, duration=duration,
@@ -1230,6 +1564,9 @@ class FileChooser(object):
                     # print("sleeping...")
                     dummy_event = threading.Event()
                     dummy_event.wait(timeout=1)
+
+            if has_multiple_drawings:
+                pass
 
             # lastly we convert to fast copy for the final join
             if has_drawing:
