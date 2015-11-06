@@ -612,7 +612,7 @@ class AddOverlay(threading.Thread):
 
 class AddMultipleDrawings(threading.Thread):
 
-    def __init__(self, temp_dir, cut_number, input_video, video_info, tmp_out, drawings):
+    def __init__(self, temp_dir, cut_number, input_video, video_info, tmp_out, drawings, pause_time):
 
         super().__init__()
 
@@ -622,6 +622,7 @@ class AddMultipleDrawings(threading.Thread):
         self.temp_dir = temp_dir
         self.video_info = video_info
         self.drawings = drawings
+        self.pause_time = pause_time
 
     def run(self):
 
@@ -631,8 +632,8 @@ class AddMultipleDrawings(threading.Thread):
         left = 20
 
         for drawing in self.drawings:
-            pass
-
+            print(drawing.drawing_time)
+            
         # lets resize the image
         ori_img = Image.open(self.image_path)
         res_img = ori_img.resize((self.video_info.width, self.video_info.height), Image.ANTIALIAS)
@@ -1566,7 +1567,19 @@ class FileChooser(object):
                     dummy_event.wait(timeout=1)
 
             if has_multiple_drawings:
-                pass
+                multiple_thr = AddMultipleDrawings(temp_dir=self.temp_dir,
+                                                   cut_number=cut_number,
+                                                   input_video=self.temp_dir.name + "\\" + str(cut_number) +
+                                                   "_comments.mp4",
+                                                   video_info=self.video_info,
+                                                   tmp_out=self.temp_dir.name + "\\" + str(cut_number) + "_overlay.mp4",
+                                                   drawings=multiple_drawings,
+                                                   pause_time=self.pause_duration.get())
+                multiple_thr.start()
+                while multiple_thr.is_alive():
+                    # print("sleeping...")
+                    dummy_event = threading.Event()
+                    dummy_event.wait(timeout=1)
 
             # lastly we convert to fast copy for the final join
             if has_drawing:
