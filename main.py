@@ -631,102 +631,7 @@ class AddMultipleDrawings(threading.Thread):
         bottom = self.video_info.height - 22 - 20
         left = 20
 
-        for drawing in self.drawings:
-            print(drawing.drawing_time)
-            
-        # lets resize the image
-        ori_img = Image.open(self.image_path)
-        res_img = ori_img.resize((self.video_info.width, self.video_info.height), Image.ANTIALIAS)
-        res_img.save(self.temp_dir.name + "\\" + str(self.cut_number) + "_overlay_res.png")
-
-        # create the pause image
-        try:
-            check_call([
-                ffmpeg_path,
-                "-y",
-                "-loop",
-                "1",
-                # video stream
-                "-i",
-                self.temp_dir.name + "\\" + str(self.cut_number) + "_overlay_res.png",
-                # we have the full image no need to get the screenshot
-                # self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb.png",
-                "-c:v",
-                "libx264",
-                # duration
-                "-t",
-                str(self.pause_time),
-                "-pix_fmt",
-                "yuv444p",
-                "-vf",
-                "scale=" + str(self.video_info.width) + "x" + str(self.video_info.height) + ",setsar=1:1",
-                self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb.mp4"
-            ], stderr=STDOUT,
-                shell=True)
-        except CalledProcessError as cpe:
-            print("IMAGE OUT", cpe.output)
-
-        # add the overlay to the pause image
-        try:
-            check_call([
-                ffmpeg_path,
-                # overwrite
-                "-y",
-                # video input
-                "-i",
-                self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb.mp4",
-                # image input
-                "-i",
-                self.temp_dir.name + "\\" + str(self.cut_number) + "_overlay_res.png",
-                # logo
-                "-i",
-                "watermark.png",
-                # filter
-                "-filter_complex",
-                "overlay [tmp]; [tmp] overlay=" + str(left) + ":" + str(bottom),
-                "-pix_fmt",
-                "yuv420p",
-                # pass the audio
-                "-c:a",
-                "copy",
-                # output
-                self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb_overlay.mp4",
-
-            ], stderr=STDOUT,
-                shell=True)
-        except CalledProcessError as cpe:
-            print("OVERLAY OUT", cpe.output)
-
-        # add sound track to pause overlay
-        try:
-            check_call([
-                ffmpeg_path,
-                "-y",
-                # sound stream
-                "-ar",
-                "48000",
-                "-ac",
-                "2",
-                "-f",
-                "s16le",
-                "-i",
-                "silence.wav",
-                "-i",
-                self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb_overlay.mp4",
-                "-shortest",
-                "-c:v",
-                "copy",
-                "-c:a",
-                "aac",
-                "-strict",
-                "-2",
-                self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb_overlay_sound.mp4"
-            ], stderr=STDOUT,
-                shell=True)
-        except CalledProcessError as cpe:
-            print("SOUND OUT", cpe.output)
-
-        # start_file = open(self.temp_dir.name + "\\" + str(self.cut_number) + "_start.log", "wb")
+        # cut the start of the clip that is until the first drawing time
         try:
             # cut from the begging to the overlay
             check_call([
@@ -742,7 +647,7 @@ class AddMultipleDrawings(threading.Thread):
                 "watermark.png",
                 # duration
                 "-t",
-                str(max(self.video_time, 1)),
+                str(max(self.drawings[0].drawing_time, 1)),
                 # filter
                 "-filter_complex",
                 "[0:v][1:v] overlay=" + str(left) + ":" + str(bottom),
@@ -759,7 +664,7 @@ class AddMultipleDrawings(threading.Thread):
         except CalledProcessError as cpe:
             print("START OUT", cpe.output)
 
-        # cut from the pause to the end
+        # cut from the last drawing to the end
         check_call([
             # path to ffmpeg
             ffmpeg_path,
@@ -773,7 +678,7 @@ class AddMultipleDrawings(threading.Thread):
             "watermark.png",
             # start time
             "-ss",
-            str(max(self.video_time, 1)),
+            str(max(self.drawings[len(self.drawings) - 1].drawing_time, 1)),
             # filter
             "-filter_complex",
             "[0:v][1:v] overlay=" + str(left) + ":" + str(bottom),
@@ -788,7 +693,183 @@ class AddMultipleDrawings(threading.Thread):
             stderr=STDOUT,
             shell=True)
 
-        print(" ", " ", " ", " ", " VIDEO TIME: ", self.video_time)
+        drawing_number = 0
+        print("DRAWWWINGS >>>>>>>>>>>>>>>>")
+        for drawing in self.drawings:
+            print(drawing.drawing_time)
+
+            # self.status_bar.set(t("Adding drawing to item %i"), self.cut_number + 1)
+            raw_png = base64.b64decode(drawing.bitmap)
+            f = open(self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(drawing_number) +
+                     "_overlay.png", "wb")
+            f.write(raw_png)
+            f.close()
+            pil_png = Image.open(self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(drawing_number) +
+                                 "_overlay.png")
+
+            raw_jpeg = base64.b64decode(drawing.screenshot)
+            jf = open(self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(drawing_number) +
+                      "_screenshot.png", "wb")
+            jf.write(raw_jpeg)
+            jf.close()
+            pil_jpeg = Image.open(self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(drawing_number) +
+                                  "_screenshot.png")
+            pil_jpeg_converted = pil_jpeg.convert(mode="RGBA")
+
+            # and now join the two?
+            pil_composite = Image.alpha_composite(pil_jpeg_converted, pil_png)
+            pil_composite.save(self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(drawing_number) +
+                               "_composite.png", "PNG")
+
+            # lets resize the image
+            ori_img = Image.open(self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(drawing_number) +
+                                 "_composite.png")
+            res_img = ori_img.resize((self.video_info.width, self.video_info.height), Image.ANTIALIAS)
+            res_img.save(self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(drawing_number) +
+                         "_overlay_res.png")
+
+            # create the pause image
+            try:
+                check_call([
+                    ffmpeg_path,
+                    "-y",
+                    "-loop",
+                    "1",
+                    # video stream
+                    "-i",
+                    self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(drawing_number) + "_overlay_res.png",
+                    # we have the full image no need to get the screenshot
+                    # self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb.png",
+                    "-c:v",
+                    "libx264",
+                    # duration
+                    "-t",
+                    str(self.pause_time),
+                    "-pix_fmt",
+                    "yuv444p",
+                    "-vf",
+                    "scale=" + str(self.video_info.width) + "x" + str(self.video_info.height) + ",setsar=1:1",
+                    self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(drawing_number) + "_thumb.mp4"
+                ], stderr=STDOUT,
+                    shell=True)
+            except CalledProcessError as cpe:
+                print("IMAGE OUT", cpe.output)
+
+            # add the overlay to the pause image
+            try:
+                check_call([
+                    ffmpeg_path,
+                    # overwrite
+                    "-y",
+                    # video input
+                    "-i",
+                    self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(drawing_number) + "_thumb.mp4",
+                    # image input
+                    "-i",
+                    self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(drawing_number) + "_overlay_res.png",
+                    # logo
+                    "-i",
+                    "watermark.png",
+                    # filter
+                    "-filter_complex",
+                    "overlay [tmp]; [tmp] overlay=" + str(left) + ":" + str(bottom),
+                    "-pix_fmt",
+                    "yuv420p",
+                    # pass the audio
+                    "-c:a",
+                    "copy",
+                    # output
+                    self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(drawing_number) + "_thumb_overlay.mp4",
+
+                ], stderr=STDOUT,
+                    shell=True)
+            except CalledProcessError as cpe:
+                print("OVERLAY OUT", cpe.output)
+
+            # add sound track to pause overlay
+            try:
+                check_call([
+                    ffmpeg_path,
+                    "-y",
+                    # sound stream
+                    "-ar",
+                    "48000",
+                    "-ac",
+                    "2",
+                    "-f",
+                    "s16le",
+                    "-i",
+                    "silence.wav",
+                    "-i",
+                    self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(drawing_number) + "_thumb_overlay.mp4",
+                    "-shortest",
+                    "-c:v",
+                    "copy",
+                    "-c:a",
+                    "aac",
+                    "-strict",
+                    "-2",
+                    self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(drawing_number) +
+                    "_thumb_overlay_sound.mp4"
+                ], stderr=STDOUT,
+                    shell=True)
+            except CalledProcessError as cpe:
+                print("SOUND OUT", cpe.output)
+
+            # if we are not at the last drawing?
+            if drawing_number < len(self.drawings) - 1:
+                # we cut the middle between one drawing and the other
+
+                # check the start and duration
+                middle_start = drawing.drawing_time;
+                middle_duration = self.drawings[drawing_number + 1].drawing_time - middle_start
+
+                # cut from the last drawing to the end
+                check_call([
+                    # path to ffmpeg
+                    ffmpeg_path,
+                    # overwrite
+                    "-y",
+                    # input file
+                    "-i",
+                    self.input_video,
+                    # watermark
+                    "-i",
+                    "watermark.png",
+                    # start time
+                    "-ss",
+                    str(max(middle_start, 1)),
+                    # duration
+                    "-t",
+                    str(max(middle_duration, 1)),
+                    # filter
+                    "-filter_complex",
+                    "[0:v][1:v] overlay=" + str(left) + ":" + str(bottom),
+                    "-pix_fmt",
+                    "yuv420p",
+                    # pass the audio
+                    "-c:a",
+                    "copy",
+                    # output file
+                    self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(drawing_number) + "_middle.mp4"
+                ],
+                    stderr=STDOUT,
+                    shell=True)
+            # do the next drawing
+            drawing_number += 1
+
+        # now we must concat the whole thing, since we have a start, end, middle, and thumbs for all drawings
+        drawing_join = str(self.cut_number) + "_" + "start.mp4"
+        drawing_number = 0
+        for x in self.drawings:
+            drawing_join += "|" + str(self.cut_number) + "_" + str(drawing_number) + "_" + "thumb_overlay_with_sound.mp4"
+            if drawing_number < len(self.drawings) - 1:
+                drawing_join += "|" + str(self.cut_number) + "_" + str(drawing_number) + "_" + "middle.mp4"
+            drawing_number += 1
+        drawing_join += "|" + str(self.cut_number) + "_" + "end.mp4"
+
+        print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> FINAL JOIN >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+        print(drawing_join)
 
         if self.video_info.has_sound:
             # and now join the three files
@@ -916,6 +997,8 @@ class AddMultipleDrawings(threading.Thread):
                     shell=True)
             except CalledProcessError as cpe:
                 print("CAT OUT", cpe.output)
+
+
 
 
 class ConvertToFastCopy(threading.Thread):
@@ -1436,7 +1519,8 @@ class FileChooser(object):
                     has_drawing = True
 
             if item_type == "cue":
-                time_start = int(float(child.find("action_cue").find("starting_time").text))
+                real_time_start = float(child.find("action_cue").find("starting_time").text)
+                time_start = int(real_time_start)
                 time_end = int(float(child.find("action_cue").find("ending_time").text))
                 comments = child.find("action_cue").find("comments").text
                 ec = child.find("action_cue").find("comments_enabled")
@@ -1457,7 +1541,8 @@ class FileChooser(object):
                         temp_uid = temp_drawing.find("uid").text
                         temp_screenshot = temp_drawing.find("screenshot").text
                         temp_bitmap = temp_drawing.find("bitmap").text
-                        temp_time = float(temp_drawing.find("time").text)
+                        # we need the time within the clip and not relative to the full video
+                        temp_time = float(temp_drawing.find("time").text) - real_time_start
                         the_drawing = Drawing(uid=temp_uid, screenshot=temp_screenshot,
                                               bitmap=temp_bitmap, drawing_time=temp_time)
                         multiple_drawings.append(the_drawing)
@@ -1472,6 +1557,9 @@ class FileChooser(object):
             print("Enable Comments>> ", enable_comments)
 
             print("")
+
+            # for drw in multiple_drawings:
+            #    print(drw.drawing_time)
 
             duration = time_end - time_start
             tmp_out = self.temp_dir.name + "\\" + str(cut_number) + ".mp4"
