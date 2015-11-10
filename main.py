@@ -1660,7 +1660,7 @@ class FileChooser(object):
                 drw = child.find("game_action").find("drawing")
                 if drw is not None:
                     drawing = drw.find("bitmap").text
-                    drawing_time = drw.find("time").text
+                    drawing_time = float(drw.find("time").text) - real_time_start
                     screenshot = drw.find("screenshot").text
 
                     the_drawing = Drawing(uid="None", screenshot=screenshot,
@@ -1694,7 +1694,7 @@ class FileChooser(object):
                 drw = child.find("action_cue").find("drawing")
                 if drw is not None:
                     drawing = drw.find("bitmap").text
-                    drawing_time = drw.find("time").text
+                    drawing_time = float(drw.find("time").text) - real_time_start
                     screenshot = drw.find("screenshot").text
 
                     the_drawing = Drawing(uid="None", screenshot=screenshot,
