@@ -1572,7 +1572,8 @@ class FileChooser(object):
             multiple_drawings = []
 
             if item_type == "ga":
-                time_start = int(float(child.find("game_action").find("video_time_start").text))
+                real_time_start = float(child.find("game_action").find("video_time_start").text)
+                time_start = int(real_time_start)
                 time_end = int(float(child.find("game_action").find("video_time_end").text))
                 comments = child.find("game_action").find("comments").text
                 ec = child.find("game_action").find("comments_enabled")
@@ -1585,6 +1586,20 @@ class FileChooser(object):
                     drawing_time = drw.find("time").text
                     screenshot = drw.find("screenshot").text
                     has_drawing = True
+                # multiple drawings going forward
+                temp_multiple_drawings = child.find("game_action").find("drawings")
+                if temp_multiple_drawings is not None:
+                    has_multiple_drawings = True
+                    # loop the drawings and add to array
+                    for temp_drawing in temp_multiple_drawings:
+                        temp_uid = temp_drawing.find("uid").text
+                        temp_screenshot = temp_drawing.find("screenshot").text
+                        temp_bitmap = temp_drawing.find("bitmap").text
+                        # we need the time within the clip and not relative to the full video
+                        temp_time = float(temp_drawing.find("time").text) - real_time_start
+                        the_drawing = Drawing(uid=temp_uid, screenshot=temp_screenshot,
+                                              bitmap=temp_bitmap, drawing_time=temp_time)
+                        multiple_drawings.append(the_drawing)
 
             if item_type == "cue":
                 real_time_start = float(child.find("action_cue").find("starting_time").text)
@@ -1738,7 +1753,7 @@ class FileChooser(object):
                     dummy_event.wait(timeout=1)
 
             # lastly we convert to fast copy for the final join
-            if has_drawing:
+            if has_drawing or has_multiple_drawings:
                 fast_copy_input = self.temp_dir.name + "\\" + str(cut_number) + "_overlay.mp4"
             else:
                 fast_copy_input = self.temp_dir.name + "\\" + str(cut_number) + "_comments.mp4"
