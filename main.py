@@ -1662,7 +1662,12 @@ class FileChooser(object):
                     drawing = drw.find("bitmap").text
                     drawing_time = drw.find("time").text
                     screenshot = drw.find("screenshot").text
-                    has_drawing = True
+
+                    the_drawing = Drawing(uid="None", screenshot=screenshot,
+                                          bitmap=drawing, drawing_time=drawing_time)
+                    multiple_drawings.append(the_drawing)
+
+                    has_multiple_drawings = True
                 # multiple drawings going forward
                 temp_multiple_drawings = child.find("game_action").find("drawings")
                 if temp_multiple_drawings is not None:
@@ -1691,7 +1696,12 @@ class FileChooser(object):
                     drawing = drw.find("bitmap").text
                     drawing_time = drw.find("time").text
                     screenshot = drw.find("screenshot").text
-                    has_drawing = True
+
+                    the_drawing = Drawing(uid="None", screenshot=screenshot,
+                                          bitmap=drawing, drawing_time=drawing_time)
+                    multiple_drawings.append(the_drawing)
+
+                    has_multiple_drawings = True
                 # multiple drawings going forward
                 temp_multiple_drawings = child.find("action_cue").find("drawings")
                 if temp_multiple_drawings is not None:
