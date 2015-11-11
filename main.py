@@ -1233,7 +1233,7 @@ class CutFastCopy(threading.Thread):
 
 class CutWithKeyFrames(threading.Thread):
 
-    def __init__(self, temp_dir, cut_number, video_path, time_start, duration, tmp_out):
+    def __init__(self, temp_dir, cut_number, video_path, time_start, duration, tmp_out, key_frames):
 
         super().__init__()
 
@@ -1243,6 +1243,7 @@ class CutWithKeyFrames(threading.Thread):
         self.duration = duration
         self.tmp_out = tmp_out
         self.temp_dir = temp_dir
+        self.key_frames = key_frames
 
     def run(self):
 
@@ -1265,7 +1266,7 @@ class CutWithKeyFrames(threading.Thread):
             self.video_path,
             # codec
             "-x264opts",
-            "keyint=12:min-keyint=12",
+            "keyint=" + str(self.key_frames) + ":min-keyint=" + str(self.key_frames),
             "-c:v",
             "libx264",
             "-c:a",
@@ -1434,6 +1435,16 @@ class FileChooser(object):
         else:
             font_val = 30
         self.font_size.set(font_val)
+
+        # key_frame_frame = Frame(root)
+        # key_frame_frame.pack(fill=X, padx="5")
+        #
+        # key_frame_label = Label(key_frame_frame, text=t("Key Frames"))
+        # key_frame_label.pack(side=LEFT)
+        #
+        # self.key_frame_scale = Scale(key_frame_frame, from_=1, to=24, orient=HORIZONTAL, length="180")
+        # self.key_frame_scale.set(12)
+        # self.key_frame_scale.pack(side=LEFT)
 
         self.meter = Meter(root, bg="white", fillcolor="light blue")
         self.meter.pack(pady="10", padx="10")
@@ -1636,6 +1647,9 @@ class FileChooser(object):
 
             time_start = ""
             time_end = ""
+            real_time_start = ""
+            real_time_end = ""
+
             comments = ""
             enable_comments = True
             has_comments = False
@@ -1651,7 +1665,8 @@ class FileChooser(object):
             if item_type == "ga":
                 real_time_start = float(child.find("game_action").find("video_time_start").text)
                 time_start = int(real_time_start)
-                time_end = int(float(child.find("game_action").find("video_time_end").text))
+                real_time_end = float(child.find("game_action").find("video_time_end").text)
+                time_end = int(real_time_end)
                 comments = child.find("game_action").find("comments").text
                 ec = child.find("game_action").find("comments_enabled")
                 if ec is not None:
@@ -1686,7 +1701,8 @@ class FileChooser(object):
             if item_type == "cue":
                 real_time_start = float(child.find("action_cue").find("starting_time").text)
                 time_start = int(real_time_start)
-                time_end = int(float(child.find("action_cue").find("ending_time").text))
+                real_time_end = float(child.find("action_cue").find("ending_time").text)
+                time_end = int(real_time_end)
                 comments = child.find("action_cue").find("comments").text
                 ec = child.find("action_cue").find("comments_enabled")
                 if ec is not None:
@@ -1732,6 +1748,7 @@ class FileChooser(object):
             #    print(drw.drawing_time)
 
             duration = time_end - time_start
+            real_duration = real_time_end - real_time_start
             tmp_out = self.temp_dir.name + "\\" + str(cut_number) + ".mp4"
 
             # now we see what we need to do...
@@ -1768,8 +1785,9 @@ class FileChooser(object):
             elif has_drawing or has_multiple_drawings:
                 # we need to convert without fast copy so that the further cuts work out right
                 key_thr = CutWithKeyFrames(temp_dir=self.temp_dir, cut_number=cut_number, video_path=video_path,
-                                           time_start=time_start, duration=duration,
-                                           tmp_out=self.temp_dir.name + "\\" + str(cut_number) + "_comments.mp4")
+                                           time_start=real_time_start, duration=real_duration,
+                                           tmp_out=self.temp_dir.name + "\\" + str(cut_number) + "_comments.mp4",
+                                           key_frames=12)
                 key_thr.start()
                 while key_thr.is_alive():
                     dummy_event = threading.Event()
