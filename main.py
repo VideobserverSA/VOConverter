@@ -18,6 +18,8 @@ import gettext
 import urllib.request
 import urllib.error
 from distutils.version import LooseVersion
+import platform
+import shlex
 
 __author__ = 'Rui'
 
@@ -38,6 +40,13 @@ t = language.gettext
 
 ffmpeg_path = "ffmpeg.exe"
 ffprobe_path = "ffprobe.exe"
+
+def shell_quote(s):
+    return s.replace(" ", "\ ")
+
+if platform.system() == "Darwin":
+    ffmpeg_path =  shell_quote(os.path.dirname(__file__) + "/ffmpeg")
+    ffprobe_path = shell_quote(os.path.dirname(__file__) +"/ffprobe")
 
 root = Tk()
 root.title(t("Vo Converter"))
