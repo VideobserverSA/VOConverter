@@ -41,12 +41,22 @@ t = language.gettext
 ffmpeg_path = "ffmpeg.exe"
 ffprobe_path = "ffprobe.exe"
 
+# we must use shell=True in windows, but shell=False in Mac OS
+shell_status = True
+# and the path separator is also different ffs
+path_separator = "\\"
+
 def shell_quote(s):
     return s.replace(" ", "\ ")
 
 if platform.system() == "Darwin":
-    ffmpeg_path =  shell_quote(os.path.dirname(__file__) + "/ffmpeg")
-    ffprobe_path = shell_quote(os.path.dirname(__file__) +"/ffprobe")
+
+    #ffmpeg_path =  shell_quote(os.path.dirname(__file__) + "/ffmpeg")
+    ffmpeg_path = "./ffmpeg"
+    ffprobe_path = "./ffprobe"
+
+    shell_status = False
+    path_separator = "/"
 
 root = Tk()
 root.title(t("Vo Converter"))
@@ -161,7 +171,7 @@ class GetScreenshot(threading.Thread):
                 "1",
                 self.out_file
             ], stderr=STDOUT,
-                shell=True)
+                shell=shell_status)
         except CalledProcessError as cpe:
             print("SCREEN OUT", cpe.output)
 
@@ -199,9 +209,9 @@ class AddSeparator(threading.Thread):
                 "yuv444p",
                 "-vf",
                 "scale=" + str(self.video_info.width) + "x" + str(self.video_info.height) + ",setsar=1:1",
-                self.temp_dir.name + "\\" + str(self.cut_number) + "_sep_no_sound.mp4"
+                self.temp_dir.name + path_separator + str(self.cut_number) + "_sep_no_sound.mp4"
             ], stderr=STDOUT,
-                shell=True)
+                shell=shell_status)
         except CalledProcessError as cpe:
             print("IMAGE OUT", cpe.output)
 
@@ -219,7 +229,7 @@ class AddSeparator(threading.Thread):
                 "-i",
                 "silence.wav",
                 "-i",
-                self.temp_dir.name + "\\" + str(self.cut_number) + "_sep_no_sound.mp4",
+                self.temp_dir.name + path_separator + str(self.cut_number) + "_sep_no_sound.mp4",
                 "-shortest",
                 "-c:v",
                 "copy",
@@ -227,9 +237,9 @@ class AddSeparator(threading.Thread):
                 "aac",
                 "-strict",
                 "-2",
-                self.temp_dir.name + "\\" + str(self.cut_number) + "_sep.mp4"
+                self.temp_dir.name + path_separator + str(self.cut_number) + "_sep.mp4"
             ], stderr=STDOUT,
-                shell=True)
+                shell=shell_status)
         except CalledProcessError as cpe:
             print("SOUND OUT", cpe.output)
 
@@ -240,7 +250,7 @@ class AddSeparator(threading.Thread):
                 "-y",
                 # separator
                 "-i",
-                self.temp_dir.name + "\\" + str(self.cut_number) + "_sep.mp4",
+                self.temp_dir.name + path_separator + str(self.cut_number) + "_sep.mp4",
                 # the clip
                 "-i",
                 self.input_video,
@@ -253,7 +263,7 @@ class AddSeparator(threading.Thread):
                 "[0:0] [0:1] [1:0] [1:1] concat=n=2:v=1:a=1 [v] [a]",
                 self.tmp_out
             ], stderr=STDOUT,
-                shell=True)
+                shell=shell_status)
         except CalledProcessError as cpe:
             print("CAT OUT", cpe.output)
 
@@ -308,7 +318,7 @@ class BurnLogo(threading.Thread):
                 self.tmp_out
 
             ], stderr=STDOUT,
-                shell=True)
+                shell=shell_status)
         except CalledProcessError as cpe:
             print("BURN LOGO", cpe.output)
 
@@ -338,7 +348,7 @@ class AddOverlay(threading.Thread):
         # lets resize the image
         ori_img = Image.open(self.image_path)
         res_img = ori_img.resize((self.video_info.width, self.video_info.height), Image.ANTIALIAS)
-        res_img.save(self.temp_dir.name + "\\" + str(self.cut_number) + "_overlay_res.png")
+        res_img.save(self.temp_dir.name + path_separator + str(self.cut_number) + "_overlay_res.png")
 
         # create the pause image
         try:
@@ -349,9 +359,9 @@ class AddOverlay(threading.Thread):
                 "1",
                 # video stream
                 "-i",
-                self.temp_dir.name + "\\" + str(self.cut_number) + "_overlay_res.png",
+                self.temp_dir.name + path_separator+ str(self.cut_number) + "_overlay_res.png",
                 # we have the full image no need to get the screenshot
-                # self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb.png",
+                # self.temp_dir.name + path_separator + str(self.cut_number) + "_thumb.png",
                 "-c:v",
                 "libx264",
                 # duration
@@ -361,9 +371,9 @@ class AddOverlay(threading.Thread):
                 "yuv444p",
                 "-vf",
                 "scale=" + str(self.video_info.width) + "x" + str(self.video_info.height) + ",setsar=1:1",
-                self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb.mp4"
+                self.temp_dir.name + path_separator + str(self.cut_number) + "_thumb.mp4"
             ], stderr=STDOUT,
-                shell=True)
+                shell=shell_status)
         except CalledProcessError as cpe:
             print("IMAGE OUT", cpe.output)
 
@@ -375,10 +385,10 @@ class AddOverlay(threading.Thread):
                 "-y",
                 # video input
                 "-i",
-                self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb.mp4",
+                self.temp_dir.name + path_separator + str(self.cut_number) + "_thumb.mp4",
                 # image input
                 "-i",
-                self.temp_dir.name + "\\" + str(self.cut_number) + "_overlay_res.png",
+                self.temp_dir.name + path_separator + str(self.cut_number) + "_overlay_res.png",
                 # logo
                 "-i",
                 "watermark.png",
@@ -391,10 +401,10 @@ class AddOverlay(threading.Thread):
                 "-c:a",
                 "copy",
                 # output
-                self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb_overlay.mp4",
+                self.temp_dir.name + path_separator + str(self.cut_number) + "_thumb_overlay.mp4",
 
             ], stderr=STDOUT,
-                shell=True)
+                shell=shell_status)
         except CalledProcessError as cpe:
             print("OVERLAY OUT", cpe.output)
 
@@ -413,7 +423,7 @@ class AddOverlay(threading.Thread):
                 "-i",
                 "silence.wav",
                 "-i",
-                self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb_overlay.mp4",
+                self.temp_dir.name + path_separator + str(self.cut_number) + "_thumb_overlay.mp4",
                 "-shortest",
                 "-c:v",
                 "copy",
@@ -421,9 +431,9 @@ class AddOverlay(threading.Thread):
                 "aac",
                 "-strict",
                 "-2",
-                self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb_overlay_sound.mp4"
+                self.temp_dir.name + path_separator + str(self.cut_number) + "_thumb_overlay_sound.mp4"
             ], stderr=STDOUT,
-                shell=True)
+                shell=shell_status)
         except CalledProcessError as cpe:
             print("SOUND OUT", cpe.output)
 
@@ -453,10 +463,10 @@ class AddOverlay(threading.Thread):
                 "-c:a",
                 "copy",
                 # output file
-                self.temp_dir.name + "\\" + str(self.cut_number) + "_start.mp4"
+                self.temp_dir.name + path_separator + str(self.cut_number) + "_start.mp4"
             ],
                 stderr=STDOUT,
-                shell=True)
+                shell=shell_status)
         except CalledProcessError as cpe:
             print("START OUT", cpe.output)
 
@@ -484,10 +494,10 @@ class AddOverlay(threading.Thread):
             "-c:a",
             "copy",
             # output file
-            self.temp_dir.name + "\\" + str(self.cut_number) + "_end.mp4"
+            self.temp_dir.name + path_separator + str(self.cut_number) + "_end.mp4"
         ],
             stderr=STDOUT,
-            shell=True)
+            shell=shell_status)
 
         print(" ", " ", " ", " ", " VIDEO TIME: ", self.video_time)
 
@@ -501,10 +511,10 @@ class AddOverlay(threading.Thread):
                     "-y",
                     # start
                     "-i",
-                    self.temp_dir.name + "\\" + str(self.cut_number) + "_start.mp4",
+                    self.temp_dir.name + path_separator + str(self.cut_number) + "_start.mp4",
                     # the overlay
                     "-i",
-                    self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb_overlay_sound.mp4",
+                    self.temp_dir.name + path_separator + str(self.cut_number) + "_thumb_overlay_sound.mp4",
                     # audio codec
                     "-c:a",
                     "aac",
@@ -519,9 +529,9 @@ class AddOverlay(threading.Thread):
                     # "[0:0] setsar=1:1 [in1]; [0:1] [1:0] setsar=1:1 [in2]; [1:1] concat=n=2:v=1:a=1 [v] [a]",
                     "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
                     "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
-                    self.temp_dir.name + "\\" + str(self.cut_number) + "_start_and_over.mp4"
+                    self.temp_dir.name + path_separator + str(self.cut_number) + "_start_and_over.mp4"
                 ], stderr=STDOUT,
-                    shell=True)
+                    shell=shell_status)
             except CalledProcessError as cpe:
                 print("CAT OUT", cpe.output)
 
@@ -533,10 +543,10 @@ class AddOverlay(threading.Thread):
                     "-y",
                     # start
                     "-i",
-                    self.temp_dir.name + "\\" + str(self.cut_number) + "_start_and_over.mp4",
+                    self.temp_dir.name + path_separator + str(self.cut_number) + "_start_and_over.mp4",
                     # the overlay
                     "-i",
-                    self.temp_dir.name + "\\" + str(self.cut_number) + "_end.mp4",
+                    self.temp_dir.name + path_separator + str(self.cut_number) + "_end.mp4",
                     # audio codec
                     "-c:a",
                     "aac",
@@ -553,7 +563,7 @@ class AddOverlay(threading.Thread):
                     "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
                     self.tmp_out,
                 ], stderr=STDOUT,
-                    shell=True)
+                    shell=shell_status)
             except CalledProcessError as cpe:
                 print("CAT OUT", cpe.output)
 
@@ -568,10 +578,10 @@ class AddOverlay(threading.Thread):
                     "-y",
                     # start
                     "-i",
-                    self.temp_dir.name + "\\" + str(self.cut_number) + "_start.mp4",
+                    self.temp_dir.name + path_separator + str(self.cut_number) + "_start.mp4",
                     # the overlay
                     "-i",
-                    self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb_overlay_sound.mp4",
+                    self.temp_dir.name + path_separator + str(self.cut_number) + "_thumb_overlay_sound.mp4",
                     # audio codec
                     "-c:a",
                     "aac",
@@ -583,9 +593,9 @@ class AddOverlay(threading.Thread):
                     "-filter_complex",
                     "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
                     "[in1][in2] concat [v]",
-                    self.temp_dir.name + "\\" + str(self.cut_number) + "_start_and_over.mp4"
+                    self.temp_dir.name + path_separator + str(self.cut_number) + "_start_and_over.mp4"
                 ], stderr=STDOUT,
-                    shell=True)
+                    shell=shell_status)
             except CalledProcessError as cpe:
                 print("CAT OUT", cpe.output)
 
@@ -597,10 +607,10 @@ class AddOverlay(threading.Thread):
                     "-y",
                     # start
                     "-i",
-                    self.temp_dir.name + "\\" + str(self.cut_number) + "_start_and_over.mp4",
+                    self.temp_dir.name + path_separator + str(self.cut_number) + "_start_and_over.mp4",
                     # the overlay
                     "-i",
-                    self.temp_dir.name + "\\" + str(self.cut_number) + "_end.mp4",
+                    self.temp_dir.name + path_separator + str(self.cut_number) + "_end.mp4",
                     # audio codec
                     "-c:a",
                     "aac",
@@ -614,7 +624,7 @@ class AddOverlay(threading.Thread):
                     "[in1][in2] concat [v]",
                     self.tmp_out,
                 ], stderr=STDOUT,
-                    shell=True)
+                    shell=shell_status)
             except CalledProcessError as cpe:
                 print("CAT OUT", cpe.output)
 
@@ -667,10 +677,10 @@ class AddMultipleDrawings(threading.Thread):
                 "-c:a",
                 "copy",
                 # output file
-                self.temp_dir.name + "\\" + str(self.cut_number) + "_start.mp4"
+                self.temp_dir.name + path_separator + str(self.cut_number) + "_start.mp4"
             ],
                 stderr=STDOUT,
-                shell=True)
+                shell=shell_status)
         except CalledProcessError as cpe:
             print("START OUT", cpe.output)
 
@@ -698,10 +708,10 @@ class AddMultipleDrawings(threading.Thread):
             "-c:a",
             "copy",
             # output file
-            self.temp_dir.name + "\\" + str(self.cut_number) + "_end.mp4"
+            self.temp_dir.name + path_separator + str(self.cut_number) + "_end.mp4"
         ],
             stderr=STDOUT,
-            shell=True)
+            shell=shell_status)
 
         drawing_number = 0
         print("DRAWWWINGS >>>>>>>>>>>>>>>>")
@@ -710,32 +720,32 @@ class AddMultipleDrawings(threading.Thread):
 
             # self.status_bar.set(t("Adding drawing to item %i"), self.cut_number + 1)
             raw_png = base64.b64decode(drawing.bitmap)
-            f = open(self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(drawing_number) +
+            f = open(self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) +
                      "_overlay.png", "wb")
             f.write(raw_png)
             f.close()
-            pil_png = Image.open(self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(drawing_number) +
+            pil_png = Image.open(self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) +
                                  "_overlay.png")
 
             raw_jpeg = base64.b64decode(drawing.screenshot)
-            jf = open(self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(drawing_number) +
+            jf = open(self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) +
                       "_screenshot.png", "wb")
             jf.write(raw_jpeg)
             jf.close()
-            pil_jpeg = Image.open(self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(drawing_number) +
+            pil_jpeg = Image.open(self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) +
                                   "_screenshot.png")
             pil_jpeg_converted = pil_jpeg.convert(mode="RGBA")
 
             # and now join the two?
             pil_composite = Image.alpha_composite(pil_jpeg_converted, pil_png)
-            pil_composite.save(self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(drawing_number) +
+            pil_composite.save(self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) +
                                "_composite.png", "PNG")
 
             # lets resize the image
-            ori_img = Image.open(self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(drawing_number) +
+            ori_img = Image.open(self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) +
                                  "_composite.png")
             res_img = ori_img.resize((self.video_info.width, self.video_info.height), Image.ANTIALIAS)
-            res_img.save(self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(drawing_number) +
+            res_img.save(self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) +
                          "_overlay_res.png")
 
             # create the pause image
@@ -747,7 +757,7 @@ class AddMultipleDrawings(threading.Thread):
                     "1",
                     # video stream
                     "-i",
-                    self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(drawing_number) + "_overlay_res.png",
+                    self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) + "_overlay_res.png",
                     # we have the full image no need to get the screenshot
                     # self.temp_dir.name + "\\" + str(self.cut_number) + "_thumb.png",
                     "-c:v",
@@ -759,9 +769,9 @@ class AddMultipleDrawings(threading.Thread):
                     "yuv444p",
                     "-vf",
                     "scale=" + str(self.video_info.width) + "x" + str(self.video_info.height) + ",setsar=1:1",
-                    self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(drawing_number) + "_thumb.mp4"
+                    self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) + "_thumb.mp4"
                 ], stderr=STDOUT,
-                    shell=True)
+                    shell=shell_status)
             except CalledProcessError as cpe:
                 print("IMAGE OUT", cpe.output)
 
@@ -773,10 +783,10 @@ class AddMultipleDrawings(threading.Thread):
                     "-y",
                     # video input
                     "-i",
-                    self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(drawing_number) + "_thumb.mp4",
+                    self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) + "_thumb.mp4",
                     # image input
                     "-i",
-                    self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(drawing_number) + "_overlay_res.png",
+                    self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) + "_overlay_res.png",
                     # logo
                     "-i",
                     "watermark.png",
@@ -789,10 +799,10 @@ class AddMultipleDrawings(threading.Thread):
                     "-c:a",
                     "copy",
                     # output
-                    self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(drawing_number) + "_thumb_overlay.mp4",
+                    self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) + "_thumb_overlay.mp4",
 
                 ], stderr=STDOUT,
-                    shell=True)
+                    shell=shell_status)
             except CalledProcessError as cpe:
                 print("OVERLAY OUT", cpe.output)
 
@@ -811,7 +821,7 @@ class AddMultipleDrawings(threading.Thread):
                     "-i",
                     "silence.wav",
                     "-i",
-                    self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(drawing_number) + "_thumb_overlay.mp4",
+                    self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) + "_thumb_overlay.mp4",
                     "-shortest",
                     "-c:v",
                     "copy",
@@ -819,10 +829,10 @@ class AddMultipleDrawings(threading.Thread):
                     "aac",
                     "-strict",
                     "-2",
-                    self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(drawing_number) +
+                    self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) +
                     "_thumb_overlay_sound.mp4"
                 ], stderr=STDOUT,
-                    shell=True)
+                    shell=shell_status)
             except CalledProcessError as cpe:
                 print("SOUND OUT", cpe.output)
 
@@ -861,10 +871,10 @@ class AddMultipleDrawings(threading.Thread):
                     "-c:a",
                     "copy",
                     # output file
-                    self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(drawing_number) + "_middle.mp4"
+                    self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) + "_middle.mp4"
                 ],
                     stderr=STDOUT,
-                    shell=True)
+                    shell=shell_status)
 
             # do the next drawing
             drawing_number += 1
@@ -885,10 +895,10 @@ class AddMultipleDrawings(threading.Thread):
                             "-y",
                             # start
                             "-i",
-                            self.temp_dir.name + "\\" + str(self.cut_number) + "_start.mp4",
+                            self.temp_dir.name + path_separator + str(self.cut_number) + "_start.mp4",
                             # the overlay
                             "-i",
-                            self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(x) + "_" +
+                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_" +
                             "thumb_overlay_sound.mp4",
                             # audio codec
                             "-c:a",
@@ -904,10 +914,10 @@ class AddMultipleDrawings(threading.Thread):
                             # "[0:0] setsar=1:1 [in1]; [0:1] [1:0] setsar=1:1 [in2]; [1:1] concat=n=2:v=1:a=1 [v] [a]",
                             "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
                             "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
-                            self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(x) + "_done.mp4"
+                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_done.mp4"
                         ],
                             stderr=STDOUT,
-                            shell=True)
+                            shell=shell_status)
                     except CalledProcessError as cpe:
                         print("DRAWING JOIN START", cpe.output)
 
@@ -921,10 +931,10 @@ class AddMultipleDrawings(threading.Thread):
                             "-y",
                             # start
                             "-i",
-                            self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(x) + "_done.mp4",
+                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_done.mp4",
                             # the overlay
                             "-i",
-                            self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(x) + "_" +
+                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_" +
                             "middle.mp4",
                             # audio codec
                             "-c:a",
@@ -940,11 +950,11 @@ class AddMultipleDrawings(threading.Thread):
                             # "[0:0] setsar=1:1 [in1]; [0:1] [1:0] setsar=1:1 [in2]; [1:1] concat=n=2:v=1:a=1 [v] [a]",
                             "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
                             "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
-                            self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(x + 1) + "_" +
+                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_" +
                             "_after_middle.mp4"
                         ],
                             stderr=STDOUT,
-                            shell=True)
+                            shell=shell_status)
                     except CalledProcessError as cpe:
                         print("DRAWING JOIN MIDDLE " + str(x), cpe.output)
 
@@ -956,11 +966,11 @@ class AddMultipleDrawings(threading.Thread):
                             "-y",
                             # start
                             "-i",
-                            self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(x + 1) + "_" +
+                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_" +
                             "_after_middle.mp4",
                             # the overlay
                             "-i",
-                            self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(x + 1) + "_" +
+                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_" +
                             "thumb_overlay_sound.mp4",
                             # audio codec
                             "-c:a",
@@ -976,10 +986,10 @@ class AddMultipleDrawings(threading.Thread):
                             # "[0:0] setsar=1:1 [in1]; [0:1] [1:0] setsar=1:1 [in2]; [1:1] concat=n=2:v=1:a=1 [v] [a]",
                             "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
                             "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
-                            self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(x + 1) + "_done.mp4"
+                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_done.mp4"
                         ],
                             stderr=STDOUT,
-                            shell=True)
+                            shell=shell_status)
                     except CalledProcessError as cpe:
                         print("DRAWING JOIN START", cpe.output)
 
@@ -996,10 +1006,10 @@ class AddMultipleDrawings(threading.Thread):
                                 "-y",
                                 # start
                                 "-i",
-                                self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(x) + "_done.mp4",
+                                self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_done.mp4",
                                 # the overlay
                                 "-i",
-                                self.temp_dir.name + "\\" + str(self.cut_number) + "_" + "end.mp4",
+                                self.temp_dir.name + path_separator + str(self.cut_number) + "_" + "end.mp4",
                                 # audio codec
                                 "-c:a",
                                 "aac",
@@ -1017,7 +1027,7 @@ class AddMultipleDrawings(threading.Thread):
                                 self.tmp_out,
                             ],
                                 stderr=STDOUT,
-                                shell=True)
+                                shell=shell_status)
                         except CalledProcessError as cpe:
                             print("DRAWING JOIN START", cpe.output)
 
@@ -1037,10 +1047,10 @@ class AddMultipleDrawings(threading.Thread):
                             "-y",
                             # start
                             "-i",
-                            self.temp_dir.name + "\\" + str(self.cut_number) + "_start.mp4",
+                            self.temp_dir.name + path_separator + str(self.cut_number) + "_start.mp4",
                             # the overlay
                             "-i",
-                            self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(x) + "_" +
+                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_" +
                             "thumb_overlay_sound.mp4",
                             # audio codec
                             "-c:a",
@@ -1053,10 +1063,10 @@ class AddMultipleDrawings(threading.Thread):
                             "-filter_complex",
                             "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
                             "[in1][in2] concat [v]",
-                            self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(x) + "_done.mp4"
+                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_done.mp4"
                         ],
                             stderr=STDOUT,
-                            shell=True)
+                            shell=shell_status)
                     except CalledProcessError as cpe:
                         print("DRAWING JOIN START", cpe.output)
 
@@ -1070,10 +1080,10 @@ class AddMultipleDrawings(threading.Thread):
                             "-y",
                             # start
                             "-i",
-                            self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(x) + "_done.mp4",
+                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_done.mp4",
                             # the overlay
                             "-i",
-                            self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(x) + "_" +
+                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_" +
                             "middle.mp4",
                             # audio codec
                             "-c:a",
@@ -1086,11 +1096,11 @@ class AddMultipleDrawings(threading.Thread):
                             "-filter_complex",
                             "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
                             "[in1][in2] concat [v]",
-                            self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(x + 1) + "_" +
+                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_" +
                             "_after_middle.mp4"
                         ],
                             stderr=STDOUT,
-                            shell=True)
+                            shell=shell_status)
                     except CalledProcessError as cpe:
                         print("DRAWING JOIN MIDDLE " + str(x), cpe.output)
 
@@ -1102,11 +1112,11 @@ class AddMultipleDrawings(threading.Thread):
                             "-y",
                             # start
                             "-i",
-                            self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(x + 1) + "_" +
+                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_" +
                             "_after_middle.mp4",
                             # the overlay
                             "-i",
-                            self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(x + 1) + "_" +
+                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_" +
                             "thumb_overlay_sound.mp4",
                             # audio codec
                             "-c:a",
@@ -1119,10 +1129,10 @@ class AddMultipleDrawings(threading.Thread):
                             "-filter_complex",
                             "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
                             "[in1][in2] concat [v]",
-                            self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(x + 1) + "_done.mp4"
+                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_done.mp4"
                         ],
                             stderr=STDOUT,
-                            shell=True)
+                            shell=shell_status)
                     except CalledProcessError as cpe:
                         print("DRAWING JOIN START", cpe.output)
 
@@ -1136,10 +1146,10 @@ class AddMultipleDrawings(threading.Thread):
                             "-y",
                             # start
                             "-i",
-                            self.temp_dir.name + "\\" + str(self.cut_number) + "_" + str(x) + "_done.mp4",
+                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_done.mp4",
                             # the overlay
                             "-i",
-                            self.temp_dir.name + "\\" + str(self.cut_number) + "_" + "end.mp4",
+                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + "end.mp4",
                             # audio codec
                             "-c:a",
                             "aac",
@@ -1154,7 +1164,7 @@ class AddMultipleDrawings(threading.Thread):
                             self.tmp_out,
                         ],
                             stderr=STDOUT,
-                            shell=True)
+                            shell=shell_status)
                     except CalledProcessError as cpe:
                         print("DRAWING JOIN START", cpe.output)
 
@@ -1172,7 +1182,7 @@ class ConvertToFastCopy(threading.Thread):
 
     def run(self):
 
-        # log_file = open(self.temp_dir.name + "\\" + str(self.cut_number) + "_fast_copy.log", "wb")
+        # log_file = open(self.temp_dir.name + path_separator + str(self.cut_number) + "_fast_copy.log", "wb")
 
         out = check_call([
             # path to ffmpeg
@@ -1194,7 +1204,7 @@ class ConvertToFastCopy(threading.Thread):
             # output file
             self.tmp_out
         ],  stderr=STDOUT,
-            shell=True)
+            shell=shell_status)
 
 
 class CutFastCopy(threading.Thread):
@@ -1212,7 +1222,7 @@ class CutFastCopy(threading.Thread):
 
     def run(self):
 
-        # log_path = self.temp_dir.name + "\\" + str(self.cut_number) + "_fast_cut.log"
+        # log_path = self.temp_dir.name + path_separator + str(self.cut_number) + "_fast_cut.log"
         # log_file = open(log_path, "wb")
 
         out = check_call([
@@ -1240,7 +1250,7 @@ class CutFastCopy(threading.Thread):
             self.tmp_out
         ],
             stderr=STDOUT,
-            shell=True
+            shell=shell_status
             )
 
 
@@ -1260,7 +1270,7 @@ class CutWithKeyFrames(threading.Thread):
 
     def run(self):
 
-        # log_path = self.temp_dir.name + "\\" + str(self.cut_number) + "_cut_key_frames.log"
+        # log_path = self.temp_dir.name + path_separator + str(self.cut_number) + "_cut_key_frames.log"
         # log_file = open(log_path, "wb")
 
         out = check_call([
@@ -1290,7 +1300,7 @@ class CutWithKeyFrames(threading.Thread):
             self.tmp_out
         ],
             stderr=STDOUT,
-            shell=True)
+            shell=shell_status)
 
 
 class EncodeSubtitles(threading.Thread):
@@ -1312,7 +1322,7 @@ class EncodeSubtitles(threading.Thread):
     def run(self):
 
         # write srt file
-        # ass_log_path = self.temp_dir.name + "\\" + str(self.cut_number) + ".ass.log"
+        # ass_log_path = self.temp_dir.name + path_separator + str(self.cut_number) + ".ass.log"
         # ass_log_file = open(ass_log_path, "wb")
 
         # video height - image height - 20 padding
@@ -1333,12 +1343,12 @@ class EncodeSubtitles(threading.Thread):
         ass_contents += "Format: Marked, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
         ass_contents += "Dialogue: Marked=0,0:00:00.00,5:00:00.00,Default,,0000,0000,0000,," + self.comments + "\n"
 
-        ass_path = self.temp_dir.name + "\\" + str(self.cut_number) + ".ass"
+        ass_path = self.temp_dir.name + path_separator + str(self.cut_number) + ".ass"
         ass_file = open(ass_path, "wb")
         ass_file.write(ass_contents.encode("utf8"))
         ass_file.close()
 
-        escaped_ass_path = ass_path.replace("\\", "\\\\").replace(":", "\:").replace(" ", "\ ")
+        escaped_ass_path = ass_path.replace(path_separator, "\\\\").replace(":", "\:").replace(" ", "\ ")
 
         try:
             check_call([
@@ -1363,9 +1373,9 @@ class EncodeSubtitles(threading.Thread):
                 "-vf",
                 "ass=" + "'" + escaped_ass_path + "'",
                 # self.tmp_out
-                self.temp_dir.name + "\\" + str(self.cut_number) + "_no_water.mp4"
+                self.temp_dir.name + path_separator + str(self.cut_number) + "_no_water.mp4"
             ],
-                shell=True,
+                shell=shell_status,
                 universal_newlines=True,
                 stderr=STDOUT,
             )
@@ -1380,7 +1390,7 @@ class EncodeSubtitles(threading.Thread):
                 # start time
                 # input file
                 "-i",
-                self.temp_dir.name + "\\" + str(self.cut_number) + "_no_water.mp4",
+                self.temp_dir.name + path_separator + str(self.cut_number) + "_no_water.mp4",
                 # watermark
                 "-i",
                 "watermark.png",
@@ -1395,7 +1405,7 @@ class EncodeSubtitles(threading.Thread):
                 # self.tmp_out
                 self.tmp_out
             ],
-                shell=True,
+                shell=shell_status,
                 universal_newlines=True,
                 stderr=STDOUT,
             )
@@ -1570,30 +1580,34 @@ class FileChooser(object):
 
     def get_video_info(self, video_path):
 
-        out = check_output([
-            ffprobe_path,
-            "-v",
-            "quiet",
-            "-print_format",
-            "json",
-            "-show_format",
-            "-show_streams",
-            video_path
-        ], stderr=STDOUT, shell=True, universal_newlines=True)
+        try:
+            out = check_output([
+                ffprobe_path,
+                "-v",
+                "quiet",
+                "-print_format",
+                "json",
+                "-show_format",
+                "-show_streams",
+                video_path
+            ], stderr=STDOUT, shell=shell_status, universal_newlines=True)
 
-        info_json = json.loads(out)
+            info_json = json.loads(out)
 
-        has_sound = False
+            has_sound = False
 
-        video_info = VideoInfo()
-        for stream in info_json["streams"]:
-            if stream["codec_type"] == "video":
-                video_info.set_w_and_h(stream["width"], stream["height"])
-            if stream["codec_type"] == "audio":
-                has_sound = True
+            video_info = VideoInfo()
+            for stream in info_json["streams"]:
+                if stream["codec_type"] == "video":
+                    video_info.set_w_and_h(stream["width"], stream["height"])
+                if stream["codec_type"] == "audio":
+                    has_sound = True
 
-        video_info.set_has_sound(has_sound)
-        return video_info
+            video_info.set_has_sound(has_sound)
+            return video_info
+
+        except CalledProcessError as cpe:
+            print("FFPROBE OUT", cpe.output)
 
     def parse_playlist(self, filename):
 
@@ -1602,6 +1616,12 @@ class FileChooser(object):
 
         # if the file name has spaces we end up with %20 in the url
         video_path = urllib.parse.unquote(base.get("video_path"))
+
+        if platform.system() == "Darwin":
+            # now if we have the file:// present we remove it
+            video_path = video_path.replace("file://", "")
+        else:
+            video_path = video_path.replace("file:///", "")
 
         # first we check for the file existence
         if not os.path.isfile(video_path):
@@ -1633,9 +1653,6 @@ class FileChooser(object):
         play_len += 1
         self.num_items = play_len
         self.meter.set(0.0, t("Converting: ") + self.base_name + " " + "0%")
-
-        # now if we have the file:/// present we remove it
-        video_path = video_path.replace("file:///", "")
 
         self.video_info = self.get_video_info(video_path)
 
@@ -1760,7 +1777,7 @@ class FileChooser(object):
 
             duration = time_end - time_start
             real_duration = real_time_end - real_time_start
-            tmp_out = self.temp_dir.name + "\\" + str(cut_number) + ".mp4"
+            tmp_out = self.temp_dir.name + path_separator + str(cut_number) + ".mp4"
 
             # now we see what we need to do...
 
@@ -1771,7 +1788,7 @@ class FileChooser(object):
 
                     burn_thr = BurnLogo(temp_dir=self.temp_dir, cut_number=cut_number, input_video=video_path,
                                         time_start=time_start, duration=duration,
-                                        tmp_out=self.temp_dir.name + "\\" + str(cut_number) + "_comments.mp4",
+                                        tmp_out=self.temp_dir.name + path_separator + str(cut_number) + "_comments.mp4",
                                         video_info=self.video_info)
                     burn_thr.start()
                     while burn_thr.is_alive():
@@ -1785,7 +1802,7 @@ class FileChooser(object):
                     sub_thr = EncodeSubtitles(temp_dir=self.temp_dir, cut_number=cut_number, video_path=video_path,
                                               video_info=self.video_info,
                                               time_start=time_start, duration=duration, comments=comments,
-                                              tmp_out=self.temp_dir.name + "\\" + str(cut_number) + "_comments.mp4",
+                                              tmp_out=self.temp_dir.name + path_separator + str(cut_number) + "_comments.mp4",
                                               font_size=self.font_size.get())
                     sub_thr.start()
                     while sub_thr.is_alive():
@@ -1797,7 +1814,7 @@ class FileChooser(object):
                 # we need to convert without fast copy so that the further cuts work out right
                 key_thr = CutWithKeyFrames(temp_dir=self.temp_dir, cut_number=cut_number, video_path=video_path,
                                            time_start=real_time_start, duration=real_duration,
-                                           tmp_out=self.temp_dir.name + "\\" + str(cut_number) + "_comments.mp4",
+                                           tmp_out=self.temp_dir.name + path_separator + str(cut_number) + "_comments.mp4",
                                            key_frames=12)
                 key_thr.start()
                 while key_thr.is_alive():
@@ -1808,7 +1825,7 @@ class FileChooser(object):
                 self.status_bar.set(t("Fast cutting item %i"), cut_number + 1)
                 fast_cut_thr = CutFastCopy(temp_dir=self.temp_dir, cut_number=cut_number, video_path=video_path,
                                            time_start=time_start, duration=duration,
-                                           tmp_out=self.temp_dir.name + "\\" + str(cut_number) + "_comments.mp4")
+                                           tmp_out=self.temp_dir.name + path_separator + str(cut_number) + "_comments.mp4")
                 fast_cut_thr.start()
                 while fast_cut_thr.is_alive():
                     dummy_event = threading.Event()
@@ -1818,21 +1835,21 @@ class FileChooser(object):
             if has_drawing:
                 self.status_bar.set(t("Adding drawing to item %i"), cut_number + 1)
                 raw_png = base64.b64decode(drawing)
-                f = open(self.temp_dir.name + "\\" + str(cut_number) + "_overlay.png", "wb")
+                f = open(self.temp_dir.name + path_separator + str(cut_number) + "_overlay.png", "wb")
                 f.write(raw_png)
                 f.close()
-                pil_png = Image.open(self.temp_dir.name + "\\" + str(cut_number) + "_overlay.png")
+                pil_png = Image.open(self.temp_dir.name + path_separator + str(cut_number) + "_overlay.png")
 
                 raw_jpeg = base64.b64decode(screenshot)
-                jf = open(self.temp_dir.name + "\\" + str(cut_number) + "_screenshot.png", "wb")
+                jf = open(self.temp_dir.name + path_separator + str(cut_number) + "_screenshot.png", "wb")
                 jf.write(raw_jpeg)
                 jf.close()
-                pil_jpeg = Image.open(self.temp_dir.name + "\\" + str(cut_number) + "_screenshot.png")
+                pil_jpeg = Image.open(self.temp_dir.name + path_separator + str(cut_number) + "_screenshot.png")
                 pil_jpeg_converted = pil_jpeg.convert(mode="RGBA")
 
                 # and now join the two?
                 pil_composite = Image.alpha_composite(pil_jpeg_converted, pil_png)
-                pil_composite.save(self.temp_dir.name + "\\" + str(cut_number) + "_composite.png", "PNG")
+                pil_composite.save(self.temp_dir.name + path_separator + str(cut_number) + "_composite.png", "PNG")
 
                 # sanity check so that if we have time after the end of the clop the conversion still works
                 # more or less that is...
@@ -1841,11 +1858,11 @@ class FileChooser(object):
                     video_time = duration - 1
 
                 overlay_thr = AddOverlay(temp_dir=self.temp_dir, cut_number=cut_number,
-                                         input_video=self.temp_dir.name + "\\" + str(cut_number) + "_comments.mp4",
+                                         input_video=self.temp_dir.name + path_separator + str(cut_number) + "_comments.mp4",
                                          video_info=self.video_info,
                                          video_time=video_time,
-                                         tmp_out=self.temp_dir.name + "\\" + str(cut_number) + "_overlay.mp4",
-                                         image_path=self.temp_dir.name + "\\" + str(cut_number) + "_composite.png",
+                                         tmp_out=self.temp_dir.name + path_separator + str(cut_number) + "_overlay.mp4",
+                                         image_path=self.temp_dir.name + path_separator + str(cut_number) + "_composite.png",
                                          pause_time=self.pause_duration.get())
                 overlay_thr.start()
                 while overlay_thr.is_alive():
@@ -1856,10 +1873,10 @@ class FileChooser(object):
             if has_multiple_drawings:
                 multiple_thr = AddMultipleDrawings(temp_dir=self.temp_dir,
                                                    cut_number=cut_number,
-                                                   input_video=self.temp_dir.name + "\\" + str(cut_number) +
+                                                   input_video=self.temp_dir.name + path_separator + str(cut_number) +
                                                    "_comments.mp4",
                                                    video_info=self.video_info,
-                                                   tmp_out=self.temp_dir.name + "\\" + str(cut_number) + "_overlay.mp4",
+                                                   tmp_out=self.temp_dir.name + path_separator + str(cut_number) + "_overlay.mp4",
                                                    drawings=multiple_drawings,
                                                    pause_time=self.pause_duration.get(),
                                                    duration=real_duration)
@@ -1871,9 +1888,9 @@ class FileChooser(object):
 
             # lastly we convert to fast copy for the final join
             if has_drawing or has_multiple_drawings:
-                fast_copy_input = self.temp_dir.name + "\\" + str(cut_number) + "_overlay.mp4"
+                fast_copy_input = self.temp_dir.name + path_separator + str(cut_number) + "_overlay.mp4"
             else:
-                fast_copy_input = self.temp_dir.name + "\\" + str(cut_number) + "_comments.mp4"
+                fast_copy_input = self.temp_dir.name + path_separator + str(cut_number) + "_comments.mp4"
 
             fast_copy_thr = ConvertToFastCopy(temp_dir=self.temp_dir, cut_number=cut_number,
                                               input_video=fast_copy_input, tmp_out=tmp_out)
@@ -1903,7 +1920,7 @@ class FileChooser(object):
         # the concat files
         concat = "concat:"
         for x in range(0, cut_number):
-            concat += self.temp_dir.name + "\\" + str(x) + ".mp4" + "|"
+            concat += self.temp_dir.name + path_separator + str(x) + ".mp4" + "|"
         concat = concat[:-1]
         concat += ""
         join_args.append(concat)
@@ -1919,13 +1936,13 @@ class FileChooser(object):
         # outfile
         out_filename = self.base_name.replace(".vopl", "")
         # put it on desktop for now
-        join_args.append("" + self.final_destination_path + "\\" + out_filename + ".mp4" + "")
+        join_args.append("" + self.final_destination_path + path_separator + out_filename + ".mp4" + "")
 
-        self.final_path = self.final_destination_path + "\\" + out_filename + ".mp4"
+        self.final_path = self.final_destination_path + path_separator + out_filename + ".mp4"
 
         # sys.stdout.write("JOINARGS>>" + ' '.join(join_args))
 
-        # join_log_path = self.temp_dir.name + "\\" + "join.log"
+        # join_log_path = self.temp_dir.name + path_separator + "join.log"
         # join_log_file = open(join_log_path, "wb")
 
         try:
@@ -1967,8 +1984,10 @@ class FileChooser(object):
 
     def open_file_with_app(self):
         # os.system("start " + "\"" + self.final_path + "\"")
-        os.startfile(self.final_path)
-
+        if platform.system() == "Darwin":
+            call(["open", self.final_path])
+        else:
+            os.startfile(self.final_path)
 
 # CODE FOR PROGRESS BAR
 class Meter(Frame):
