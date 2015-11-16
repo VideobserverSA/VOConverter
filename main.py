@@ -1348,7 +1348,11 @@ class EncodeSubtitles(threading.Thread):
         ass_file.write(ass_contents.encode("utf8"))
         ass_file.close()
 
-        escaped_ass_path = ass_path.replace(path_separator, "\\\\").replace(":", "\:").replace(" ", "\ ")
+        escaped_ass_path = ""
+        if platform.system() == "Darwin":
+            escaped_ass_path = ass_path
+        else:
+            escaped_ass_path = ass_path.replace("\\", "\\\\").replace(":", "\:").replace(" ", "\ ")
 
         try:
             check_call([
