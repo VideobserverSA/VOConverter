@@ -1331,6 +1331,7 @@ class EncodeSubtitles(threading.Thread):
 
         ass_contents = "[Script Info]\n"
         ass_contents += "PlayResY: 600\n"
+        ass_contents += "PlayResX: 800\n"
         ass_contents += "\n"
         ass_contents += "[V4 Styles]\n"
         ass_contents += "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, TertiaryColour," \
