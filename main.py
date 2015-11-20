@@ -1,5 +1,4 @@
-from tkinter import *
-from tkinter import filedialog
+import wx
 import xml.etree.ElementTree as xmlParser
 from subprocess import *
 import os
@@ -19,24 +18,13 @@ import urllib.request
 import urllib.error
 from distutils.version import LooseVersion
 import platform
-import shlex
 
 __author__ = 'Rui'
 
 # current_locale = 'en'
 
-lang_conf = configparser.ConfigParser()
-lang_conf.read("lang.ini")
-
-current_locale = lang_conf["Language"]["Default Locale"]
-# current_locale = locale.getdefaultlocale()[0]
-
-locale_path = 'lang/'
-language = gettext.translation('voconv', locale_path, [current_locale])
-language.install()
-
-# so that we can write shorthands
-t = language.gettext
+# to make the mac .app work nice when bundled
+os_prefix = ""
 
 ffmpeg_path = "ffmpeg.exe"
 ffprobe_path = "ffprobe.exe"
@@ -51,17 +39,27 @@ def shell_quote(s):
 
 if platform.system() == "Darwin":
 
-    #ffmpeg_path =  shell_quote(os.path.dirname(__file__) + "/ffmpeg")
-    ffmpeg_path = "./ffmpeg"
-    ffprobe_path = "./ffprobe"
+    os_prefix = os.getcwd() + "/VoConverter.app/Contents/Resources/"
+
+    ffmpeg_path = os_prefix + "ffmpeg"
+    ffprobe_path = os_prefix + "ffprobe"
 
     shell_status = False
     path_separator = "/"
 
-root = Tk()
-root.title(t("Vo Converter"))
-root.iconbitmap("icon.ico")
 
+lang_conf = configparser.ConfigParser()
+lang_conf.read(os_prefix + "lang.ini")
+
+current_locale = lang_conf["Language"]["Default Locale"]
+# current_locale = locale.getdefaultlocale()[0]
+
+locale_path = os_prefix + "lang/"
+language = gettext.translation('voconv', locale_path, [current_locale])
+language.install()
+
+# so that we can write shorthands
+t = language.gettext
 
 class VideoInfo:
 
@@ -119,7 +117,7 @@ class CheckForUpdate(threading.Thread):
                     upgrade_message = Label(upgrade_pop, text=t("There is a new version available for download. Do you wish to:"))
                     upgrade_message.pack()
 
-                    btn_frame = Frame(upgrade_pop)
+                    btn_frame = ƒFrame(upgrade_pop)
                     btn_frame.pack(padx=10, pady=10)
 
                     close_btn = Button(btn_frame, text=t("Ignore this time"), command=upgrade_pop.destroy)
@@ -302,7 +300,7 @@ class BurnLogo(threading.Thread):
                 self.input_video,
                 # image input
                 "-i",
-                "watermark.png",
+                os_prefix + "watermark.png",
                 # filter
                 "-filter_complex",
                 "[0:v][1:v] overlay=" + str(left) + ":" + str(bottom),
@@ -391,7 +389,7 @@ class AddOverlay(threading.Thread):
                 self.temp_dir.name + path_separator + str(self.cut_number) + "_overlay_res.png",
                 # logo
                 "-i",
-                "watermark.png",
+                os_prefix + "watermark.png",
                 # filter
                 "-filter_complex",
                 "overlay [tmp]; [tmp] overlay=" + str(left) + ":" + str(bottom),
@@ -421,7 +419,7 @@ class AddOverlay(threading.Thread):
                 "-f",
                 "s16le",
                 "-i",
-                "silence.wav",
+                os_prefix + "silence.wav",
                 "-i",
                 self.temp_dir.name + path_separator + str(self.cut_number) + "_thumb_overlay.mp4",
                 "-shortest",
@@ -450,7 +448,7 @@ class AddOverlay(threading.Thread):
                 self.input_video,
                 # watermark
                 "-i",
-                "watermark.png",
+                os_prefix + "watermark.png",
                 # duration
                 "-t",
                 str(max(self.video_time, 1)),
@@ -481,7 +479,7 @@ class AddOverlay(threading.Thread):
             self.input_video,
             # watermark
             "-i",
-            "watermark.png",
+            os_prefix + "watermark.png",
             # start time
             "-ss",
             str(max(self.video_time, 1)),
@@ -664,7 +662,7 @@ class AddMultipleDrawings(threading.Thread):
                 self.input_video,
                 # watermark
                 "-i",
-                "watermark.png",
+                os_prefix + "watermark.png",
                 # duration
                 "-t",
                 str(max(self.drawings[0].drawing_time, 1)),
@@ -695,7 +693,7 @@ class AddMultipleDrawings(threading.Thread):
             self.input_video,
             # watermark
             "-i",
-            "watermark.png",
+            os_prefix + "watermark.png",
             # start time
             "-ss",
             str(max(self.drawings[len(self.drawings) - 1].drawing_time, 1)),
@@ -718,7 +716,6 @@ class AddMultipleDrawings(threading.Thread):
         for drawing in self.drawings:
             print(drawing.drawing_time)
 
-            # self.status_bar.set(t("Adding drawing to item %i"), self.cut_number + 1)
             raw_png = base64.b64decode(drawing.bitmap)
             f = open(self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) +
                      "_overlay.png", "wb")
@@ -789,7 +786,7 @@ class AddMultipleDrawings(threading.Thread):
                     self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) + "_overlay_res.png",
                     # logo
                     "-i",
-                    "watermark.png",
+                    os_prefix + "watermark.png",
                     # filter
                     "-filter_complex",
                     "overlay [tmp]; [tmp] overlay=" + str(left) + ":" + str(bottom),
@@ -819,7 +816,7 @@ class AddMultipleDrawings(threading.Thread):
                     "-f",
                     "s16le",
                     "-i",
-                    "silence.wav",
+                    os_prefix + "silence.wav",
                     "-i",
                     self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) + "_thumb_overlay.mp4",
                     "-shortest",
@@ -855,7 +852,7 @@ class AddMultipleDrawings(threading.Thread):
                     self.input_video,
                     # watermark
                     "-i",
-                    "watermark.png",
+                    os_prefix + "watermark.png",
                     # start time
                     "-ss",
                     str(max(middle_start, 1)),
@@ -1398,7 +1395,7 @@ class EncodeSubtitles(threading.Thread):
                 self.temp_dir.name + path_separator + str(self.cut_number) + "_no_water.mp4",
                 # watermark
                 "-i",
-                "watermark.png",
+                os_prefix + "watermark.png",
                 # filter
                 "-filter_complex",
                 "[0:v][1:v] overlay=" + str(left) + ":" + str(bottom),
@@ -1418,102 +1415,118 @@ class EncodeSubtitles(threading.Thread):
             print("SUB ASS OUT", cpe.output)
 
 
-class FileChooser(object):
+class MainWindow(wx.Frame):
 
-    def __init__(self):
+    def __init__(self, parent, title):
+
+        wx.Frame.__init__(self, parent, title=title, size=(600,300))
 
         settings_path = os.path.expanduser("~/voconverter.conf")
 
         self.settings = EasySettings(settings_path)
 
-        pause_frame = Frame(root)
-        pause_frame.pack(fill=X, padx="5")
+        # to give detailed info to the user
+        self.CreateStatusBar()
 
-        pause_label = Label(pause_frame, text=t("Drawings Pause Time"))
-        pause_label.pack(side=LEFT)
+        # create the main sizer where we will place all the other elements
+        self.main_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self.pause_duration = Scale(pause_frame, from_=1, to=10, orient=HORIZONTAL, length="180")
-        self.pause_duration.pack(side=RIGHT)
+        # image pause stuff
+
+        # and a sizer to hold the pause gauge
+        self.pause_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.pause_label = wx.StaticText(parent=self, id=wx.ID_ANY, label=t("Drawings Pause Time"))
+        self.pause_duration = wx.Slider(parent=self, id=wx.ID_ANY, value=4, minValue=1, maxValue=10,
+                                        style=wx.SL_LABELS)
+        self.pause_sizer.Add(self.pause_label, 0)
+        self.pause_sizer.Add(self.pause_duration, 1, wx.GROW)
+
+        self.main_sizer.Add(self.pause_sizer)
+
         # default value
         if self.settings.has_option("pause"):
             pause_val = self.settings.get("pause")
         else:
             pause_val = 4
-        self.pause_duration.set(pause_val)
+        self.pause_duration.SetValue(pause_val)
 
-        font_frame = Frame(root)
-        font_frame.pack(fill=X, padx="5")
+        # font size stuff
 
-        font_size_label = Label(font_frame, text=t("Font Size"))
-        font_size_label.pack(side=LEFT)
+        # sizer for font size
+        self.font_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.font_label = wx.StaticText(parent=self, id=wx.ID_ANY, label=t("Font Size"))
+        self.font_size = wx.Slider(parent=self, id=wx.ID_ANY, value=25, minValue=10, maxValue=50,
+                                        style=wx.SL_LABELS)
+        self.font_sizer.Add(self.font_label, 0)
+        self.font_sizer.Add(self.font_size, 1, wx.GROW)
 
-        slow_and_better_frame = Frame(root)
-        slow_and_better_frame.pack(fill=X, padx=5)
+        self.main_sizer.Add(self.font_sizer)
 
-        self.slow_and_better = IntVar(value=0)
-        slow_and_better_cb = Checkbutton(slow_and_better_frame, text=t("Slow but better"),
-                                         variable=self.slow_and_better)
-        slow_and_better_cb.pack(side=LEFT)
-
-        self.font_size = Scale(font_frame, from_=10, to=50, orient=HORIZONTAL, length="180")
-        self.font_size.pack(side=RIGHT)
-        # default value
         if self.settings.has_option("font_size"):
             font_val = self.settings.get("font_size")
         else:
             font_val = 30
-        self.font_size.set(font_val)
+        self.font_size.SetValue(font_val)
 
-        # key_frame_frame = Frame(root)
-        # key_frame_frame.pack(fill=X, padx="5")
-        #
-        # key_frame_label = Label(key_frame_frame, text=t("Key Frames"))
-        # key_frame_label.pack(side=LEFT)
-        #
-        # self.key_frame_scale = Scale(key_frame_frame, from_=1, to=24, orient=HORIZONTAL, length="180")
-        # self.key_frame_scale.set(12)
-        # self.key_frame_scale.pack(side=LEFT)
+        # slow but better stuff
 
-        self.meter = Meter(root, bg="white", fillcolor="light blue")
-        self.meter.pack(pady="10", padx="10")
+        # sizer for slow but better
+        self.slow_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.slow_check_box = wx.CheckBox(parent=self, id=wx.ID_ANY, label=t("Slow but better"))
+        self.slow_sizer.Add(self.slow_check_box)
+        self.main_sizer.Add(self.slow_sizer)
 
-        destination_frame = Frame(root)
-        destination_frame.pack(padx="10", pady="10", fill=X)
+        # progress bar
+        self.meter_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.meter = wx.Gauge(parent=self, id=wx.ID_ANY, range=100)
+        self.meter_sizer.Add(self.meter, 1, wx.GROW)
+        self.main_sizer.Add(self.meter_sizer, 0, wx.GROW)
 
-        dest_label = Label(destination_frame, text=t("Destination:"))
-        dest_label.pack(side=LEFT)
+        # destination stuff
 
         if self.settings.has_option("destination_path"):
             self.final_destination_path = self.settings.get("destination_path")
         else:
             self.final_destination_path = os.path.expanduser("~/Desktop")
 
-        self.destination_path = Label(destination_frame, text=self.final_destination_path)
-        self.destination_path.pack(side=LEFT)
+        # sizer for dest
+        self.destination_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.destination_label = wx.StaticText(parent=self, id=wx.ID_ANY, label=t("Destination:"))
+        self.destination_picker = wx.DirPickerCtrl(parent=self, id=wx.ID_ANY, path=self.final_destination_path,
+                                                   message=t("Select final video destination directory"))
+        self.destination_sizer.Add(self.destination_label, 0)
+        self.destination_sizer.Add(self.destination_picker, 2, wx.GROW)
+        self.main_sizer.Add(self.destination_sizer, 1, wx.GROW)
 
-        self.dest_btn = Button(destination_frame, text=t("Choose"), command=self.choose_destination)
-        self.dest_btn.pack(side=RIGHT)
+        # button stuff
 
-        btn_frame = Frame(root)
-        btn_frame.pack(padx="10", pady="10")
+        # sizer for buttons
+        self.button_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.open_playlist_btn = wx.Button(parent=self, id=wx.ID_ANY, label=t("Open File"))
+        self.quit_app_btn = wx.Button(parent=self, id=wx.ID_ANY, label=t("Quit"))
+        self.button_sizer.Add(self.open_playlist_btn)
+        self.button_sizer.Add(self.quit_app_btn)
+        self.main_sizer.Add(self.button_sizer)
 
-        btn = Button(btn_frame, text=t("Open File"), command=self.open_dialog)
-        btn.pack(side=LEFT, padx="10")
+        # BINDINGS
+        self.Bind(wx.EVT_BUTTON, self.open_dialog, self.open_playlist_btn)
+        self.Bind(wx.EVT_BUTTON, self.quit_app, self.quit_app_btn)
 
-        another = Button(btn_frame, text=t("Quit"), command=self.quit_app)
-        another.pack(side=LEFT, padx="10")
-
-        self.status_bar = StatusBar(root)
-        self.status_bar.pack(fill=X)
+        self.SetSizer(self.main_sizer)
+        # self.SetAutoLayout(1)
+        # self.main_sizer.Fit(self)
+        self.Show(True)
 
         # get the version from the ini
         config = configparser.ConfigParser()
-        config.read("version.ini")
+        config.read(os_prefix + "version.ini")
         version = config["Vo Converter"]["version"]
         date = config["Vo Converter"]["date"]
         print("VERSION, DATE>>", version, date)
-        self.status_bar.set(t("Version: %s , date: %s"), version, date)
+        version_str = t("Version: ") + version + t(" , date: ") + date
+        self.PushStatusText(version_str)
 
+        # Several stuff that we need later aka globals
         self.temp_dir = tempfile.TemporaryDirectory()
         self.num_items = 0
 
@@ -1529,21 +1542,21 @@ class FileChooser(object):
         version_thr = CheckForUpdate(version, self.temp_dir)
         version_thr.start()
 
-    def open_dialog(self):
+    def open_dialog(self, e):
+        dlg = wx.FileDialog(self, t("VO Playlist"), "", "", "*.vopl", wx.FD_OPEN)
+        if dlg.ShowModal() == wx.ID_OK:
+            path = dlg.GetPath()
+            self.PushStatusText(path + " loaded...")
 
-        initial_dir = os.path.expanduser("~/Documents/VideoObserver/Playlist")
+            self.parse_playlist(filename=path)
 
-        fn = filedialog.askopenfilename(filetypes=((t("VO Playlist"), "*.vopl"),
-                                                   (t("All Files"), "*.*")),
-                                        initialdir=initial_dir
-                                        )
-        self.parse_playlist(filename=fn)
+        dlg.Destroy()
 
-    def quit_app(self):
+    def quit_app(self, e):
 
         # save settings for next time
-        self.settings.set("pause", self.pause_duration.get())
-        self.settings.set("font_size", self.font_size.get())
+        self.settings.set("pause", self.pause_duration.GetValue())
+        self.settings.set("font_size", self.font_size.GetValue())
         self.settings.set("destination_path", self.final_destination_path)
 
         self.settings.save()
@@ -1553,35 +1566,35 @@ class FileChooser(object):
 
         sys.exit(0)
 
-    def choose_destination(self):
-        # get dir from user, using the saved dir as the starting point
-        fn = filedialog.askdirectory(initialdir=self.final_destination_path)
-
-        # if fn is the empty string the user pressed cancel, so no need to do the checks
-        if fn != '':
-            # check if the directory exists and is writable
-            try:
-                file = fn + '/test_write.txt'
-                test = open(file, 'w')
-                # if we get here the file is writable or we would be in the except block
-                # so cleanup
-                test.close()
-                os.remove(file)
-                # and this means we can save the directory
-                self.final_destination_path = fn
-                self.destination_path.config(text=fn)
-            except IOError as ioe:
-                print('directory not writable: ' + str(ioe))
-                # so we better popup a warning
-                warn_pop = Toplevel(padx=20, pady=20)
-                warn_pop.title(t("Error"))
-                warn_pop.iconbitmap("icon.ico")
-
-                warn_msg = Label(warn_pop, text=t("The directory you selected is not valid. Write error.") + " " + fn)
-                warn_msg.pack()
-
-                warn_btn = Button(warn_pop, text=t("Ok"), command=warn_pop.destroy)
-                warn_btn.pack()
+    # def choose_destination(self):
+    #     # get dir from user, using the saved dir as the starting point
+    #     fn = filedialog.askdirectory(initialdir=self.final_destination_path)
+    #
+    #     # if fn is the empty string the user pressed cancel, so no need to do the checks
+    #     if fn != '':
+    #         # check if the directory exists and is writable
+    #         try:
+    #             file = fn + '/test_write.txt'
+    #             test = open(file, 'w')
+    #             # if we get here the file is writable or we would be in the except block
+    #             # so cleanup
+    #             test.close()
+    #             os.remove(file)
+    #             # and this means we can save the directory
+    #             self.final_destination_path = fn
+    #             self.destination_path.config(text=fn)
+    #         except IOError as ioe:
+    #             print('directory not writable: ' + str(ioe))
+    #             # so we better popup a warning
+    #             warn_pop = Toplevel(padx=20, pady=20)
+    #             warn_pop.title(t("Error"))
+    #             warn_pop.iconbitmap("icon.ico")
+    #
+    #             warn_msg = Label(warn_pop, text=t("The directory you selected is not valid. Write error.") + " " + fn)
+    #             warn_msg.pack()
+    #
+    #             warn_btn = Button(warn_pop, text=t("Ok"), command=warn_pop.destroy)
+    #             warn_btn.pack()
 
     def get_video_info(self, video_path):
 
@@ -1630,18 +1643,21 @@ class FileChooser(object):
 
         # first we check for the file existence
         if not os.path.isfile(video_path):
-            # then we need to ask the user for a new file
-            fn = filedialog.askopenfile(mode='r', title=t("Video file not found, please select another"))
-            if fn is not None:
-                video_path = fn.name
-            else:
-                return
+            dlg = wx.FileDialog(self, t("Video file not found, please select another"), "", "", "*.*", wx.FD_OPEN)
+            if dlg.ShowModal() == wx.ID_OK:
+                path = dlg.GetPath()
+                self.PushStatusText(path + " video loaded...")
+
+                video_path = path
+                #self.parse_playlist(filename=path)
+
+            dlg.Destroy()
 
         # record start time
         self.start_time = time.time()
 
         # to keep the cut files
-        self.status_bar.set("%s", t("Processing..."))
+        self.PushStatusText(t("Processing..."))
 
         # we have a name so make sure we create the dir
         if not os.path.exists(self.temp_dir.name):
@@ -1657,7 +1673,10 @@ class FileChooser(object):
         # we say that the join is the last step
         play_len += 1
         self.num_items = play_len
-        self.meter.set(0.0, t("Converting: ") + self.base_name + " " + "0%")
+
+        # TODO: check how to do this
+        # self.meter.set(0.0, t("Converting: ") + self.base_name + " " + "0%")
+        self.meter.SetValue(0)
 
         self.video_info = self.get_video_info(video_path)
 
@@ -1665,7 +1684,7 @@ class FileChooser(object):
         print("Resolution>>>", str(self.video_info.width) + "x" + str(self.video_info.height))
         print("Has Sound>>>", self.video_info.has_sound)
 
-        print("SLOW AND BETTER>>", self.slow_and_better.get() == 1)
+        print("SLOW AND BETTER>>", self.slow_check_box.GetValue() is True)
 
         print("")
 
@@ -1673,7 +1692,8 @@ class FileChooser(object):
         # start parsing each item
         for child in base.findall('.items/item'):
 
-            self.status_bar.set(t("Processing item %i"), cut_number + 1)
+            status_text = t("Processing item %i") % (cut_number + 1)
+            self.PushStatusText(status_text)
 
             item_type = child.find("type").text
             print("ItemType>> ", item_type)
@@ -1787,9 +1807,9 @@ class FileChooser(object):
             # now we see what we need to do...
 
             #  first check for comments
-            if (comments is not None and enable_comments == "true") or self.slow_and_better.get() == 1:
-                if self.slow_and_better.get() == 1 and comments is None:
-                    self.status_bar.set(t("Better converting %i"), cut_number + 1)
+            if (comments is not None and enable_comments == "true") or self.slow_check_box.GetValue() is True:
+                if self.slow_check_box.GetValue() is True and comments is None:
+                    self.PushStatusText(t("Better converting %i") % (cut_number + 1))
 
                     burn_thr = BurnLogo(temp_dir=self.temp_dir, cut_number=cut_number, input_video=video_path,
                                         time_start=time_start, duration=duration,
@@ -1801,19 +1821,20 @@ class FileChooser(object):
                         dummy_event.wait(timeout=1)
 
                 else:
-                    self.status_bar.set(t("Adding subtitles to item %i"), cut_number + 1)
+                    self.PushStatusText(t("Adding subtitles to item %i") % (cut_number + 1))
 
                     has_comments = True
                     sub_thr = EncodeSubtitles(temp_dir=self.temp_dir, cut_number=cut_number, video_path=video_path,
                                               video_info=self.video_info,
                                               time_start=time_start, duration=duration, comments=comments,
                                               tmp_out=self.temp_dir.name + path_separator + str(cut_number) + "_comments.mp4",
-                                              font_size=self.font_size.get())
+                                              font_size=self.font_size.GetValue())
                     sub_thr.start()
                     while sub_thr.is_alive():
                         # print("sleeping...")
+                        # self.meter.Pulse()
                         dummy_event = threading.Event()
-                        dummy_event.wait(timeout=1)
+                        dummy_event.wait(timeout=5)
 
             elif has_drawing or has_multiple_drawings:
                 # we need to convert without fast copy so that the further cuts work out right
@@ -1827,7 +1848,8 @@ class FileChooser(object):
                     dummy_event.wait(timeout=1)
             else:
                 # just cut in time since we need no further processing
-                self.status_bar.set(t("Fast cutting item %i"), cut_number + 1)
+                status_text = t("Fast cutting item %i") % (cut_number + 1)
+                self.PushStatusText(status_text)
                 fast_cut_thr = CutFastCopy(temp_dir=self.temp_dir, cut_number=cut_number, video_path=video_path,
                                            time_start=time_start, duration=duration,
                                            tmp_out=self.temp_dir.name + path_separator + str(cut_number) + "_comments.mp4")
@@ -1838,7 +1860,7 @@ class FileChooser(object):
 
             # do we add an overlay?
             if has_drawing:
-                self.status_bar.set(t("Adding drawing to item %i"), cut_number + 1)
+                self.PushStatusText(t("Adding drawing to item %i") % (cut_number + 1))
                 raw_png = base64.b64decode(drawing)
                 f = open(self.temp_dir.name + path_separator + str(cut_number) + "_overlay.png", "wb")
                 f.write(raw_png)
@@ -1883,7 +1905,7 @@ class FileChooser(object):
                                                    video_info=self.video_info,
                                                    tmp_out=self.temp_dir.name + path_separator + str(cut_number) + "_overlay.mp4",
                                                    drawings=multiple_drawings,
-                                                   pause_time=self.pause_duration.get(),
+                                                   pause_time=self.pause_duration.GetValue(),
                                                    duration=real_duration)
                 multiple_thr.start()
                 while multiple_thr.is_alive():
@@ -1901,7 +1923,7 @@ class FileChooser(object):
                                               input_video=fast_copy_input, tmp_out=tmp_out)
             fast_copy_thr.start()
             while fast_copy_thr.is_alive():
-                self.status_bar.set(t("Finishing item %i"), cut_number + 1)
+                self.PushStatusText(t("Finishing item %i") % (cut_number + 1))
                 # print("sleeping...")
                 dummy_event = threading.Event()
                 dummy_event.wait(timeout=1)
@@ -1909,11 +1931,13 @@ class FileChooser(object):
             # calc progress
             progress = cut_number / self.num_items
             progress_str = str(math.ceil(progress * 100))
-            self.meter.set(progress, t("Converting: ") + self.base_name + " " + progress_str + "%")
+            # TODO solve this
+            # self.meter.set(progress, t("Converting: ") + self.base_name + " " + progress_str + "%")
+            self.meter.SetValue(progress * 100)
 
             cut_number += 1
 
-        self.status_bar.set(t("Joining final video"))
+        self.PushStatusText(t("Joining final video"))
         # JOIN THE THINGS
         join_args = []
         # path to ffmpeg
@@ -1954,8 +1978,9 @@ class FileChooser(object):
             out = check_call(join_args, stderr=STDOUT, shell=False)
         except CalledProcessError as cpe:
             print("ERROR>>", cpe.output)
-
-        self.meter.set(1, t("Done: ") + self.base_name + " " + "100" + "%")
+        # TODO solve this
+        # self.meter.set(1, t("Done: ") + self.base_name + " " + "100" + "%")
+        self.meter.SetValue(100)
 
         self.end_time = time.time()
         time_delta = self.end_time - self.start_time
@@ -1964,8 +1989,8 @@ class FileChooser(object):
         minutes = int(time_delta / 60)
         hours = int(time_delta / (60 * 60))
 
-        self.status_bar.set(t("Done in %s:%s:%s ..."), format(hours, "02d"),
-                            format(minutes, "02d"), format(seconds, "02d"))
+        self.PushStatusText(t("Done in %s:%s:%s ...") % (format(hours, "02d"),
+                            format(minutes, "02d"), format(seconds, "02d")))
 
         print("")
         print("")
@@ -1974,90 +1999,38 @@ class FileChooser(object):
         print("")
         print(t("Done in"), format(hours, "02d"), ":", format(minutes, "02d"), ":", format(seconds, "02d"))
 
-        done_pop = Toplevel(padx=20, pady=20)
-        done_pop.title(t("Done..."))
-        done_pop.iconbitmap("icon.ico")
+        # create a dialog and bind the correct function
+        # the OK button does not need it since we pass it the wx.ID_OK that does the job for us
+        done_dlg = wx.Dialog(parent=self, id=wx.ID_ANY, title=t("Playlist done..."))
+        done_dlg_sizer = wx.BoxSizer(wx.VERTICAL)
+        done_msg = wx.StaticText(parent=done_dlg, id=wx.ID_ANY, label=t("Playlist done..."))
+        done_open_btn = wx.Button(parent=done_dlg, id=wx.ID_ANY, label=t("Open Video"))
+        done_ok_btn = wx.Button(parent=done_dlg, id=wx.ID_OK, label=t("Ok"))
+        # sizer stuff
+        done_dlg_sizer.Add(done_msg)
+        done_dlg_sizer.Add(done_open_btn)
+        done_dlg_sizer.Add(done_ok_btn)
+        done_dlg.SetSizer(done_dlg_sizer)
+        # auto layout TODO fix this a bit
+        done_dlg.SetAutoLayout(1)
+        done_dlg.Fit()
+        # bind
+        done_dlg.Bind(event=wx.EVT_BUTTON, handler=self.open_file_with_app, source=done_open_btn)
+        # and show
+        done_dlg.Show()
 
-        done_msg = Label(done_pop, text=t("Playlist done..."))
-        done_msg.pack()
 
-        done_btn = Button(done_pop, text=t("Ok"), command=done_pop.destroy)
-        done_btn.pack()
-
-        open_btn = Button(done_pop, text=t("Open Video"), command=self.open_file_with_app)
-        open_btn.pack()
-
-    def open_file_with_app(self):
-        # os.system("start " + "\"" + self.final_path + "\"")
+    def open_file_with_app(self, e):
+        # destroy the calling dialog
+        e.EventObject.Parent.Destroy()
+        # open the video file
         if platform.system() == "Darwin":
             call(["open", self.final_path])
         else:
             os.startfile(self.final_path)
 
-# CODE FOR PROGRESS BAR
-class Meter(Frame):
-    def __init__(self, master, width=300, height=20, bg='white', fillcolor='orchid1',
-                 value=0.0, text=None, font=None, textcolor='black', *args, **kw):
-        Frame.__init__(self, master, bg=bg, width=width, height=height, *args, **kw)
-        self._value = value
+# if __name__ == '__main__':
 
-        self._canv = Canvas(self, bg=self['bg'], width=self['width'], height=self['height'],
-                            highlightthickness=0, relief='flat', bd=0)
-        self._canv.pack(fill='both', expand=1)
-        self._rect = self._canv.create_rectangle(0, 0, 0, self._canv.winfo_reqheight(), fill=fillcolor,
-                                                 width=0)
-        self._text = self._canv.create_text(self._canv.winfo_reqwidth()/2, self._canv.winfo_reqheight()/2,
-                                            text='', fill=textcolor)
-        if font:
-            self._canv.itemconfigure(self._text, font=font)
-
-        self.set(value, text)
-        self.bind('<Configure>', self._update_coords)
-
-    def _update_coords(self, event):
-        # Updates the position of the text and rectangle inside the canvas when the size of
-        # the widget gets changed.
-        # looks like we have to call update_idletasks() twice to make sure
-        # to get the results we expect
-        self._canv.update_idletasks()
-        self._canv.coords(self._text, self._canv.winfo_width()/2, self._canv.winfo_height()/2)
-        self._canv.coords(self._rect, 0, 0, self._canv.winfo_width()*self._value, self._canv.winfo_height())
-        self._canv.update_idletasks()
-
-    def get(self):
-        return self._value, self._canv.itemcget(self._text, 'text')
-
-    def set(self, value=0.0, text=None):
-        # make the value failsafe:
-        if value < 0.0:
-            value = 0.0
-        elif value > 1.0:
-            value = 1.0
-        self._value = value
-        if text is None:
-            # if no text is specified use the default percentage string:
-            text = str(int(round(100 * value))) + ' %'
-        self._canv.coords(self._rect, 0, 0, self._canv.winfo_width()*value, self._canv.winfo_height())
-        self._canv.itemconfigure(self._text, text=text)
-        self._canv.update_idletasks()
-
-
-# Code for status bar
-class StatusBar(Frame):
-
-    def __init__(self, master):
-        Frame.__init__(self, master)
-        self.label = Label(self, bd=1, relief=SUNKEN, anchor=W)
-        self.label.pack(fill=X)
-
-    def set(self, fmt, *args):
-        self.label.config(text=fmt % args)
-        self.label.update_idletasks()
-
-    def clear(self):
-        self.label.config(text="")
-        self.label.update_idletasks()
-
-if __name__ == '__main__':
-    fc = FileChooser()
-    mainloop()
+app = wx.App(True)
+frame = MainWindow(None, t("Vo Converter"))
+app.MainLoop()
