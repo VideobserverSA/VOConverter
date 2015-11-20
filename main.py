@@ -21,46 +21,6 @@ import platform
 
 __author__ = 'Rui'
 
-# current_locale = 'en'
-
-# to make the mac .app work nice when bundled
-os_prefix = ""
-
-ffmpeg_path = "ffmpeg.exe"
-ffprobe_path = "ffprobe.exe"
-
-# we must use shell=True in windows, but shell=False in Mac OS
-shell_status = True
-# and the path separator is also different ffs
-path_separator = "\\"
-
-def shell_quote(s):
-    return s.replace(" ", "\ ")
-
-if platform.system() == "Darwin":
-
-    os_prefix = os.getcwd() + "/VoConverter.app/Contents/Resources/"
-
-    ffmpeg_path = os_prefix + "ffmpeg"
-    ffprobe_path = os_prefix + "ffprobe"
-
-    shell_status = False
-    path_separator = "/"
-
-
-lang_conf = configparser.ConfigParser()
-lang_conf.read(os_prefix + "lang.ini")
-
-current_locale = lang_conf["Language"]["Default Locale"]
-# current_locale = locale.getdefaultlocale()[0]
-
-locale_path = os_prefix + "lang/"
-language = gettext.translation('voconv', locale_path, [current_locale])
-language.install()
-
-# so that we can write shorthands
-t = language.gettext
-
 class VideoInfo:
 
     def __init__(self):
@@ -2029,8 +1989,50 @@ class MainWindow(wx.Frame):
         else:
             os.startfile(self.final_path)
 
-# if __name__ == '__main__':
-
+# init the app amd make it read to read resources
 app = wx.App(True)
+
+#
+# FUCKING IMPORTANT, we need to do this code here or else the app does not see its resources
+# and therefore fails absolutely miserably!!!
+#
+
+#to make the mac .app work nice when bundled
+os_prefix = ""
+
+ffmpeg_path = "ffmpeg.exe"
+ffprobe_path = "ffprobe.exe"
+
+# we must use shell=True in windows, but shell=False in Mac OS
+shell_status = True
+# and the path separator is also different ffs
+path_separator = "\\"
+
+def shell_quote(s):
+    return s.replace(" ", "\ ")
+
+if platform.system() == "Darwin":
+
+    os_prefix = os.getcwd() + "/VoConverter.app/Contents/Resources/"
+
+    ffmpeg_path = os_prefix + "ffmpeg"
+    ffprobe_path = os_prefix + "ffprobe"
+
+    shell_status = False
+    path_separator = "/"
+
+
+lang_conf = configparser.ConfigParser()
+lang_conf.read(os_prefix + "lang.ini")
+
+current_locale = lang_conf["Language"]["Default Locale"]
+
+locale_path = os_prefix + "lang/"
+language = gettext.translation('voconv', locale_path, [current_locale])
+language.install()
+
+# so that we can write shorthands
+t = language.gettext
+
 frame = MainWindow(None, t("Vo Converter"))
 app.MainLoop()
