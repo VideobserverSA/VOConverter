@@ -1339,7 +1339,7 @@ class EncodeSubtitles(threading.Thread):
             ],
                 shell=shell_status,
                 universal_newlines=True,
-                stderr=STDOUT,
+                #stderr=STDOUT,
             )
         except CalledProcessError as cpe:
             print("SUB ASS OUT", cpe.output)
@@ -2030,6 +2030,10 @@ if platform.system() == "Darwin":
 
     shell_status = False
     path_separator = "/"
+
+    # set the correct env to make font conifg work
+    os.environ["FONTCONFIG_PATH"] = os_prefix + "fonts/"
+    print("setting font config path to", os.environ["FONTCONFIG_PATH"])
 
 
 lang_conf = configparser.ConfigParser()
