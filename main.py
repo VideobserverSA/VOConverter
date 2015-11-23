@@ -77,7 +77,7 @@ class CheckForUpdate(threading.Thread):
                     upgrade_message = Label(upgrade_pop, text=t("There is a new version available for download. Do you wish to:"))
                     upgrade_message.pack()
 
-                    btn_frame = ƒFrame(upgrade_pop)
+                    btn_frame = Frame(upgrade_pop)
                     btn_frame.pack(padx=10, pady=10)
 
                     close_btn = Button(btn_frame, text=t("Ignore this time"), command=upgrade_pop.destroy)
@@ -1777,6 +1777,7 @@ class MainWindow(wx.Frame):
                                         video_info=self.video_info)
                     burn_thr.start()
                     while burn_thr.is_alive():
+                        self.Update()
                         dummy_event = threading.Event()
                         dummy_event.wait(timeout=1)
 
@@ -1791,8 +1792,7 @@ class MainWindow(wx.Frame):
                                               font_size=self.font_size.GetValue())
                     sub_thr.start()
                     while sub_thr.is_alive():
-                        # print("sleeping...")
-                        # self.meter.Pulse()
+                        self.Update()
                         dummy_event = threading.Event()
                         dummy_event.wait(timeout=5)
 
@@ -1804,6 +1804,7 @@ class MainWindow(wx.Frame):
                                            key_frames=12)
                 key_thr.start()
                 while key_thr.is_alive():
+                    self.Update()
                     dummy_event = threading.Event()
                     dummy_event.wait(timeout=1)
             else:
@@ -1815,6 +1816,7 @@ class MainWindow(wx.Frame):
                                            tmp_out=self.temp_dir.name + path_separator + str(cut_number) + "_comments.mp4")
                 fast_cut_thr.start()
                 while fast_cut_thr.is_alive():
+                    self.Update()
                     dummy_event = threading.Event()
                     dummy_event.wait(timeout=1)
 
@@ -1853,7 +1855,7 @@ class MainWindow(wx.Frame):
                                          pause_time=self.pause_duration.get())
                 overlay_thr.start()
                 while overlay_thr.is_alive():
-                    # print("sleeping...")
+                    self.Update()
                     dummy_event = threading.Event()
                     dummy_event.wait(timeout=1)
 
@@ -1869,7 +1871,7 @@ class MainWindow(wx.Frame):
                                                    duration=real_duration)
                 multiple_thr.start()
                 while multiple_thr.is_alive():
-                    # print("sleeping...")
+                    self.Update()
                     dummy_event = threading.Event()
                     dummy_event.wait(timeout=1)
 
@@ -1884,7 +1886,7 @@ class MainWindow(wx.Frame):
             fast_copy_thr.start()
             while fast_copy_thr.is_alive():
                 self.PushStatusText(t("Finishing item %i") % (cut_number + 1))
-                # print("sleeping...")
+                self.Update()
                 dummy_event = threading.Event()
                 dummy_event.wait(timeout=1)
 
@@ -1894,6 +1896,7 @@ class MainWindow(wx.Frame):
             # TODO solve this
             # self.meter.set(progress, t("Converting: ") + self.base_name + " " + progress_str + "%")
             self.meter.SetValue(progress * 100)
+            wx.Yield()
 
             cut_number += 1
 
