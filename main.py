@@ -1503,14 +1503,17 @@ class MainWindow(wx.Frame):
         version_thr.start()
 
     def open_dialog(self, e):
+        path = ""
         dlg = wx.FileDialog(self, t("VO Playlist"), "", "", "*.vopl", wx.FD_OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             path = dlg.GetPath()
             self.PushStatusText(path + " loaded...")
 
-            self.parse_playlist(filename=path)
-
         dlg.Destroy()
+        # we do this so that the wx main loop can see the dialog being destroyed, and does so before
+        # we call parse playlist. Otherwise the file dialog would stay open until the end.
+        if path != "":
+            self.parse_playlist(filename=path)
 
     def quit_app(self, e):
 
@@ -1588,6 +1591,10 @@ class MainWindow(wx.Frame):
             print("FFPROBE OUT", cpe.output)
 
     def parse_playlist(self, filename):
+
+        wx.Yield()
+        self.Update()
+        self.Refresh()
 
         tree = xmlParser.parse(filename)
         base = tree.getroot()
