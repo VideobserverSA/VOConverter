@@ -1381,12 +1381,30 @@ class MainWindow(wx.Frame):
 
         wx.Frame.__init__(self, parent, title=title, size=(600,300))
 
-        settings_path = os.path.expanduser("~/voconverter.conf")
-
-        self.settings = EasySettings(settings_path)
-
         # to give detailed info to the user
         self.CreateStatusBar()
+
+        # lets create a menu so we can change the language?
+        self.file_menu = wx.Menu()
+        file_open = self.file_menu.Append(wx.ID_OPEN, t("Open Playlist"), t("Open a playlist (.vopl) for conversion"))
+        self.file_menu.AppendSeparator()
+        file_quit = self.file_menu.Append(wx.ID_EXIT, t("Quit"), t("Quit the App"))
+
+        self.Bind(wx.EVT_MENU, self.open_dialog, file_open)
+        self.Bind(wx.EVT_MENU, self.quit_app, file_quit)
+
+        self.lang_menu = wx.Menu()
+        lang_en = self.lang_menu.Append(wx.ID_ANY, t("English"), t("Select English language"))
+        lang_pt = self.lang_menu.Append(wx.ID_ANY, t("Portuguese"), t("Select Portuguese language"))
+
+        self.Bind(wx.EVT_MENU, self.set_lang_en, lang_en)
+        self.Bind(wx.EVT_MENU, self.set_lang_pt, lang_pt)
+
+        self.menu_bar = wx.MenuBar()
+        self.menu_bar.Append(self.file_menu, t("File"))
+        self.menu_bar.Append(self.lang_menu, t("Language"))
+
+        self.SetMenuBar(self.menu_bar)
 
         # create the main sizer where we will place all the other elements
         self.main_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -1404,8 +1422,8 @@ class MainWindow(wx.Frame):
         self.main_sizer.Add(self.pause_sizer)
 
         # default value
-        if self.settings.has_option("pause"):
-            pause_val = self.settings.get("pause")
+        if settings.has_option("pause"):
+            pause_val = settings.get("pause")
         else:
             pause_val = 4
         self.pause_duration.SetValue(pause_val)
@@ -1422,8 +1440,8 @@ class MainWindow(wx.Frame):
 
         self.main_sizer.Add(self.font_sizer)
 
-        if self.settings.has_option("font_size"):
-            font_val = self.settings.get("font_size")
+        if settings.has_option("font_size"):
+            font_val = settings.get("font_size")
         else:
             font_val = 30
         self.font_size.SetValue(font_val)
@@ -1444,8 +1462,8 @@ class MainWindow(wx.Frame):
 
         # destination stuff
 
-        if self.settings.has_option("destination_path"):
-            self.final_destination_path = self.settings.get("destination_path")
+        if settings.has_option("destination_path"):
+            self.final_destination_path = settings.get("destination_path")
         else:
             self.final_destination_path = os.path.expanduser("~/Desktop")
 
@@ -1518,16 +1536,24 @@ class MainWindow(wx.Frame):
     def quit_app(self, e):
 
         # save settings for next time
-        self.settings.set("pause", self.pause_duration.GetValue())
-        self.settings.set("font_size", self.font_size.GetValue())
-        self.settings.set("destination_path", self.final_destination_path)
+        settings.set("pause", self.pause_duration.GetValue())
+        settings.set("font_size", self.font_size.GetValue())
+        settings.set("destination_path", self.final_destination_path)
 
-        self.settings.save()
+        settings.save()
 
         # Cleanup
         self.temp_dir.cleanup()
 
         sys.exit(0)
+
+    def set_lang_en(self, e):
+        settings.set("locale", "en_US")
+        settings.save()
+
+    def set_lang_pt(self, e):
+        settings.set("locale", "pt_PT")
+        settings.save()
 
     # def choose_destination(self):
     #     # get dir from user, using the saved dir as the starting point
@@ -2041,8 +2067,13 @@ lang_conf.read(os_prefix + "lang.ini")
 
 current_locale = lang_conf["Language"]["Default Locale"]
 
+settings_path = os.path.expanduser("~/voconverter.conf")
+settings = EasySettings(settings_path)
+
+user_locale = settings.get("locale", current_locale)
+
 locale_path = os_prefix + "lang/"
-language = gettext.translation('voconv', locale_path, [current_locale])
+language = gettext.translation('voconv', locale_path, [user_locale])
 language.install()
 
 # so that we can write shorthands
