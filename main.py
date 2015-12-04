@@ -21,6 +21,7 @@ import platform
 
 __author__ = 'Rui'
 
+
 class VideoInfo:
 
     def __init__(self):
@@ -45,51 +46,18 @@ class Drawing:
         self.drawing_time = drawing_time
 
 
-class CheckForUpdate(threading.Thread):
+class DownloadUpdate(threading.Thread):
 
-    def __init__(self, current_version, tmp_dir):
+    def __init__(self, temp_dir, download_url):
         super().__init__()
-        self.current_version = current_version
-        self.download_url = ''
-        self.tmp_dir = tmp_dir
-
-    def download_upgrade(self):
-        print("downloading upgrade from: " + self.download_url)
-        voconv_filename = self.tmp_dir.name + '\\' + 'vo_converter_install.exe'
-        urllib.request.urlretrieve(url=self.download_url, filename=voconv_filename)
-        os.startfile(voconv_filename)
-        sys.exit(0)
+        self.download_url = download_url
+        self.temp_dir = temp_dir
 
     def run(self):
-        try:
-            # grab the file from server
-            with urllib.request.urlopen("http://staging.videobserver.com/app/converter_version.json") as version_file:
-                version_json = json.loads(version_file.read().decode('utf-8'))
-                if LooseVersion(self.current_version) < LooseVersion(version_json['version']):
-                    self.download_url = version_json['url']
-                    print('Upgrade found on server... ' + version_json['version'])
-
-                    # create a window
-                    upgrade_pop = Toplevel(padx=20, pady=20)
-                    upgrade_pop.title(t("Upgrade"))
-                    upgrade_pop.iconbitmap("icon.ico")
-
-                    upgrade_message = Label(upgrade_pop, text=t("There is a new version available for download. Do you wish to:"))
-                    upgrade_message.pack()
-
-                    btn_frame = Frame(upgrade_pop)
-                    btn_frame.pack(padx=10, pady=10)
-
-                    close_btn = Button(btn_frame, text=t("Ignore this time"), command=upgrade_pop.destroy)
-                    close_btn.pack(side=LEFT, padx=20)
-
-                    download_btn = Button(btn_frame, text=t("Download"), command=self.download_upgrade)
-                    download_btn.pack(side=LEFT, padx=20)
-                else:
-                    print('Current version installed')
-
-        except urllib.error.URLError as ue:
-            print('Could not reach server to check version... ' + str(ue.reason))
+        print("downloading upgrade from: " + self.download_url)
+        voconv_filename = self.temp_dir.name + '\\' + 'vo_converter_install.exe'
+        urllib.request.urlretrieve(url=self.download_url, filename=voconv_filename)
+        os.startfile(voconv_filename)
 
 
 class SleepThreaded(threading.Thread):
@@ -686,11 +654,11 @@ class AddMultipleDrawings(threading.Thread):
 
             raw_jpeg = base64.b64decode(drawing.screenshot)
             jf = open(self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) +
-                      "_screenshot.png", "wb")
+                      "_screenshot.jpg", "wb")
             jf.write(raw_jpeg)
             jf.close()
             pil_jpeg = Image.open(self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) +
-                                  "_screenshot.png")
+                                  "_screenshot.jpg")
             pil_jpeg_converted = pil_jpeg.convert(mode="RGBA")
 
             # and now join the two?
@@ -1379,7 +1347,7 @@ class MainWindow(wx.Frame):
 
     def __init__(self, parent, title):
 
-        wx.Frame.__init__(self, parent, title=title, size=(600,300))
+        wx.Frame.__init__(self, parent, title=title, size=(600, 300))
 
         # to give detailed info to the user
         self.CreateStatusBar()
@@ -1517,8 +1485,47 @@ class MainWindow(wx.Frame):
 
         self.final_path = ""
 
-        version_thr = CheckForUpdate(version, self.temp_dir)
-        version_thr.start()
+        # version_thr = CheckForUpdate(version, self.temp_dir)
+        # version_thr.start()
+
+        # check the version
+        self.download_url = ""
+        try:
+            # grab the file from server
+            with urllib.request.urlopen("http://staging.videobserver.com/app/converter_version.json") as version_file:
+                version_json = json.loads(version_file.read().decode('utf-8'))
+                if LooseVersion(version) < LooseVersion(version_json['version']):
+                    self.download_url = version_json['url']
+                    print('Upgrade found on server... ' + version_json['version'])
+
+                    # create a dialog and bind the correct function
+                    # the OK button does not need it since we pass it the wx.ID_OK that does the job for us
+                    done_dlg = wx.Dialog(parent=self, id=wx.ID_ANY, title=t("New version on Server"))
+                    done_dlg_sizer = wx.BoxSizer(wx.VERTICAL)
+                    done_msg = wx.StaticText(parent=done_dlg, id=wx.ID_ANY,
+                                             label=t("There is a new version available for download. Do you wish to:"))
+                    self.upgrade_gauge = wx.Gauge(parent=done_dlg)
+                    download_btn = wx.Button(parent=done_dlg, id=wx.ID_ANY, label=t("Download"))
+                    done_ok_btn = wx.Button(parent=done_dlg, id=wx.ID_OK, label=t("Ignore this time"))
+                    # sizer stuff
+                    done_dlg_sizer.Add(done_msg)
+                    done_dlg_sizer.Add(self.upgrade_gauge, 1, wx.EXPAND)
+                    done_dlg_sizer.Add(download_btn)
+                    done_dlg_sizer.Add(done_ok_btn)
+                    done_dlg.SetSizer(done_dlg_sizer)
+                    # auto layout TODO fix this a bit
+                    done_dlg.SetAutoLayout(1)
+                    # done_dlg.Fit()
+                    # bind
+                    done_dlg.Bind(event=wx.EVT_BUTTON, handler=self.download_upgrade, source=download_btn)
+                    # and show
+                    done_dlg.Show()
+
+                else:
+                    print('Current version installed')
+
+        except urllib.error.URLError as ue:
+            print('Could not reach server to check version... ' + str(ue.reason))
 
     def open_dialog(self, e):
         path = ""
@@ -1555,35 +1562,19 @@ class MainWindow(wx.Frame):
         settings.set("locale", "pt_PT")
         settings.save()
 
-    # def choose_destination(self):
-    #     # get dir from user, using the saved dir as the starting point
-    #     fn = filedialog.askdirectory(initialdir=self.final_destination_path)
-    #
-    #     # if fn is the empty string the user pressed cancel, so no need to do the checks
-    #     if fn != '':
-    #         # check if the directory exists and is writable
-    #         try:
-    #             file = fn + '/test_write.txt'
-    #             test = open(file, 'w')
-    #             # if we get here the file is writable or we would be in the except block
-    #             # so cleanup
-    #             test.close()
-    #             os.remove(file)
-    #             # and this means we can save the directory
-    #             self.final_destination_path = fn
-    #             self.destination_path.config(text=fn)
-    #         except IOError as ioe:
-    #             print('directory not writable: ' + str(ioe))
-    #             # so we better popup a warning
-    #             warn_pop = Toplevel(padx=20, pady=20)
-    #             warn_pop.title(t("Error"))
-    #             warn_pop.iconbitmap("icon.ico")
-    #
-    #             warn_msg = Label(warn_pop, text=t("The directory you selected is not valid. Write error.") + " " + fn)
-    #             warn_msg.pack()
-    #
-    #             warn_btn = Button(warn_pop, text=t("Ok"), command=warn_pop.destroy)
-    #             warn_btn.pack()
+    def download_upgrade(self, e):
+        self.upgrade_gauge.Pulse()
+
+        download_thr = DownloadUpdate(temp_dir=self.temp_dir, download_url=self.download_url)
+        download_thr.start()
+
+        while download_thr.is_alive():
+            self.upgrade_gauge.Pulse()
+            self.Update()
+            dummy_event = threading.Event()
+            dummy_event.wait(timeout=1)
+
+        sys.exit(0)
 
     def get_video_info(self, video_path):
 
@@ -2015,7 +2006,6 @@ class MainWindow(wx.Frame):
         # and show
         done_dlg.Show()
 
-
     def open_file_with_app(self, e):
         # destroy the calling dialog
         e.EventObject.Parent.Destroy()
@@ -2033,7 +2023,7 @@ app = wx.App(True)
 # and therefore fails absolutely miserably!!!
 #
 
-#to make the mac .app work nice when bundled
+# to make the mac .app work nice when bundled
 os_prefix = ""
 
 ffmpeg_path = "ffmpeg.exe"
@@ -2042,7 +2032,8 @@ ffprobe_path = "ffprobe.exe"
 # we must use shell=True in windows, but shell=False in Mac OS
 shell_status = True
 # and the path separator is also different ffs
-path_separator = "\\"
+path_separator = '\\'
+
 
 def shell_quote(s):
     return s.replace(" ", "\ ")
