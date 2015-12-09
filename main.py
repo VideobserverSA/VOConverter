@@ -18,6 +18,7 @@ import urllib.request
 import urllib.error
 from distutils.version import LooseVersion
 import platform
+import random
 
 __author__ = 'Rui'
 
@@ -1991,10 +1992,16 @@ class MainWindow(wx.Frame):
 
         # outfile
         out_filename = self.base_name.replace(".vopl", "")
-        # put it on desktop for now
-        join_args.append("" + self.final_destination_path + path_separator + out_filename + ".mp4" + "")
+        out_path = self.final_destination_path + path_separator + out_filename + ".mp4"
 
-        self.final_path = self.final_destination_path + path_separator + out_filename + ".mp4"
+        if os.path.isfile(out_path):
+            rnd = random.randint(1, 5)
+            out_path = self.final_destination_path + path_separator + out_filename + "_" + str(rnd) + "_" + ".mp4"
+
+        # put it on desktop for now
+        join_args.append("" + out_path + "")
+
+        self.final_path = out_path
 
         # sys.stdout.write("JOINARGS>>" + ' '.join(join_args))
 
