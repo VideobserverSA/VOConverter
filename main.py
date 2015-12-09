@@ -60,6 +60,24 @@ class DownloadUpdate(threading.Thread):
         os.startfile(voconv_filename)
 
 
+class SendVersion(threading.Thread):
+
+    def __init__(self, version, secret, email=""):
+        super().__init__()
+        self.version = version
+        self.secret = secret
+        self.email = email
+
+    def run(self):
+        try:
+            with urllib.request.urlopen("http://api.videobserver.com/v3/logappversion/logappversionvoconverter.json/" +
+                                        self.version + "/" + self.secret + "?email=" +
+                                        self.email) as version_request:
+                print(version_request.status)
+        except urllib.error.URLError as ue:
+            print('Could not reach server to check version... ' + str(ue.reason))
+
+
 class SleepThreaded(threading.Thread):
 
     def __init__(self, seconds):
@@ -1349,6 +1367,8 @@ class MainWindow(wx.Frame):
 
         wx.Frame.__init__(self, parent, title=title, size=(600, 300))
 
+        self.panel = wx.Panel(self, wx.ID_ANY)
+
         # to give detailed info to the user
         self.CreateStatusBar()
 
@@ -1381,8 +1401,8 @@ class MainWindow(wx.Frame):
 
         # and a sizer to hold the pause gauge
         self.pause_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.pause_label = wx.StaticText(parent=self, id=wx.ID_ANY, label=t("Drawings Pause Time"))
-        self.pause_duration = wx.Slider(parent=self, id=wx.ID_ANY, value=4, minValue=1, maxValue=10,
+        self.pause_label = wx.StaticText(parent=self.panel, id=wx.ID_ANY, label=t("Drawings Pause Time"))
+        self.pause_duration = wx.Slider(parent=self.panel, id=wx.ID_ANY, value=4, minValue=1, maxValue=10,
                                         style=wx.SL_LABELS)
         self.pause_sizer.Add(self.pause_label, 0)
         self.pause_sizer.Add(self.pause_duration, 1, wx.GROW)
@@ -1400,9 +1420,9 @@ class MainWindow(wx.Frame):
 
         # sizer for font size
         self.font_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.font_label = wx.StaticText(parent=self, id=wx.ID_ANY, label=t("Font Size"))
-        self.font_size = wx.Slider(parent=self, id=wx.ID_ANY, value=25, minValue=10, maxValue=50,
-                                        style=wx.SL_LABELS)
+        self.font_label = wx.StaticText(parent=self.panel, id=wx.ID_ANY, label=t("Font Size"))
+        self.font_size = wx.Slider(parent=self.panel, id=wx.ID_ANY, value=25, minValue=10, maxValue=50,
+                                   style=wx.SL_LABELS)
         self.font_sizer.Add(self.font_label, 0)
         self.font_sizer.Add(self.font_size, 1, wx.GROW)
 
@@ -1418,13 +1438,13 @@ class MainWindow(wx.Frame):
 
         # sizer for slow but better
         self.slow_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.slow_check_box = wx.CheckBox(parent=self, id=wx.ID_ANY, label=t("Slow but better"))
+        self.slow_check_box = wx.CheckBox(parent=self.panel, id=wx.ID_ANY, label=t("Slow but better"))
         self.slow_sizer.Add(self.slow_check_box)
         self.main_sizer.Add(self.slow_sizer)
 
         # progress bar
         self.meter_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.meter = wx.Gauge(parent=self, id=wx.ID_ANY, range=100)
+        self.meter = wx.Gauge(parent=self.panel, id=wx.ID_ANY, range=100)
         self.meter_sizer.Add(self.meter, 1, wx.GROW)
         self.main_sizer.Add(self.meter_sizer, 0, wx.GROW)
 
@@ -1437,8 +1457,8 @@ class MainWindow(wx.Frame):
 
         # sizer for dest
         self.destination_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.destination_label = wx.StaticText(parent=self, id=wx.ID_ANY, label=t("Destination:"))
-        self.destination_picker = wx.DirPickerCtrl(parent=self, id=wx.ID_ANY, path=self.final_destination_path,
+        self.destination_label = wx.StaticText(parent=self.panel, id=wx.ID_ANY, label=t("Destination:"))
+        self.destination_picker = wx.DirPickerCtrl(parent=self.panel, id=wx.ID_ANY, path=self.final_destination_path,
                                                    message=t("Select final video destination directory"))
         self.destination_sizer.Add(self.destination_label, 0)
         self.destination_sizer.Add(self.destination_picker, 2, wx.GROW)
@@ -1448,8 +1468,8 @@ class MainWindow(wx.Frame):
 
         # sizer for buttons
         self.button_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.open_playlist_btn = wx.Button(parent=self, id=wx.ID_ANY, label=t("Open File"))
-        self.quit_app_btn = wx.Button(parent=self, id=wx.ID_ANY, label=t("Quit"))
+        self.open_playlist_btn = wx.Button(parent=self.panel, id=wx.ID_ANY, label=t("Open File"))
+        self.quit_app_btn = wx.Button(parent=self.panel, id=wx.ID_ANY, label=t("Quit"))
         self.button_sizer.Add(self.open_playlist_btn)
         self.button_sizer.Add(self.quit_app_btn)
         self.main_sizer.Add(self.button_sizer)
@@ -1471,6 +1491,15 @@ class MainWindow(wx.Frame):
         print("VERSION, DATE>>", version, date)
         version_str = t("Version: ") + version + t(" , date: ") + date
         self.PushStatusText(version_str)
+
+        self.username = settings.get("username", "")
+
+        key_config = configparser.ConfigParser()
+        key_config.read(os_prefix + "secret_key.ini")
+        secret_key = key_config["Secret Key"]["key"]
+
+        send_version_thr = SendVersion(version=version, secret=secret_key, email=self.username)
+        send_version_thr.start()
 
         # Several stuff that we need later aka globals
         self.temp_dir = tempfile.TemporaryDirectory()
@@ -1508,14 +1537,21 @@ class MainWindow(wx.Frame):
                     download_btn = wx.Button(parent=done_dlg, id=wx.ID_ANY, label=t("Download"))
                     done_ok_btn = wx.Button(parent=done_dlg, id=wx.ID_OK, label=t("Ignore this time"))
                     # sizer stuff
-                    done_dlg_sizer.Add(done_msg)
-                    done_dlg_sizer.Add(self.upgrade_gauge, 1, wx.EXPAND)
-                    done_dlg_sizer.Add(download_btn)
-                    done_dlg_sizer.Add(done_ok_btn)
+                    done_dlg_sizer.Add(done_msg, 0, wx.ALL, 5)
+                    done_dlg_sizer.Add(self.upgrade_gauge, 1, wx.EXPAND | wx.ALL, 5)
+
+                    done_dlg_btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+                    done_dlg_btn_sizer.Add(download_btn, 0, wx.RIGHT, 10)
+                    done_dlg_btn_sizer.Add(done_ok_btn)
+
+                    done_dlg_sizer.Add(done_dlg_btn_sizer, 0, wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, 10)
                     done_dlg.SetSizer(done_dlg_sizer)
                     # auto layout TODO fix this a bit
-                    done_dlg.SetAutoLayout(1)
+                    # done_dlg.SetAutoLayout(1)
                     # done_dlg.Fit()
+
+                    done_dlg_sizer.SetSizeHints(done_dlg)
+
                     # bind
                     done_dlg.Bind(event=wx.EVT_BUTTON, handler=self.download_upgrade, source=download_btn)
                     # and show
@@ -1572,7 +1608,7 @@ class MainWindow(wx.Frame):
             self.upgrade_gauge.Pulse()
             self.Update()
             dummy_event = threading.Event()
-            dummy_event.wait(timeout=1)
+            dummy_event.wait(timeout=0.01)
 
         sys.exit(0)
 
@@ -1650,6 +1686,10 @@ class MainWindow(wx.Frame):
         self.base_name = base.get("name")
         if self.base_name is None:
             self.base_name = os.path.basename(filename)
+
+        self.username = base.get("username")
+        settings.set("username", self.username)
+        settings.save()
 
         # get playlist length
         play_len = len(base.findall('.items/item'))
