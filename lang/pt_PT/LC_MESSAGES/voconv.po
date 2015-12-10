@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Vo Converter\n"
-"POT-Creation-Date: 2015-10-02 17:24+0100\n"
-"PO-Revision-Date: 2015-10-02 17:25+0100\n"
+"POT-Creation-Date: 2015-12-09 18:14+0000\n"
+"PO-Revision-Date: 2015-12-09 18:17+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: pt\n"
@@ -15,149 +15,196 @@ msgstr ""
 "X-Poedit-KeywordsList: t:1;t:1,2\n"
 "X-Poedit-SearchPath-0: main.py\n"
 
-#: main.py:43
-msgid "Vo Converter"
-msgstr "Vo Converter"
+#: main.py:1378
+msgid "Open Playlist"
+msgstr "Abrir Playlist"
 
-#: main.py:88
-msgid "Upgrade"
-msgstr "Actualizacção"
+#: main.py:1378
+msgid "Open a playlist (.vopl) for conversion"
+msgstr "Abrir uma playlist (.vopl) para conversão"
 
-#: main.py:91
-msgid "There is a new version available for download. Do you wish to:"
-msgstr "Existe uma nova versão disponível no servidor. Deseja:"
-
-#: main.py:97
-msgid "Ignore this time"
-msgstr "Ignorar desta vez"
-
-#: main.py:100
-msgid "Download"
-msgstr "Descarregar"
-
-#: main.py:857
-msgid "Drawings Pause Time"
-msgstr "Pausa do Desenho"
-
-#: main.py:872
-msgid "Font Size"
-msgstr "Tamanho da Letra"
-
-#: main.py:879
-msgid "Slow but better"
-msgstr ""
-
-#: main.py:898
-msgid "Destination:"
-msgstr "Destino:"
-
-#: main.py:909
-msgid "Choose"
-msgstr "Escolher"
-
-#: main.py:915
-msgid "Open File"
-msgstr "Abrir Ficheiro"
-
-#: main.py:918
+#: main.py:1380 main.py:1473
 msgid "Quit"
 msgstr "Sair"
 
-#: main.py:930
-#, python-format
-msgid "Version: %s , date: %s"
-msgstr "Versão: %s, data: %s"
+#: main.py:1380
+msgid "Quit the App"
+msgstr "Sair da Aplicação"
 
-#: main.py:951
+#: main.py:1386
+msgid "English"
+msgstr "Inglês"
+
+#: main.py:1386
+msgid "Select English language"
+msgstr "Selecionar Língua Inglesa"
+
+#: main.py:1387
+msgid "Portuguese"
+msgstr "Português"
+
+#: main.py:1387
+msgid "Select Portuguese language"
+msgstr "Selecionar Língua Portuguesa"
+
+#: main.py:1393
+msgid "File"
+msgstr "Ficheiro"
+
+#: main.py:1394
+msgid "Language"
+msgstr "Língua"
+
+#: main.py:1405
+msgid "Drawings Pause Time"
+msgstr "Pausa do Desenho"
+
+#: main.py:1424
+msgid "Font Size"
+msgstr "Tamanho da Letra"
+
+#: main.py:1442
+msgid "Slow but better"
+msgstr ""
+
+#: main.py:1461
+msgid "Destination:"
+msgstr "Destino:"
+
+#: main.py:1463
+msgid "Select final video destination directory"
+msgstr "Selecionar diretoria de destino do vídeo final"
+
+#: main.py:1472
+msgid "Open File"
+msgstr "Abrir Ficheiro"
+
+#: main.py:1493
+msgid "Version: "
+msgstr "Versão:"
+
+#: main.py:1493
+msgid " , date: "
+msgstr ",data:"
+
+#: main.py:1533
+msgid "New version on Server"
+msgstr "Nova versão disponivel"
+
+#: main.py:1536
+msgid "There is a new version available for download. Do you wish to:"
+msgstr "Existe uma nova versão disponível no servidor. Deseja:"
+
+#: main.py:1538
+msgid "Download"
+msgstr "Descarregar"
+
+#: main.py:1539
+msgid "Ignore this time"
+msgstr "Ignorar desta vez"
+
+#: main.py:1569
 msgid "VO Playlist"
 msgstr "Playlist VO"
 
-#: main.py:952
+#: main.py:1669
+msgid "Video Files"
+msgstr "Ficheiros de Video"
+
+#: main.py:1669
 msgid "All Files"
 msgstr "Todos os Ficheiros"
 
-#: main.py:992
-msgid "Error"
-msgstr "Erro"
-
-#: main.py:995
-msgid "The directory you selected is not valid. Write error."
-msgstr "O diretório selecionado não é válido. Erro de escrita."
-
-#: main.py:998 main.py:1321
-msgid "Ok"
-msgstr "Ok"
-
-#: main.py:1039
+#: main.py:1672
 msgid "Video file not found, please select another"
 msgstr "Ficheiro de vídeo não encontrado, por favor escolha outro."
 
-#: main.py:1046
+#: main.py:1687
 msgid "Processing..."
 msgstr "A Processar..."
 
-#: main.py:1064 main.py:1249
-msgid "Converting: "
-msgstr "A converter:"
-
-#: main.py:1083
+#: main.py:1726
 #, python-format
 msgid "Processing item %i"
 msgstr "A processar item %i"
 
-#: main.py:1146
+#: main.py:1843
 #, python-format
 msgid "Better converting %i"
 msgstr ""
 
-#: main.py:1158
+#: main.py:1856
 #, python-format
 msgid "Adding subtitles to item %i"
 msgstr "A adicionar legendas ao item %i"
 
-#: main.py:1183
+#: main.py:1883
 #, python-format
 msgid "Fast cutting item %i"
 msgstr "A cortar o item %i"
 
-#: main.py:1194
+#: main.py:1896
 #, python-format
 msgid "Adding drawing to item %i"
 msgstr "Adicionar desenho ao item %i"
 
-#: main.py:1241
+#: main.py:1959
 #, python-format
 msgid "Finishing item %i"
 msgstr "A acabar item %i"
 
-#: main.py:1253
+#: main.py:1974
 msgid "Joining final video"
 msgstr "A criar o vídeo final"
 
-#: main.py:1295
-msgid "Done: "
-msgstr "Completo:"
-
-#: main.py:1304
+#: main.py:2032
 #, python-format
 msgid "Done in %s:%s:%s ..."
 msgstr "Completo em %s:%s:%s ..."
 
-#: main.py:1312
+#: main.py:2040
 msgid "Done in"
 msgstr "Completo em"
 
-#: main.py:1315
-msgid "Done..."
-msgstr "Completo..."
-
-#: main.py:1318
+#: main.py:2044 main.py:2046
 msgid "Playlist done..."
 msgstr "Playlist completa..."
 
-#: main.py:1324
+#: main.py:2047
 msgid "Open Video"
 msgstr "Abrir Video"
+
+#: main.py:2048
+msgid "Ok"
+msgstr "Ok"
+
+#: main.py:2126
+msgid "Vo Converter"
+msgstr "Vo Converter"
+
+#~ msgid "Upgrade"
+#~ msgstr "Actualizacção"
+
+#~ msgid "Choose"
+#~ msgstr "Escolher"
+
+#~ msgid "Version: %s , date: %s"
+#~ msgstr "Versão: %s, data: %s"
+
+#~ msgid "Error"
+#~ msgstr "Erro"
+
+#~ msgid "The directory you selected is not valid. Write error."
+#~ msgstr "O diretório selecionado não é válido. Erro de escrita."
+
+#~ msgid "Converting: "
+#~ msgstr "A converter:"
+
+#~ msgid "Done: "
+#~ msgstr "Completo:"
+
+#~ msgid "Done..."
+#~ msgstr "Completo..."
 
 #~ msgid "Close"
 #~ msgstr "Ignorar desta vez"

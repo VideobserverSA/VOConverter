@@ -1664,13 +1664,19 @@ class MainWindow(wx.Frame):
 
         # first we check for the file existence
         if not os.path.isfile(video_path):
-            dlg = wx.FileDialog(self, t("Video file not found, please select another"), "", "", "*.*", wx.FD_OPEN)
+
+            wildcard_ext = "*.mp4;*.mov;*.avi;*.mkv"
+            wildcard = t("Video Files") + " (" + wildcard_ext + ")" + "|" + wildcard_ext + "|" + t("All Files") +\
+                       " (*.*)" + "|" + "*.*"
+
+            dlg = wx.FileDialog(self, t("Video file not found, please select another"), "", "",
+                                wildcard, wx.FD_OPEN)
             if dlg.ShowModal() == wx.ID_OK:
                 path = dlg.GetPath()
                 self.PushStatusText(path + " video loaded...")
 
                 video_path = path
-                #self.parse_playlist(filename=path)
+                # self.parse_playlist(filename=path)
 
             dlg.Destroy()
 
