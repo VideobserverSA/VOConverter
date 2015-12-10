@@ -1366,7 +1366,9 @@ class MainWindow(wx.Frame):
 
     def __init__(self, parent, title):
 
-        wx.Frame.__init__(self, parent, title=title, size=(600, 300))
+        # we don't want to allow resizing
+        wx.Frame.__init__(self, parent, title=title, size=(600, 350),
+                          style=wx.DEFAULT_FRAME_STYLE & ~(wx.RESIZE_BORDER | wx.MAXIMIZE_BOX))
 
         self.panel = wx.Panel(self, wx.ID_ANY)
 
@@ -1405,10 +1407,10 @@ class MainWindow(wx.Frame):
         self.pause_label = wx.StaticText(parent=self.panel, id=wx.ID_ANY, label=t("Drawings Pause Time"))
         self.pause_duration = wx.Slider(parent=self.panel, id=wx.ID_ANY, value=4, minValue=1, maxValue=10,
                                         style=wx.SL_LABELS)
-        self.pause_sizer.Add(self.pause_label, 0)
-        self.pause_sizer.Add(self.pause_duration, 1, wx.GROW)
+        self.pause_sizer.Add(self.pause_label, 0, wx.ALL, 10)
+        self.pause_sizer.Add(self.pause_duration, 1, wx.GROW | wx.RIGHT, 10)
 
-        self.main_sizer.Add(self.pause_sizer)
+        self.main_sizer.Add(self.pause_sizer, 1, wx.EXPAND)
 
         # default value
         if settings.has_option("pause"):
@@ -1424,10 +1426,10 @@ class MainWindow(wx.Frame):
         self.font_label = wx.StaticText(parent=self.panel, id=wx.ID_ANY, label=t("Font Size"))
         self.font_size = wx.Slider(parent=self.panel, id=wx.ID_ANY, value=25, minValue=10, maxValue=50,
                                    style=wx.SL_LABELS)
-        self.font_sizer.Add(self.font_label, 0)
-        self.font_sizer.Add(self.font_size, 1, wx.GROW)
+        self.font_sizer.Add(self.font_label, 0, wx.ALL, 10)
+        self.font_sizer.Add(self.font_size, 1, wx.GROW | wx.RIGHT, 10)
 
-        self.main_sizer.Add(self.font_sizer)
+        self.main_sizer.Add(self.font_sizer, 1, wx.EXPAND)
 
         if settings.has_option("font_size"):
             font_val = settings.get("font_size")
@@ -1440,13 +1442,13 @@ class MainWindow(wx.Frame):
         # sizer for slow but better
         self.slow_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.slow_check_box = wx.CheckBox(parent=self.panel, id=wx.ID_ANY, label=t("Slow but better"))
-        self.slow_sizer.Add(self.slow_check_box)
+        self.slow_sizer.Add(self.slow_check_box, 1, wx.ALL, 10)
         self.main_sizer.Add(self.slow_sizer)
 
         # progress bar
         self.meter_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.meter = wx.Gauge(parent=self.panel, id=wx.ID_ANY, range=100)
-        self.meter_sizer.Add(self.meter, 1, wx.GROW)
+        self.meter = wx.Gauge(parent=self.panel, id=wx.ID_ANY, range=100, size=(550, 20))
+        self.meter_sizer.Add(self.meter, 1, wx.GROW | wx.ALL, 10)
         self.main_sizer.Add(self.meter_sizer, 0, wx.GROW)
 
         # destination stuff
@@ -1461,8 +1463,8 @@ class MainWindow(wx.Frame):
         self.destination_label = wx.StaticText(parent=self.panel, id=wx.ID_ANY, label=t("Destination:"))
         self.destination_picker = wx.DirPickerCtrl(parent=self.panel, id=wx.ID_ANY, path=self.final_destination_path,
                                                    message=t("Select final video destination directory"))
-        self.destination_sizer.Add(self.destination_label, 0)
-        self.destination_sizer.Add(self.destination_picker, 2, wx.GROW)
+        self.destination_sizer.Add(self.destination_label, 0, wx.ALL, 10)
+        self.destination_sizer.Add(self.destination_picker, 2, wx.GROW | wx.ALL, 10)
         self.main_sizer.Add(self.destination_sizer, 1, wx.GROW)
 
         # button stuff
@@ -1473,15 +1475,16 @@ class MainWindow(wx.Frame):
         self.quit_app_btn = wx.Button(parent=self.panel, id=wx.ID_ANY, label=t("Quit"))
         self.button_sizer.Add(self.open_playlist_btn)
         self.button_sizer.Add(self.quit_app_btn)
-        self.main_sizer.Add(self.button_sizer)
+        self.main_sizer.Add(self.button_sizer, 0, wx.ALIGN_CENTER | wx.ALL, 10)
 
         # BINDINGS
         self.Bind(wx.EVT_BUTTON, self.open_dialog, self.open_playlist_btn)
         self.Bind(wx.EVT_BUTTON, self.quit_app, self.quit_app_btn)
 
         self.SetSizer(self.main_sizer)
-        # self.SetAutoLayout(1)
-        # self.main_sizer.Fit(self)
+
+        self.main_sizer.SetSizeHints(self)
+
         self.Show(True)
 
         # get the version from the ini
