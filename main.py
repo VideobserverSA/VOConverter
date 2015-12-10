@@ -2076,9 +2076,9 @@ class MainWindow(wx.Frame):
         done_open_btn = wx.Button(parent=done_dlg, id=wx.ID_ANY, label=t("Open Video"))
         done_ok_btn = wx.Button(parent=done_dlg, id=wx.ID_OK, label=t("Ok"))
         # sizer stuff
-        done_dlg_sizer.Add(done_msg)
-        done_dlg_sizer.Add(done_open_btn)
-        done_dlg_sizer.Add(done_ok_btn)
+        done_dlg_sizer.Add(done_msg, 0, wx.ALL, 15)
+        done_dlg_sizer.Add(done_open_btn, 0, wx.LEFT | wx.RIGHT | wx.ALIGN_CENTER_HORIZONTAL, 15)
+        done_dlg_sizer.Add(done_ok_btn, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 15)
         done_dlg.SetSizer(done_dlg_sizer)
         # auto layout TODO fix this a bit
         done_dlg.SetAutoLayout(1)
