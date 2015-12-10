@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Vo Converter\n"
-"POT-Creation-Date: 2015-12-09 18:14+0000\n"
-"PO-Revision-Date: 2015-12-09 18:17+0000\n"
+"POT-Creation-Date: 2015-12-10 18:29+0000\n"
+"PO-Revision-Date: 2015-12-10 18:30+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: pt\n"
@@ -15,170 +15,193 @@ msgstr ""
 "X-Poedit-KeywordsList: t:1;t:1,2\n"
 "X-Poedit-SearchPath-0: main.py\n"
 
-#: main.py:1378
+#: main.py:1380
 msgid "Open Playlist"
 msgstr "Abrir Playlist"
 
-#: main.py:1378
+#: main.py:1380
 msgid "Open a playlist (.vopl) for conversion"
 msgstr "Abrir uma playlist (.vopl) para conversão"
 
-#: main.py:1380 main.py:1473
+#: main.py:1382 main.py:1475
 msgid "Quit"
 msgstr "Sair"
 
-#: main.py:1380
+#: main.py:1382
 msgid "Quit the App"
 msgstr "Sair da Aplicação"
 
-#: main.py:1386
+#: main.py:1388
 msgid "English"
 msgstr "Inglês"
 
-#: main.py:1386
+#: main.py:1388
 msgid "Select English language"
 msgstr "Selecionar Língua Inglesa"
 
-#: main.py:1387
+#: main.py:1389
 msgid "Portuguese"
 msgstr "Português"
 
-#: main.py:1387
+#: main.py:1389
 msgid "Select Portuguese language"
 msgstr "Selecionar Língua Portuguesa"
 
-#: main.py:1393
+#: main.py:1395
 msgid "File"
 msgstr "Ficheiro"
 
-#: main.py:1394
+#: main.py:1396
 msgid "Language"
 msgstr "Língua"
 
-#: main.py:1405
+#: main.py:1407
 msgid "Drawings Pause Time"
 msgstr "Pausa do Desenho"
 
-#: main.py:1424
+#: main.py:1426
 msgid "Font Size"
 msgstr "Tamanho da Letra"
 
-#: main.py:1442
+#: main.py:1444
 msgid "Slow but better"
 msgstr ""
 
-#: main.py:1461
+#: main.py:1463
 msgid "Destination:"
 msgstr "Destino:"
 
-#: main.py:1463
+#: main.py:1465
 msgid "Select final video destination directory"
 msgstr "Selecionar diretoria de destino do vídeo final"
 
-#: main.py:1472
+#: main.py:1474
 msgid "Open File"
 msgstr "Abrir Ficheiro"
 
-#: main.py:1493
+#: main.py:1496
 msgid "Version: "
 msgstr "Versão:"
 
-#: main.py:1493
+#: main.py:1496
 msgid " , date: "
 msgstr ",data:"
 
-#: main.py:1533
+#: main.py:1538
 msgid "New version on Server"
 msgstr "Nova versão disponivel"
 
-#: main.py:1536
+#: main.py:1541
 msgid "There is a new version available for download. Do you wish to:"
 msgstr "Existe uma nova versão disponível no servidor. Deseja:"
 
-#: main.py:1538
+#: main.py:1543
 msgid "Download"
 msgstr "Descarregar"
 
-#: main.py:1539
+#: main.py:1544
 msgid "Ignore this time"
 msgstr "Ignorar desta vez"
 
-#: main.py:1569
+#: main.py:1574
 msgid "VO Playlist"
 msgstr "Playlist VO"
 
-#: main.py:1669
+#: main.py:1674
 msgid "Video Files"
 msgstr "Ficheiros de Video"
 
-#: main.py:1669
+#: main.py:1674
 msgid "All Files"
 msgstr "Todos os Ficheiros"
 
-#: main.py:1672
+#: main.py:1677
 msgid "Video file not found, please select another"
 msgstr "Ficheiro de vídeo não encontrado, por favor escolha outro."
 
-#: main.py:1687
+#: main.py:1692
 msgid "Processing..."
 msgstr "A Processar..."
 
-#: main.py:1726
+#: main.py:1731
 #, python-format
 msgid "Processing item %i"
 msgstr "A processar item %i"
 
-#: main.py:1843
+#: main.py:1848
 #, python-format
 msgid "Better converting %i"
 msgstr ""
 
-#: main.py:1856
+#: main.py:1861
 #, python-format
 msgid "Adding subtitles to item %i"
 msgstr "A adicionar legendas ao item %i"
 
-#: main.py:1883
+#: main.py:1888
 #, python-format
 msgid "Fast cutting item %i"
 msgstr "A cortar o item %i"
 
-#: main.py:1896
+#: main.py:1901
 #, python-format
 msgid "Adding drawing to item %i"
 msgstr "Adicionar desenho ao item %i"
 
-#: main.py:1959
+#: main.py:1964
 #, python-format
 msgid "Finishing item %i"
 msgstr "A acabar item %i"
 
-#: main.py:1974
+#: main.py:1979
 msgid "Joining final video"
 msgstr "A criar o vídeo final"
 
-#: main.py:2032
+#: main.py:2011
+msgid "Overwrite final file?"
+msgstr "Substituir ficheiro final?"
+
+#: main.py:2014
+msgid ""
+"There is already a file with that name on the destination directory... Do you "
+"wish to:"
+msgstr ""
+"Já existe um ficheiro com o mesmo nome na diretoria de destino... Deseja:"
+
+#: main.py:2015
+msgid "Overwrite"
+msgstr "Substituir"
+
+#: main.py:2016
+msgid "Rename"
+msgstr "Renomear"
+
+#: main.py:2061
 #, python-format
 msgid "Done in %s:%s:%s ..."
 msgstr "Completo em %s:%s:%s ..."
 
-#: main.py:2040
+#: main.py:2069
 msgid "Done in"
 msgstr "Completo em"
 
-#: main.py:2044 main.py:2046
+#: main.py:2073 main.py:2075
 msgid "Playlist done..."
 msgstr "Playlist completa..."
 
-#: main.py:2047
+#: main.py:2076
 msgid "Open Video"
 msgstr "Abrir Video"
 
-#: main.py:2048
+#: main.py:2077 main.py:2108
 msgid "Ok"
 msgstr "Ok"
 
-#: main.py:2126
+#: main.py:2101
+msgid "Select new file"
+msgstr "Selecione Novo Ficheiro"
+
+#: main.py:2186
 msgid "Vo Converter"
 msgstr "Vo Converter"
 
@@ -212,5 +235,11 @@ msgstr "Vo Converter"
 #~ msgid "Ignore"
 #~ msgstr "Ignorar"
 
-#~ msgid "There is a new version available for download.                                                                  Do you wish to:"
-#~ msgstr "Existe uma nova versão disponível no servidor.                                                            Deseja:"
+#~ msgid ""
+#~ "There is a new version available for "
+#~ "download.                                                                  "
+#~ "Do you wish to:"
+#~ msgstr ""
+#~ "Existe uma nova versão disponível no "
+#~ "servidor.                                                            "
+#~ "Deseja:"
