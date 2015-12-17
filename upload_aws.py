@@ -365,6 +365,9 @@ class MainWindow(wx.Frame):
         self.percentage = 0
         self.last_percentage = 0
 
+        self.upload_data_points = []
+        self.upload_start_time = time.time()
+
         self.conv_progress = 0
 
         self.converted_video = ''
@@ -391,6 +394,8 @@ class MainWindow(wx.Frame):
         if not self.conversion_done:
             return
 
+        self.upload_start_time = time.time()
+
         # we cheat so that the user can see some progress at start
         self.upload_progress_gauge.Pulse()
         # self.progress_label.SetLabelText("1" + "%")
@@ -412,15 +417,44 @@ class MainWindow(wx.Frame):
             dummy_event = threading.Event()
             dummy_event.wait(timeout=0.01)
             self.upload_progress_gauge.SetValue(self.percentage)
-            self.upload_progress_label.SetLabelText(str(self.percentage) + "%")
+            # self.upload_progress_label.SetLabelText(str(self.percentage) + "%")
+            if len(self.upload_data_points) > 0:
+
+                remain = (sum(self.upload_data_points) / len(self.upload_data_points))
+                # print(remain)
+                s = int(remain % 60)
+                m = int((remain / 60))
+                h = int((remain / (60 * 60)))
+
+                self.upload_progress_label.SetLabelText(str(self.percentage) + "%      " +
+                                                        str(h) + "h " + str(m) + "m " + str(s) + "s" +
+                                                        " remaining to completion"
+                                                        )
             wx.Yield()
             self.Update()
 
         confirm_upload(token=self.t["token"], bucket=self.aws_data["Bucket"], key=self.upload_key, duration=100, size=100)
+        self.upload_progress_label.SetLabelText("Complete")
 
     def update_progress(self, progress):
         self.uploaded_size += progress
         self.percentage = math.ceil((self.uploaded_size / self.total_size) * 100)
+
+        if self.percentage == 0:
+            self.percentage = 1
+
+        # calc estimated time
+        delta = time.time() - self.upload_start_time
+        eta = (delta * 100) / self.percentage
+        remaining = eta - delta
+
+        # print("d:", delta, "p:", progress, "e:", eta, "r:", remaining)
+
+        # create data point
+        self.upload_data_points.append(remaining)
+        if len(self.upload_data_points) > 5:
+            # remove the earliest data point
+            self.upload_data_points.pop(0)
 
     def set_progress(self, progress):
         self.uploaded_size = progress
