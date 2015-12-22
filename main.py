@@ -1860,9 +1860,10 @@ class MainWindow(wx.Frame):
                                         video_info=self.video_info)
                     burn_thr.start()
                     while burn_thr.is_alive():
+                        wx.Yield()
                         self.Update()
                         dummy_event = threading.Event()
-                        dummy_event.wait(timeout=1)
+                        dummy_event.wait(timeout=0.01)
 
                 else:
                     self.PushStatusText(t("Adding subtitles to item %i") % (cut_number + 1))
@@ -1875,9 +1876,10 @@ class MainWindow(wx.Frame):
                                               font_size=self.font_size.GetValue())
                     sub_thr.start()
                     while sub_thr.is_alive():
+                        wx.Yield()
                         self.Update()
                         dummy_event = threading.Event()
-                        dummy_event.wait(timeout=5)
+                        dummy_event.wait(timeout=0.01)
 
             elif has_drawing or has_multiple_drawings:
                 # we need to convert without fast copy so that the further cuts work out right
@@ -1887,9 +1889,10 @@ class MainWindow(wx.Frame):
                                            key_frames=12)
                 key_thr.start()
                 while key_thr.is_alive():
+                    wx.Yield()
                     self.Update()
                     dummy_event = threading.Event()
-                    dummy_event.wait(timeout=1)
+                    dummy_event.wait(timeout=0.01)
             else:
                 # just cut in time since we need no further processing
                 status_text = t("Fast cutting item %i") % (cut_number + 1)
@@ -1899,9 +1902,10 @@ class MainWindow(wx.Frame):
                                            tmp_out=self.temp_dir.name + path_separator + str(cut_number) + "_comments.mp4")
                 fast_cut_thr.start()
                 while fast_cut_thr.is_alive():
+                    wx.Yield()
                     self.Update()
                     dummy_event = threading.Event()
-                    dummy_event.wait(timeout=1)
+                    dummy_event.wait(timeout=0.01)
 
             # do we add an overlay?
             if has_drawing:
@@ -1938,9 +1942,10 @@ class MainWindow(wx.Frame):
                                          pause_time=self.pause_duration.get())
                 overlay_thr.start()
                 while overlay_thr.is_alive():
+                    wx.Yield()
                     self.Update()
                     dummy_event = threading.Event()
-                    dummy_event.wait(timeout=1)
+                    dummy_event.wait(timeout=0.01)
 
             if has_multiple_drawings:
                 multiple_thr = AddMultipleDrawings(temp_dir=self.temp_dir,
@@ -1954,9 +1959,10 @@ class MainWindow(wx.Frame):
                                                    duration=real_duration)
                 multiple_thr.start()
                 while multiple_thr.is_alive():
+                    wx.Yield()
                     self.Update()
                     dummy_event = threading.Event()
-                    dummy_event.wait(timeout=1)
+                    dummy_event.wait(timeout=0.01)
 
             # lastly we convert to fast copy for the final join
             if has_drawing or has_multiple_drawings:
@@ -1968,10 +1974,11 @@ class MainWindow(wx.Frame):
                                               input_video=fast_copy_input, tmp_out=tmp_out)
             fast_copy_thr.start()
             while fast_copy_thr.is_alive():
+                wx.Yield()
                 self.PushStatusText(t("Finishing item %i") % (cut_number + 1))
                 self.Update()
                 dummy_event = threading.Event()
-                dummy_event.wait(timeout=1)
+                dummy_event.wait(timeout=0.01)
 
             # calc progress
             progress = cut_number / self.num_items
