@@ -19,6 +19,7 @@ import urllib.error
 from distutils.version import LooseVersion
 import platform
 import random
+import shutil
 
 __author__ = 'Rui'
 
@@ -974,6 +975,12 @@ class AddMultipleDrawings(threading.Thread):
                                 shell=shell_status)
                         except CalledProcessError as cpe:
                             print("DRAWING JOIN START", cpe.output)
+                else:
+                    # copy the done to the final video
+                    shutil.copy(
+                                self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_done.mp4",
+                                self.tmp_out
+                                )
 
         else:
             # and join all the bits and pieces
