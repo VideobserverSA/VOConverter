@@ -1597,7 +1597,7 @@ class MainWindow(wx.Frame):
         # save settings for next time
         settings.set("pause", self.pause_duration.GetValue())
         settings.set("font_size", self.font_size.GetValue())
-        settings.set("destination_path", self.final_destination_path)
+        settings.set("destination_path", self.destination_picker.GetPath())
 
         settings.save()
 
