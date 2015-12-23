@@ -597,6 +597,9 @@ class AddMultipleDrawings(threading.Thread):
         bottom = self.video_info.height - 22 - 20
         left = 20
 
+        # sort the drawings by time
+        self.drawings = sorted(self.drawings, key=lambda drw: drw.drawing_time)
+
         # cut the start of the clip that is until the first drawing time
         try:
             # cut from the begging to the overlay
