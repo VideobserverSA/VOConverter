@@ -2017,7 +2017,8 @@ class MainWindow(wx.Frame):
 
         # outfile
         out_filename = self.base_name.replace(".vopl", "")
-        self.out_path = self.final_destination_path + path_separator + out_filename + ".mp4"
+
+        self.out_path = self.destination_picker.GetPath() + path_separator + out_filename + ".mp4"
         self.final_path = self.out_path
 
         if os.path.isfile(self.out_path):
