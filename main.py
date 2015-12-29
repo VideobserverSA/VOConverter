@@ -1578,6 +1578,8 @@ class MainWindow(wx.Frame):
 
         except urllib.error.URLError as ue:
             print('Could not reach server to check version... ' + str(ue.reason))
+        except ValueError as ve:
+            print('Invalid version json')
 
     def open_dialog(self, e):
         path = ""
@@ -2147,7 +2149,7 @@ class MainWindow(wx.Frame):
             os.startfile(self.final_path)
 
 # init the app amd make it read to read resources
-app = wx.App(True)
+app = wx.App(False)
 
 #
 # FUCKING IMPORTANT, we need to do this code here or else the app does not see its resources
