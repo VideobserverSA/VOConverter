@@ -1,0 +1,26 @@
+[
+  {
+    "name" : "Full HD",
+    "width" : 1920,
+    "height" : 1080,
+    "bitrate": 4300,
+    "framerate" : 25,
+    "keyframes" : 25
+  },
+  {
+    "name" : "HD",
+    "width" : 1280,
+    "height" : 720,
+    "bitrate": 2350,
+    "framerate" : 25,
+    "keyframes" : 25
+  },
+  {
+    "name" : "DVD",
+    "width" : 720,
+    "height" : 480,
+    "bitrate": 1750,
+    "framerate" : 25,
+    "keyframes" : 25
+  }
+]

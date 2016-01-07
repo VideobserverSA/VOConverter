@@ -14,6 +14,7 @@ import tempfile
 import uuid
 import re
 import time
+from qtfaststart import processor
 
 api_url = "http://api.qa.videobserver.com/"
 # test_file = "teste user.mp4"
@@ -33,6 +34,19 @@ part_size = 5 * 1024 * 1024
 
 # just some global settings
 settings = EasySettings("test.conf")
+
+# lets create a template array?
+
+
+class EncodingPreset:
+
+    def __init__(self, name, width, height, bitrate, framerate, keyframes):
+        self.name = name
+        self.width = width
+        self.height = height
+        self.bitrate = bitrate
+        self.framerate = framerate
+        self.keyframes = keyframes
 
 
 class VideoInfo:
@@ -160,22 +174,44 @@ class UploadFile(threading.Thread):
 
 class EncodeWithKeyFrames(threading.Thread):
 
-    def __init__(self, in_video,in_video_time, out_video, key_frames, log, callback):
+    def __init__(self, in_video, in_video_info, out_video, key_frames, log, callback, preset):
 
         super().__init__()
 
         self.in_video = in_video
-        self.in_video_time = in_video_time
+        self.in_video_info = in_video_info
         self.out_video = out_video
         self.key_frames = key_frames
         self.log = log
         self.callback = callback
+        self.preset = preset
 
     def run(self):
 
         # log_path = self.temp_dir.name + path_separator + str(self.cut_number) + "_cut_key_frames.log"
         # log_file = open(log_path, "wb")
 
+        new_w = self.in_video_info.width
+        new_h = self.in_video_info.height
+
+        # if self.restrict_resolution:
+        #     if self.in_video_info.width > 3000 or self.in_video_info.height > 3000:
+        #         new_w = int(self.in_video_info.width / 2)
+        #         new_h = int(self.in_video_info.height / 2)
+        #
+        #         if new_w % 2 != 0:
+        #             new_w += 1
+        #
+        #         if new_h % 2 != 0:
+        #             new_h += 1
+
+        w = str(self.preset.width)
+        h = str(self.preset.height)
+
+        # shamelessly stolen from
+        # http://superuser.com/questions/547296/resizing-videos-with-ffmpeg-avconv-to-fit-into-static-sized-player
+        scale = "iw*min(" + w + "/iw\," + h + "/ih):ih*min(" + w + "/iw\," + h + "/ih), pad=" + w + ":" + h +\
+                ":(" + w + " -iw*min(" + w + "/iw\," + h + "/ih))/2:(" + h + "-ih*min(" + w + "/iw\," + h + "/ih))/2"
         cmd = [
                 # path to ffmpeg
                 ffmpeg_path,
@@ -185,16 +221,27 @@ class EncodeWithKeyFrames(threading.Thread):
                 "-i",
                 self.in_video,
                 # codec
+                # fast start for good indexing
+                # "-movflags",
+                # "faststart",
                 "-x264opts",
-                "keyint=" + str(self.key_frames) + ":min-keyint=" + str(self.key_frames),
+                "keyint=" + str(self.preset.keyframes) + ":min-keyint=" + str(self.preset.keyframes),
                 "-c:v",
                 "libx264",
+                "-b:v",
+                str(self.preset.bitrate) + "k",
                 "-c:a",
                 "aac",
                 "-strict",
                 "-2",
+                "-vf",
+                # "scale=" + str(self.preset.width) + ":" + str(self.preset.height),
+                "scale=" + scale,
+                # frames
+                "-framerate",
+                str(self.preset.framerate),
                 # output file
-                self.out_video
+                self.out_video + "_temp.mp4"
                 ]
 
         p = Popen(cmd,
@@ -208,14 +255,14 @@ class EncodeWithKeyFrames(threading.Thread):
         had_one_hundred = False
 
         for line in iter(p.stdout.readline, b''):
-            # print(">>> " + str(line.rstrip()))
+            print(">>> " + str(line.rstrip()))
             m = reg.search(str(line.rstrip()))
             if m is not None:
                 time_str = m.group().replace("time=", "")[:-3]
                 splitted = time_str.split(":")
                 seconds = 60 * 60 * int(splitted[0]) + 60 * int(splitted[1]) + int(splitted[2])
                 # print("time:", time_str, " seconds:" + str(seconds))
-                percentage = int((seconds * 100) / int(float(self.in_video_time)))
+                percentage = int((seconds * 100) / int(float(self.in_video_info.duration)))
 
                 if percentage == 100:
                     had_one_hundred = True
@@ -229,6 +276,8 @@ class EncodeWithKeyFrames(threading.Thread):
                     # so we need to avoid it
                     p.terminate()
                     break
+
+        processor.process(self.out_video + "_temp.mp4", self.out_video)
 
 
 # get the token
@@ -309,10 +358,33 @@ class MainWindow(wx.Frame):
 
         # self.panel = wx.Panel(parent=self, id=wx.ID_ANY)
 
+        self.presets = []
+
+        # parse the presets, and create radio buttons for each one
+        presets_file = open("presets.json", "r")
+        presets_json = json.load(presets_file)
+
+        preset_choices = []
+
+        for preset_json in presets_json:
+            preset = EncodingPreset(name=preset_json["name"],
+                                    width=preset_json["width"],
+                                    height=preset_json["height"],
+                                    bitrate=preset_json["bitrate"],
+                                    framerate=preset_json["framerate"],
+                                    keyframes=preset_json["keyframes"])
+            self.presets.append(preset)
+            preset_choices.append(preset.name)
+
         self.main_sizer = wx.BoxSizer(wx.VERTICAL)
 
+        # create the radio button groups
+        self.presets_radio_box = wx.RadioBox(parent=self, id=wx.ID_ANY, label="Video Preset!!", choices=preset_choices)
+
+        self.main_sizer.Add(self.presets_radio_box)
+
         self.file_picker = wx.FilePickerCtrl(parent=self, id=wx.ID_ANY, message="Chose file to convert and upload",
-                                             path="C:\\Users\\Rui\\Desktop\\Video07set_high.flv")
+                                             path="D:\\golf.mp4")
 
         self.conversion_progress_gauge = wx.Gauge(parent=self, id=wx.ID_ANY, range=100, size=(400, 20))
 
@@ -482,6 +554,11 @@ class MainWindow(wx.Frame):
 
     def convert_test(self, e):
 
+        # get the preset name
+        preset_name = self.presets_radio_box.GetStringSelection()
+        # and now get the preset itself
+        preset = [x for x in self.presets if x.name == preset_name][0]
+
         self.conv_start_time = time.time()
 
         video_to_conv = self.file_picker.GetPath()
@@ -493,9 +570,10 @@ class MainWindow(wx.Frame):
 
         log_file = open(self.temp_dir.name + '\\' + "conv.log", 'w')
 
-        convert_thr = EncodeWithKeyFrames(in_video=video_to_conv, in_video_time=video_info.duration,
+        convert_thr = EncodeWithKeyFrames(in_video=video_to_conv, in_video_info=video_info,
                                           out_video=self.converted_video, key_frames=24,
-                                          log=log_file, callback=self.update_conv_progress)
+                                          log=log_file, callback=self.update_conv_progress,
+                                          preset=preset)
         convert_thr.start()
 
         while convert_thr.is_alive():
