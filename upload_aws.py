@@ -224,6 +224,8 @@ class EncodeWithKeyFrames(threading.Thread):
                 str(self.preset.bitrate) + "k",
                 "-c:a",
                 "aac",
+                "-b:a",
+                "128k",
                 "-strict",
                 "-2",
                 # pass scaling
@@ -388,9 +390,18 @@ class JoinFiles(threading.Thread):
         except CalledProcessError as cpe:
             print("ERROR>>", cpe.output)
 
+        # we are DONE!
+        self.callback(100)
+
     def update_progress(self, progress):
-        self.callback(progress)
-        pass
+        # which part of the percentage each item takes?
+        item_slice = 100 / len(self.in_videos)
+        # at what cut number are we?
+        # so at minimum we are
+        baseline = self.cut_number * item_slice
+        # now we add the actual slice percentage to the baseline
+        to_add = (progress * item_slice / 100)
+        self.callback(int(baseline + to_add))
 
 
 # get the token
@@ -464,7 +475,8 @@ def confirm_upload(token, bucket, key, duration, size):
 class MyFileDrop(wx.FileDropTarget):
 
     def OnDropFiles(self, x, y, filenames):
-        frame.join_files(filenames)
+        # frame.join_files(filenames)
+        frame.add_files_to_join(filenames)
         return True
 
 
@@ -541,6 +553,15 @@ class MainWindow(wx.Frame):
         self.main_sizer.Add(self.test_button, 0, wx.ALIGN_CENTER_HORIZONTAL)
 
         self.Bind(event=wx.EVT_BUTTON, handler=self.clean_incomplete_uploads, source=self.test_button)
+
+        self.join_list_view = wx.ListView(parent=self, winid=wx.ID_ANY, style=wx.LC_REPORT, name="FILES TO JOIN!!!")
+        self.main_sizer.Add(self.join_list_view, wx.EXPAND)
+        self.join_list_view.AppendColumn("Teste Col", wx.LIST_FORMAT_CENTER, 500)
+
+        self.join_files_btn = wx.Button(parent=self, id=wx.ID_ANY, label="JOIN THESE FILES")
+        self.main_sizer.Add(self.join_files_btn)
+
+        self.Bind(event=wx.EVT_BUTTON, handler=self.join_files, source=self.join_files_btn)
 
         self.SetSizer(self.main_sizer)
         self.main_sizer.SetSizeHints(self)
@@ -779,8 +800,21 @@ class MainWindow(wx.Frame):
         except CalledProcessError as cpe:
             print("FFPROBE OUT", cpe.output)
 
-    def join_files(self, filenames):
-        print("DROP THIS", filenames)
+    def show_files_to_join(self, filenames):
+        print("FILENAMES", filenames)
+        pass
+
+    def join_files(self, e):
+
+        self.conv_start_time = time.time()
+
+        # get the files
+        filenames = []
+        for x in range(self.join_list_view.GetItemCount()):
+            item = self.join_list_view.GetItem(x)
+            filenames.append(item.GetText())
+
+        print("FILENAMES DO CENA", filenames)
 
         # get the preset name
         preset_name = self.presets_radio_box.GetStringSelection()
@@ -796,8 +830,26 @@ class MainWindow(wx.Frame):
             dummy_event = threading.Event()
             dummy_event.wait(timeout=0.01)
 
+            self.conversion_progress_gauge.SetValue(self.conv_progress)
+            if len(self.conv_data_points) > 0:
+
+                remain = (sum(self.conv_data_points) / len(self.conv_data_points))
+                # print(remain)
+                s = int(remain % 60)
+                m = int((remain / 60))
+                h = int((remain / (60 * 60)))
+
+                self.conv_progress_label.SetLabelText(str(self.conv_progress) + "%      " +
+                                                      str(h) + "h " + str(m) + "m " + str(s) + "s" +
+                                                      " remaining to completion"
+                                                      )
+
             wx.Yield()
             self.Update()
+
+        self.conversion_progress_gauge.SetValue(100)
+        self.conv_progress_label.SetLabelText("Join Complete")
+        self.conversion_done = True
 
     def update_join_progress(self, progress):
         self.conv_progress = progress
@@ -816,6 +868,19 @@ class MainWindow(wx.Frame):
         if len(self.conv_data_points) > 5:
             # remove the earliest data point
             self.conv_data_points.pop(0)
+
+    def add_files_to_join(self, filenames):
+        for file in filenames:
+            # create a ListItem and add it to the list view
+
+            # list_item = wx.ListItem()
+            # list_item.SetText(file)
+            # self.join_list_view.Append(list_item)
+            # print("FDX FDX", file)
+
+            # self.join_list_view.SetItem(1, 1, "cenas", -1)
+
+            self.join_list_view.Append([file])
 
 
 app = wx.App(False)
