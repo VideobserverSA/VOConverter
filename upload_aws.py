@@ -174,25 +174,20 @@ class UploadFile(threading.Thread):
 
 class EncodeWithKeyFrames(threading.Thread):
 
-    def __init__(self, in_video, in_video_info, out_video, key_frames, log, callback, preset):
+    def __init__(self, in_video, in_video_info, out_video, callback, preset):
 
         super().__init__()
 
         self.in_video = in_video
         self.in_video_info = in_video_info
         self.out_video = out_video
-        self.key_frames = key_frames
-        self.log = log
         self.callback = callback
         self.preset = preset
 
     def run(self):
 
-        # log_path = self.temp_dir.name + path_separator + str(self.cut_number) + "_cut_key_frames.log"
-        # log_file = open(log_path, "wb")
-
-        new_w = self.in_video_info.width
-        new_h = self.in_video_info.height
+        # new_w = self.in_video_info.width
+        # new_h = self.in_video_info.height
 
         # if self.restrict_resolution:
         #     if self.in_video_info.width > 3000 or self.in_video_info.height > 3000:
@@ -221,9 +216,6 @@ class EncodeWithKeyFrames(threading.Thread):
                 "-i",
                 self.in_video,
                 # codec
-                # fast start for good indexing
-                # "-movflags",
-                # "faststart",
                 "-x264opts",
                 "keyint=" + str(self.preset.keyframes) + ":min-keyint=" + str(self.preset.keyframes),
                 "-c:v",
@@ -234,8 +226,8 @@ class EncodeWithKeyFrames(threading.Thread):
                 "aac",
                 "-strict",
                 "-2",
+                # pass scaling
                 "-vf",
-                # "scale=" + str(self.preset.width) + ":" + str(self.preset.height),
                 "scale=" + scale,
                 # frames
                 "-framerate",
@@ -278,6 +270,127 @@ class EncodeWithKeyFrames(threading.Thread):
                     break
 
         processor.process(self.out_video + "_temp.mp4", self.out_video)
+
+
+class ConvertToFastCopy(threading.Thread):
+
+    def __init__(self, temp_dir, cut_number, input_video, tmp_out):
+
+        super().__init__()
+
+        self.cut_number = cut_number
+        self.input_video = input_video
+        self.tmp_out = tmp_out
+        self.temp_dir = temp_dir
+
+    def run(self):
+
+        # log_file = open(self.temp_dir.name + path_separator + str(self.cut_number) + "_fast_copy.log", "wb")
+
+        out = check_call([
+            # path to ffmpeg
+            ffmpeg_path,
+            # overwrite
+            "-y",
+            # start time, since this clip is already we want to use it all
+            "-ss",
+            "0",
+            # input file
+            "-i",
+            self.input_video,
+            "-c",
+            "copy",
+            "-bsf:v",
+            "h264_mp4toannexb",
+            "-f",
+            "mpegts",
+            # output file
+            self.tmp_out
+        ],  stderr=STDOUT,
+            shell=False)
+
+
+class JoinFiles(threading.Thread):
+    def __init__(self, in_videos, out_video, callback, preset, tmp_dir):
+
+        super().__init__()
+
+        self.in_videos = in_videos
+        self.out_video = out_video
+        self.callback = callback
+        self.preset = preset
+        self.tmp_dir = tmp_dir
+
+        self.progress = 0
+        self.cut_number = 0
+
+    def run(self):
+        # loop the in videos and convert according to the preset
+        for video in self.in_videos:
+            # use the damn preset
+
+            video_info = frame.get_video_info(video)
+
+            convert_thr = EncodeWithKeyFrames(in_video=video,
+                                              out_video=self.tmp_dir.name + "\\" + str(self.cut_number) + "_to_join.mp4",
+                                              callback=self.update_progress, preset=self.preset,
+                                              in_video_info=video_info)
+
+            convert_thr.start()
+
+            while convert_thr.is_alive():
+                dummy_event = threading.Event()
+                dummy_event.wait(timeout=0.01)
+
+            # fast copy??
+            fast_copy_thr = ConvertToFastCopy(self.tmp_dir, cut_number=self.cut_number,
+                                              input_video=self.tmp_dir.name + "\\" + str(self.cut_number) + "_to_join.mp4",
+                                              tmp_out=self.tmp_dir.name + "\\" + str(self.cut_number) + "_fast.mp4")
+            fast_copy_thr.start()
+            while fast_copy_thr.is_alive():
+                dummy_event = threading.Event()
+                dummy_event.wait(timeout=0.01)
+
+            self.cut_number += 1
+
+        # now we join the damn thing
+        join_args = []
+        # path to ffmpeg
+        join_args.append(ffmpeg_path)
+        # overwrite
+        join_args.append("-y")
+        # input
+        join_args.append("-i")
+        # the concat files
+        concat = "concat:"
+        for x in range(0, self.cut_number):
+            concat += self.tmp_dir.name + "\\" + str(x) + "_fast.mp4" + "|"
+        concat = concat[:-1]
+        concat += ""
+        join_args.append(concat)
+
+        # fast copy concatneation
+        join_args.append("-c")
+        join_args.append("copy")
+        join_args.append("-bsf:a")
+        join_args.append("aac_adtstoasc")
+        join_args.append("-movflags")
+        join_args.append("faststart")
+
+        # outfile
+        # put it on desktop for now
+        join_args.append("" + self.out_video + "")
+
+        print("JUNTAMOS", join_args)
+
+        try:
+            out = check_call(join_args, stderr=STDOUT, shell=False)
+        except CalledProcessError as cpe:
+            print("ERROR>>", cpe.output)
+
+    def update_progress(self, progress):
+        self.callback(progress)
+        pass
 
 
 # get the token
@@ -348,6 +461,13 @@ def confirm_upload(token, bucket, key, duration, size):
         return None
 
 
+class MyFileDrop(wx.FileDropTarget):
+
+    def OnDropFiles(self, x, y, filenames):
+        frame.join_files(filenames)
+        return True
+
+
 class MainWindow(wx.Frame):
 
     def __init__(self, parent, title):
@@ -380,6 +500,7 @@ class MainWindow(wx.Frame):
 
         # create the radio button groups
         self.presets_radio_box = wx.RadioBox(parent=self, id=wx.ID_ANY, label="Video Preset!!", choices=preset_choices)
+        self.presets_radio_box.SetSelection(2)
 
         self.main_sizer.Add(self.presets_radio_box)
 
@@ -424,6 +545,10 @@ class MainWindow(wx.Frame):
         self.SetSizer(self.main_sizer)
         self.main_sizer.SetSizeHints(self)
         self.Show()
+
+        # test the drop target stuff?
+        self.file_drop = MyFileDrop()
+        self.SetDropTarget(self.file_drop)
 
         self.t = ""
         self.aws_data = {}
@@ -571,8 +696,8 @@ class MainWindow(wx.Frame):
         log_file = open(self.temp_dir.name + '\\' + "conv.log", 'w')
 
         convert_thr = EncodeWithKeyFrames(in_video=video_to_conv, in_video_info=video_info,
-                                          out_video=self.converted_video, key_frames=24,
-                                          log=log_file, callback=self.update_conv_progress,
+                                          out_video=self.converted_video,
+                                          callback=self.update_conv_progress,
                                           preset=preset)
         convert_thr.start()
 
@@ -653,6 +778,44 @@ class MainWindow(wx.Frame):
 
         except CalledProcessError as cpe:
             print("FFPROBE OUT", cpe.output)
+
+    def join_files(self, filenames):
+        print("DROP THIS", filenames)
+
+        # get the preset name
+        preset_name = self.presets_radio_box.GetStringSelection()
+        # and now get the preset itself
+        preset = [x for x in self.presets if x.name == preset_name][0]
+
+        join_thr = JoinFiles(in_videos=filenames, out_video=self.temp_dir.name + "\\cenas.mp4", tmp_dir=self.temp_dir,
+                             preset=preset, callback=self.update_join_progress)
+
+        join_thr.start()
+
+        while join_thr.is_alive():
+            dummy_event = threading.Event()
+            dummy_event.wait(timeout=0.01)
+
+            wx.Yield()
+            self.Update()
+
+    def update_join_progress(self, progress):
+        self.conv_progress = progress
+        if progress == 0:
+            progress = 1
+
+        # calc estimated time
+        delta = time.time() - self.conv_start_time
+        eta = (delta * 100) / progress
+        remaining = eta - delta
+
+        # print("d:", delta, "p:", progress, "e:", eta, "r:", remaining)
+
+        # create data point
+        self.conv_data_points.append(remaining)
+        if len(self.conv_data_points) > 5:
+            # remove the earliest data point
+            self.conv_data_points.pop(0)
 
 
 app = wx.App(False)
