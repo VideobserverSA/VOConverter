@@ -538,6 +538,10 @@ class MainWindow(wx.Frame):
 
         self.destination_picker = wx.DirPickerCtrl(parent=self, id=wx.ID_ANY, path="",
                                                    message="Converted / joined files destination")
+
+        desktop = os.path.expanduser("~\\Desktop\\")
+        self.destination_picker.SetPath(desktop)
+
         self.main_sizer.Add(self.destination_picker, 0, wx.EXPAND)
 
         convert_header = wx.StaticText(parent=self, id=wx.ID_ANY, label="CONVERT JOIN FUNCTIONS")
@@ -552,6 +556,10 @@ class MainWindow(wx.Frame):
         self.join_list_view = wx.ListView(parent=self, winid=wx.ID_ANY, style=wx.LC_REPORT, name="FILES TO JOIN!!!")
         self.main_sizer.Add(self.join_list_view, wx.EXPAND)
         self.join_list_view.AppendColumn("File to convert. More than one file joins", wx.LIST_FORMAT_CENTER, 500)
+
+        self.main_sizer.Add(wx.StaticText(parent=self, id=wx.ID_ANY, label="Final file name"))
+        self.final_name = wx.TextCtrl(parent=self, id=wx.ID_ANY)
+        self.main_sizer.Add(self.final_name, 0, wx.EXPAND)
 
         self.add_single_file_btn = wx.Button(parent=self, id=wx.ID_ANY, label="Add file to convert/join")
         self.main_sizer.Add(self.add_single_file_btn)
@@ -642,8 +650,6 @@ class MainWindow(wx.Frame):
         self.conv_data_points = []
         self.conv_start_time = time.time()
 
-
-
     def do_upload(self, e):
 
         # AMAZON STUFF
@@ -684,7 +690,8 @@ class MainWindow(wx.Frame):
         while upload_thr.is_alive():
             dummy_event = threading.Event()
             dummy_event.wait(timeout=0.01)
-            self.upload_progress_gauge.SetValue(self.percentage)
+            if self.percentage > 0:
+                self.upload_progress_gauge.SetValue(self.percentage)
             # self.upload_progress_label.SetLabelText(str(self.percentage) + "%")
             if len(self.upload_data_points) > 0:
 
@@ -709,7 +716,8 @@ class MainWindow(wx.Frame):
         self.percentage = math.ceil((self.uploaded_size / self.total_size) * 100)
 
         if self.percentage == 0:
-            self.percentage = 1
+            # self.percentage = 1
+            return
 
         # calc estimated time
         delta = time.time() - self.upload_start_time
@@ -855,10 +863,6 @@ class MainWindow(wx.Frame):
         except CalledProcessError as cpe:
             print("FFPROBE OUT", cpe.output)
 
-    def show_files_to_join(self, filenames):
-        print("FILENAMES", filenames)
-        pass
-
     def join_files(self, e):
 
         # get the preset name
@@ -892,7 +896,7 @@ class MainWindow(wx.Frame):
 
         self.conv_start_time = time.time()
 
-        out_video = self.destination_picker.GetPath() + "\\" + "cenas.mp4"
+        out_video = self.destination_picker.GetPath() + "\\" + self.final_name.GetValue() + ".mp4"
 
         join_thr = JoinFiles(in_videos=filenames, out_video=out_video, tmp_dir=self.temp_dir,
                              preset=preset, callback=self.update_join_progress)
@@ -945,6 +949,12 @@ class MainWindow(wx.Frame):
     def add_files_to_join(self, filenames):
         for file in filenames:
             self.join_list_view.Append([file])
+
+        # place the first file as the output sugestion
+        base = os.path.basename(filenames[0])
+        no_ext = base.split(".")[0]
+        final = no_ext + "_voconverted"
+        self.final_name.SetValue(final)
 
     def add_single_file(self, e):
         path = ""
