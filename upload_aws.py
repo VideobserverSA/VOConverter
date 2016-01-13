@@ -56,6 +56,8 @@ class VideoInfo:
         self.height = 0
         self.has_sound = True
         self.duration = 0
+        self.bitrate = 0
+        self.framerate = 0
 
     def set_w_and_h(self, w, h):
         self.width = w
@@ -66,6 +68,12 @@ class VideoInfo:
 
     def set_duration(self, duration):
         self.duration = duration
+
+    def set_bitrate(self, bitrate):
+        self.bitrate = bitrate
+
+    def set_framerate(self, framerate):
+        self.framerate = framerate
 
 
 class UploadFile(threading.Thread):
@@ -199,6 +207,13 @@ class EncodeWithKeyFrames(threading.Thread):
         #
         #         if new_h % 2 != 0:
         #             new_h += 1
+
+        if self.preset.name == "Original":
+            self.preset.width = self.in_video_info.width
+            self.preset.height = self.in_video_info.height
+            self.preset.bitrate = str(int(self.in_video_info.bitrate) / 1024)
+            self.preset.framerate = 25
+            self.preset.keyframes = 25
 
         w = str(self.preset.width)
         h = str(self.preset.height)
@@ -405,12 +420,12 @@ class JoinFiles(threading.Thread):
 
 
 # get the token
-def get_token():
+def get_token(username, password):
     try:
 
         # compose the data
-        data = {"user": "soccer_teste@vo.com",
-                "pass": "password",
+        data = {"user": username,
+                "pass": password,
                 "version": "10.0.100",
                 "type": "VO_CONVERTER_APP"}
         post_data = urllib.parse.urlencode(data)
@@ -508,16 +523,41 @@ class MainWindow(wx.Frame):
             self.presets.append(preset)
             preset_choices.append(preset.name)
 
+        original_preset = EncodingPreset(name="Original",
+                                         width=0,
+                                         height=0,
+                                         bitrate=0,
+                                         framerate=0,
+                                         keyframes=0)
+        preset_choices.append(original_preset.name)
+        self.presets.append(original_preset)
+
         self.main_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        self.main_sizer.Add(wx.StaticText(parent=self, id=wx.ID_ANY, label="Destination DIR"))
+
+        self.destination_picker = wx.DirPickerCtrl(parent=self, id=wx.ID_ANY, path="",
+                                                   message="Converted / joined files destination")
+        self.main_sizer.Add(self.destination_picker, 0, wx.EXPAND)
+
+        convert_header = wx.StaticText(parent=self, id=wx.ID_ANY, label="CONVERT JOIN FUNCTIONS")
+        self.main_sizer.Add(convert_header)
 
         # create the radio button groups
         self.presets_radio_box = wx.RadioBox(parent=self, id=wx.ID_ANY, label="Video Preset!!", choices=preset_choices)
-        self.presets_radio_box.SetSelection(2)
+        self.presets_radio_box.SetSelection(1)
 
         self.main_sizer.Add(self.presets_radio_box)
 
-        self.file_picker = wx.FilePickerCtrl(parent=self, id=wx.ID_ANY, message="Chose file to convert and upload",
-                                             path="D:\\golf.mp4")
+        self.join_list_view = wx.ListView(parent=self, winid=wx.ID_ANY, style=wx.LC_REPORT, name="FILES TO JOIN!!!")
+        self.main_sizer.Add(self.join_list_view, wx.EXPAND)
+        self.join_list_view.AppendColumn("File to convert. More than one file joins", wx.LIST_FORMAT_CENTER, 500)
+
+        self.add_single_file_btn = wx.Button(parent=self, id=wx.ID_ANY, label="Add file to convert/join")
+        self.main_sizer.Add(self.add_single_file_btn)
+
+        self.join_files_btn = wx.Button(parent=self, id=wx.ID_ANY, label="Convert/Join these files")
+        self.main_sizer.Add(self.join_files_btn)
 
         self.conversion_progress_gauge = wx.Gauge(parent=self, id=wx.ID_ANY, range=100, size=(400, 20))
 
@@ -525,14 +565,27 @@ class MainWindow(wx.Frame):
 
         self.conv_progress_label = wx.StaticText(parent=self, id=wx.ID_ANY, label="0%")
 
-        self.main_sizer.Add(self.file_picker, 0, wx.EXPAND)
-
         self.main_sizer.Add(self.conversion_progress_gauge, 0, wx.EXPAND)
-        self.main_sizer.Add(self.conv_progress_label)
-        self.convert_btn = wx.Button(parent=self, id=wx.ID_ANY, label="CONVERT THIS STUFF!!")
-        self.main_sizer.Add(self.convert_btn, 0, wx.ALIGN_CENTER_HORIZONTAL)
+        self.main_sizer.Add(self.conv_progress_label, 0, wx.BOTTOM, 50)
 
-        self.Bind(event=wx.EVT_BUTTON, handler=self.convert_test, source=self.convert_btn)
+        #
+        # UPLOAD
+        #
+
+        self.main_sizer.Add(wx.StaticText(parent=self, id=wx.ID_ANY, label="UPLOAD FUNCS"), 0, wx.BOTTOM, 10)
+
+        self.main_sizer.Add(wx.StaticText(parent=self, id=wx.ID_ANY, label="Username"))
+        self.username = wx.TextCtrl(parent=self, id=wx.ID_ANY, value="soccer_teste@vo.com")
+        self.main_sizer.Add(self.username, 0, wx.EXPAND)
+
+        self.main_sizer.Add(wx.StaticText(parent=self, id=wx.ID_ANY, label="Password"))
+        self.password = wx.TextCtrl(parent=self, id=wx.ID_ANY, value="password")
+        self.main_sizer.Add(self.password, 0, wx.EXPAND)
+
+        self.main_sizer.Add(wx.StaticText(parent=self, id=wx.ID_ANY, label="File to Upload"))
+
+        self.upload_file_picker = wx.FilePickerCtrl(parent=self, id=wx.ID_ANY, message="File to upload")
+        self.main_sizer.Add(self.upload_file_picker, 0, wx.EXPAND)
 
         self.main_sizer.Add(self.upload_progress_gauge, 0, wx.EXPAND)
 
@@ -554,14 +607,9 @@ class MainWindow(wx.Frame):
 
         self.Bind(event=wx.EVT_BUTTON, handler=self.clean_incomplete_uploads, source=self.test_button)
 
-        self.join_list_view = wx.ListView(parent=self, winid=wx.ID_ANY, style=wx.LC_REPORT, name="FILES TO JOIN!!!")
-        self.main_sizer.Add(self.join_list_view, wx.EXPAND)
-        self.join_list_view.AppendColumn("Teste Col", wx.LIST_FORMAT_CENTER, 500)
-
-        self.join_files_btn = wx.Button(parent=self, id=wx.ID_ANY, label="JOIN THESE FILES")
-        self.main_sizer.Add(self.join_files_btn)
-
+        self.Bind(event=wx.EVT_LIST_ITEM_SELECTED, handler=self.join_list_remove, source=self.join_list_view)
         self.Bind(event=wx.EVT_BUTTON, handler=self.join_files, source=self.join_files_btn)
+        self.Bind(event=wx.EVT_BUTTON, handler=self.add_single_file, source=self.add_single_file_btn)
 
         self.SetSizer(self.main_sizer)
         self.main_sizer.SetSizeHints(self)
@@ -591,26 +639,26 @@ class MainWindow(wx.Frame):
         self.converted_video = ''
         self.conversion_done = False
 
-        self.t = get_token()
-        self.aws_data = get_aws_data(self.t["token"])
-
         self.conv_data_points = []
         self.conv_start_time = time.time()
 
-        # init s3 session
-        self.aws_session = Session(aws_access_key_id=self.aws_data["AccessKeyId"],
-                                   aws_secret_access_key=self.aws_data["SecretAccessKey"],
-                                   aws_session_token=self.aws_data["SessionToken"],
-                                   region_name=self.aws_data["Region"])
 
-        # first create and object to send
-        self.client = self.aws_session.client(service_name="s3",
-                                              endpoint_url=self.aws_data["CloudfrontEndpoint"])
 
     def do_upload(self, e):
 
-        if not self.conversion_done:
-            return
+        # AMAZON STUFF
+        t = get_token(self.username.GetValue(), self.password.GetValue())
+        aws_data = get_aws_data(t["token"])
+
+        # init s3 session
+        aws_session = Session(aws_access_key_id=aws_data["AccessKeyId"],
+                              aws_secret_access_key=aws_data["SecretAccessKey"],
+                              aws_session_token=aws_data["SessionToken"],
+                              region_name=aws_data["Region"])
+
+        # first create and object to send
+        client = aws_session.client(service_name="s3",
+                                    endpoint_url=aws_data["CloudfrontEndpoint"])
 
         self.upload_start_time = time.time()
 
@@ -619,13 +667,15 @@ class MainWindow(wx.Frame):
         # self.progress_label.SetLabelText("1" + "%")
         self.Update()
 
-        self.upload_key = os.path.basename(self.converted_video)
+        self.upload_key = os.path.basename(self.upload_file_picker.GetPath())
         print(self.upload_key)
 
-        upload_thr = UploadFile(s3client=self.client,
-                                bucket=self.aws_data["Bucket"],
+        self.total_size = os.stat(self.upload_file_picker.GetPath()).st_size
+
+        upload_thr = UploadFile(s3client=client,
+                                bucket=aws_data["Bucket"],
                                 key=self.upload_key,
-                                file=self.converted_video,
+                                file=self.upload_file_picker.GetPath(),
                                 progress_callback=self.update_progress,
                                 resume_callback=self.set_progress,
                                 name=test_name)
@@ -651,7 +701,7 @@ class MainWindow(wx.Frame):
             wx.Yield()
             self.Update()
 
-        confirm_upload(token=self.t["token"], bucket=self.aws_data["Bucket"], key=self.upload_key, duration=100, size=100)
+        confirm_upload(t["token"], bucket=aws_data["Bucket"], key=self.upload_key, duration=100, size=100)
         self.upload_progress_label.SetLabelText("Complete")
 
     def update_progress(self, progress):
@@ -698,73 +748,73 @@ class MainWindow(wx.Frame):
                                                               )
         #         print(abrt_ret)
 
-    def convert_test(self, e):
-
-        # get the preset name
-        preset_name = self.presets_radio_box.GetStringSelection()
-        # and now get the preset itself
-        preset = [x for x in self.presets if x.name == preset_name][0]
-
-        self.conv_start_time = time.time()
-
-        video_to_conv = self.file_picker.GetPath()
-
-        video_info = self.get_video_info(video_to_conv)
-
-        self.converted_video = self.temp_dir.name + "\\" + str(uuid.uuid4()) + "_" + str(self.t["user_id"]) + ".mp4"
-        print(self.converted_video)
-
-        log_file = open(self.temp_dir.name + '\\' + "conv.log", 'w')
-
-        convert_thr = EncodeWithKeyFrames(in_video=video_to_conv, in_video_info=video_info,
-                                          out_video=self.converted_video,
-                                          callback=self.update_conv_progress,
-                                          preset=preset)
-        convert_thr.start()
-
-        while convert_thr.is_alive():
-            dummy_event = threading.Event()
-            dummy_event.wait(timeout=0.01)
-            # self.upload_progress_gauge.SetValue(self.percentage)
-            self.conversion_progress_gauge.SetValue(self.conv_progress)
-            if len(self.conv_data_points) > 0:
-
-                remain = (sum(self.conv_data_points) / len(self.conv_data_points))
-                # print(remain)
-                s = int(remain % 60)
-                m = int((remain / 60))
-                h = int((remain / (60 * 60)))
-
-                self.conv_progress_label.SetLabelText(str(self.conv_progress) + "%      " +
-                                                      str(h) + "h " + str(m) + "m " + str(s) + "s" +
-                                                      " remaining to completion"
-                                                      )
-
-            wx.Yield()
-            self.Update()
-
-        self.conversion_progress_gauge.SetValue(100)
-        self.conv_progress_label.SetLabelText("Complete")
-        self.conversion_done = True
-        self.total_size = os.stat(self.converted_video).st_size
-
-    def update_conv_progress(self, progress):
-        self.conv_progress = progress
-        if progress == 0:
-            progress = 1
-
-        # calc estimated time
-        delta = time.time() - self.conv_start_time
-        eta = (delta * 100) / progress
-        remaining = eta - delta
-
-        # print("d:", delta, "p:", progress, "e:", eta, "r:", remaining)
-
-        # create data point
-        self.conv_data_points.append(remaining)
-        if len(self.conv_data_points) > 5:
-            # remove the earliest data point
-            self.conv_data_points.pop(0)
+    # def convert_test(self, e):
+    #
+    #     # get the preset name
+    #     preset_name = self.presets_radio_box.GetStringSelection()
+    #     # and now get the preset itself
+    #     preset = [x for x in self.presets if x.name == preset_name][0]
+    #
+    #     self.conv_start_time = time.time()
+    #
+    #     video_to_conv = self.file_picker.GetPath()
+    #
+    #     video_info = self.get_video_info(video_to_conv)
+    #
+    #     self.converted_video = self.temp_dir.name + "\\" + str(uuid.uuid4()) + "_" + str(self.t["user_id"]) + ".mp4"
+    #     print(self.converted_video)
+    #
+    #     log_file = open(self.temp_dir.name + '\\' + "conv.log", 'w')
+    #
+    #     convert_thr = EncodeWithKeyFrames(in_video=video_to_conv, in_video_info=video_info,
+    #                                       out_video=self.converted_video,
+    #                                       callback=self.update_conv_progress,
+    #                                       preset=preset)
+    #     convert_thr.start()
+    #
+    #     while convert_thr.is_alive():
+    #         dummy_event = threading.Event()
+    #         dummy_event.wait(timeout=0.01)
+    #         # self.upload_progress_gauge.SetValue(self.percentage)
+    #         self.conversion_progress_gauge.SetValue(self.conv_progress)
+    #         if len(self.conv_data_points) > 0:
+    #
+    #             remain = (sum(self.conv_data_points) / len(self.conv_data_points))
+    #             # print(remain)
+    #             s = int(remain % 60)
+    #             m = int((remain / 60))
+    #             h = int((remain / (60 * 60)))
+    #
+    #             self.conv_progress_label.SetLabelText(str(self.conv_progress) + "%      " +
+    #                                                   str(h) + "h " + str(m) + "m " + str(s) + "s" +
+    #                                                   " remaining to completion"
+    #                                                   )
+    #
+    #         wx.Yield()
+    #         self.Update()
+    #
+    #     self.conversion_progress_gauge.SetValue(100)
+    #     self.conv_progress_label.SetLabelText("Complete")
+    #     self.conversion_done = True
+    #     self.total_size = os.stat(self.converted_video).st_size
+    #
+    # def update_conv_progress(self, progress):
+    #     self.conv_progress = progress
+    #     if progress == 0:
+    #         progress = 1
+    #
+    #     # calc estimated time
+    #     delta = time.time() - self.conv_start_time
+    #     eta = (delta * 100) / progress
+    #     remaining = eta - delta
+    #
+    #     # print("d:", delta, "p:", progress, "e:", eta, "r:", remaining)
+    #
+    #     # create data point
+    #     self.conv_data_points.append(remaining)
+    #     if len(self.conv_data_points) > 5:
+    #         # remove the earliest data point
+    #         self.conv_data_points.pop(0)
 
     def get_video_info(self, video_path):
 
@@ -788,8 +838,13 @@ class MainWindow(wx.Frame):
             for stream in info_json["streams"]:
                 if stream["codec_type"] == "video":
                     video_info.set_w_and_h(stream["width"], stream["height"])
+                    video_info.set_bitrate(stream.get("bit_rate"))
+                    video_info.set_framerate(stream["avg_frame_rate"])
                 if stream["codec_type"] == "audio":
                     has_sound = True
+
+            if video_info.bitrate is None:
+                video_info.set_bitrate(info_json.get("format").get("bit_rate"))
 
             video_info.set_has_sound(has_sound)
 
@@ -806,7 +861,10 @@ class MainWindow(wx.Frame):
 
     def join_files(self, e):
 
-        self.conv_start_time = time.time()
+        # get the preset name
+        preset_name = self.presets_radio_box.GetStringSelection()
+        # and now get the preset itself
+        preset = [x for x in self.presets if x.name == preset_name][0]
 
         # get the files
         filenames = []
@@ -816,12 +874,27 @@ class MainWindow(wx.Frame):
 
         print("FILENAMES DO CENA", filenames)
 
-        # get the preset name
-        preset_name = self.presets_radio_box.GetStringSelection()
-        # and now get the preset itself
-        preset = [x for x in self.presets if x.name == preset_name][0]
+        if preset_name == "Original" and len(filenames) > 1:
+            print("NO JOIN ON ORIGINAL")
 
-        join_thr = JoinFiles(in_videos=filenames, out_video=self.temp_dir.name + "\\cenas.mp4", tmp_dir=self.temp_dir,
+            # show dialog to user
+            dialog = wx.Dialog(parent=self, id=wx.ID_ANY, title="Cannot use original preset for joining")
+            sizer = wx.BoxSizer(wx.VERTICAL)
+            msg = wx.StaticText(parent=dialog, id=wx.ID_ANY, label="Cannot use original preset for joining")
+            sizer.Add(msg)
+            ok_btn = wx.Button(parent=dialog, id=wx.ID_OK, label="Ok")
+            sizer.Add(ok_btn)
+            dialog.SetSizer(sizer)
+            sizer.SetSizeHints(dialog)
+            dialog.ShowModal()
+
+            return
+
+        self.conv_start_time = time.time()
+
+        out_video = self.destination_picker.GetPath() + "\\" + "cenas.mp4"
+
+        join_thr = JoinFiles(in_videos=filenames, out_video=out_video, tmp_dir=self.temp_dir,
                              preset=preset, callback=self.update_join_progress)
 
         join_thr.start()
@@ -851,6 +924,8 @@ class MainWindow(wx.Frame):
         self.conv_progress_label.SetLabelText("Join Complete")
         self.conversion_done = True
 
+        self.upload_file_picker.SetPath(out_video)
+
     def update_join_progress(self, progress):
         self.conv_progress = progress
         if progress == 0:
@@ -861,8 +936,6 @@ class MainWindow(wx.Frame):
         eta = (delta * 100) / progress
         remaining = eta - delta
 
-        # print("d:", delta, "p:", progress, "e:", eta, "r:", remaining)
-
         # create data point
         self.conv_data_points.append(remaining)
         if len(self.conv_data_points) > 5:
@@ -871,16 +944,21 @@ class MainWindow(wx.Frame):
 
     def add_files_to_join(self, filenames):
         for file in filenames:
-            # create a ListItem and add it to the list view
-
-            # list_item = wx.ListItem()
-            # list_item.SetText(file)
-            # self.join_list_view.Append(list_item)
-            # print("FDX FDX", file)
-
-            # self.join_list_view.SetItem(1, 1, "cenas", -1)
-
             self.join_list_view.Append([file])
+
+    def add_single_file(self, e):
+        path = ""
+        dlg = wx.FileDialog(self, "Video file", "", "", "*.*", wx.FD_OPEN)
+        if dlg.ShowModal() == wx.ID_OK:
+            path = dlg.GetPath()
+
+        dlg.Destroy()
+        if path != "":
+            self.add_files_to_join([path])
+
+    def join_list_remove(self, e):
+        print("index", e.GetIndex())
+        self.join_list_view.DeleteItem(e.GetIndex())
 
 
 app = wx.App(False)
