@@ -1,4 +1,4 @@
-from boto3.session import Session
+# from boto3.session import Session
 import urllib.request
 from urllib.request import Request
 import urllib.parse
@@ -580,7 +580,7 @@ class MainWindow(wx.Frame):
         # UPLOAD
         #
 
-        self.main_sizer.Add(wx.StaticText(parent=self, id=wx.ID_ANY, label="UPLOAD FUNCS"), 0, wx.BOTTOM, 10)
+        self.main_sizer.Add(wx.StaticText(parent=self, id=wx.ID_ANY, label="UPLOAD FUNCS (A apontar para o QA) MAS AGORA NAO FUNCA"), 0, wx.BOTTOM, 10)
 
         self.main_sizer.Add(wx.StaticText(parent=self, id=wx.ID_ANY, label="Username"))
         self.username = wx.TextCtrl(parent=self, id=wx.ID_ANY, value="soccer_teste@vo.com")
