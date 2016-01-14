@@ -1,4 +1,4 @@
-# from boto3.session import Session
+from boto3.session import Session
 import urllib.request
 from urllib.request import Request
 import urllib.parse
@@ -15,6 +15,8 @@ import uuid
 import re
 import time
 from qtfaststart import processor
+import subprocess
+import sys
 
 api_url = "http://api.qa.videobserver.com/"
 # test_file = "teste user.mp4"
@@ -38,6 +40,55 @@ settings = EasySettings("test.conf")
 # lets create a template array?
 
 
+# we need this because: https://github.com/pyinstaller/pyinstaller/wiki/Recipe-subprocess
+
+if getattr(sys, 'frozen', False):
+    isFrozen = True
+else:
+    isFrozen = False
+
+
+def subprocess_args(include_stdout=True):
+    # The following is true only on Windows.
+    if hasattr(subprocess, 'STARTUPINFO'):
+        # On Windows, subprocess calls will pop up a command window by default
+        # when run from Pyinstaller with the ``--noconsole`` option. Avoid this
+        # distraction.
+        si = subprocess.STARTUPINFO()
+        si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        # Windows doesn't search the path by default. Pass it an environment so
+        # it will.
+        env = os.environ
+    else:
+        si = None
+        env = None
+
+    # ``subprocess.check_output`` doesn't allow specifying ``stdout``::
+    #
+    #   Traceback (most recent call last):
+    #     File "test_subprocess.py", line 58, in <module>
+    #       **subprocess_args(stdout=None))
+    #     File "C:\Python27\lib\subprocess.py", line 567, in check_output
+    #       raise ValueError('stdout argument not allowed, it will be overridden.')
+    #   ValueError: stdout argument not allowed, it will be overridden.
+    #
+    # So, add it only if it's needed.
+    if include_stdout:
+        ret = {'stdout:': subprocess.PIPE}
+    else:
+        ret = {}
+
+    # On Windows, running this from the binary produced by Pyinstaller
+    # with the ``--noconsole`` option requires redirecting everything
+    # (stdin, stdout, stderr) to avoid an OSError exception
+    # "[Error 6] the handle is invalid."
+    ret.update({'stdin': subprocess.PIPE,
+                'stderr': subprocess.PIPE,
+                'startupinfo': si,
+                'env': env })
+    return ret
+
+
 class EncodingPreset:
 
     def __init__(self, name, width, height, bitrate, framerate, keyframes):
@@ -58,6 +109,8 @@ class VideoInfo:
         self.duration = 0
         self.bitrate = 0
         self.framerate = 0
+        self.video_codec = ""
+        self.audio_codec = ""
 
     def set_w_and_h(self, w, h):
         self.width = w
@@ -74,6 +127,20 @@ class VideoInfo:
 
     def set_framerate(self, framerate):
         self.framerate = framerate
+
+    def set_video_codec(self, codec):
+        self.video_codec = codec
+
+    def set_audio_codec(self, codec):
+        self.audio_codec = codec
+
+    def codecs_match(self, other_info):
+        if self.width != other_info.width or\
+           self.height != other_info.height or\
+           self.video_codec != other_info.video_codec or\
+           self.audio_codec != other_info.audio_codec:
+            return False
+        return True
 
 
 class UploadFile(threading.Thread):
@@ -345,7 +412,6 @@ class JoinFiles(threading.Thread):
         # loop the in videos and convert according to the preset
         for video in self.in_videos:
             # use the damn preset
-
             video_info = frame.get_video_info(video)
 
             convert_thr = EncodeWithKeyFrames(in_video=video,
@@ -562,10 +628,10 @@ class MainWindow(wx.Frame):
         self.main_sizer.Add(self.final_name, 0, wx.EXPAND)
 
         self.add_single_file_btn = wx.Button(parent=self, id=wx.ID_ANY, label="Add file to convert/join")
-        self.main_sizer.Add(self.add_single_file_btn)
+        self.main_sizer.Add(self.add_single_file_btn, 0, wx.ALIGN_CENTER_HORIZONTAL)
 
         self.join_files_btn = wx.Button(parent=self, id=wx.ID_ANY, label="Convert/Join these files")
-        self.main_sizer.Add(self.join_files_btn)
+        self.main_sizer.Add(self.join_files_btn, 0, wx.ALIGN_CENTER_HORIZONTAL)
 
         self.conversion_progress_gauge = wx.Gauge(parent=self, id=wx.ID_ANY, range=100, size=(400, 20))
 
@@ -580,7 +646,7 @@ class MainWindow(wx.Frame):
         # UPLOAD
         #
 
-        self.main_sizer.Add(wx.StaticText(parent=self, id=wx.ID_ANY, label="UPLOAD FUNCS (A apontar para o QA) MAS AGORA NAO FUNCA"), 0, wx.BOTTOM, 10)
+        self.main_sizer.Add(wx.StaticText(parent=self, id=wx.ID_ANY, label="UPLOAD FUNCS (A apontar para o QA)"), 0, wx.BOTTOM, 10)
 
         self.main_sizer.Add(wx.StaticText(parent=self, id=wx.ID_ANY, label="Username"))
         self.username = wx.TextCtrl(parent=self, id=wx.ID_ANY, value="soccer_teste@vo.com")
@@ -826,6 +892,10 @@ class MainWindow(wx.Frame):
 
     def get_video_info(self, video_path):
 
+        print("VIDEO_PATH", video_path)
+
+        print("EXITS", os.path.exists(ffprobe_path), os.path.exists(video_path))
+
         try:
             out = check_output([
                 ffprobe_path,
@@ -836,7 +906,7 @@ class MainWindow(wx.Frame):
                 "-show_format",
                 "-show_streams",
                 video_path
-            ], stderr=STDOUT, shell=False, universal_newlines=True)
+            ], universal_newlines=True, **subprocess_args(False))
 
             info_json = json.loads(out)
 
@@ -848,7 +918,9 @@ class MainWindow(wx.Frame):
                     video_info.set_w_and_h(stream["width"], stream["height"])
                     video_info.set_bitrate(stream.get("bit_rate"))
                     video_info.set_framerate(stream["avg_frame_rate"])
+                    video_info.set_video_codec(stream.get("codec_name"))
                 if stream["codec_type"] == "audio":
+                    video_info.set_audio_codec(stream.get("codec_name"))
                     has_sound = True
 
             if video_info.bitrate is None:
@@ -872,19 +944,28 @@ class MainWindow(wx.Frame):
 
         # get the files
         filenames = []
+        video_infos = []
         for x in range(self.join_list_view.GetItemCount()):
             item = self.join_list_view.GetItem(x)
             filenames.append(item.GetText())
+            video_infos.append(self.get_video_info(item.GetText()))
 
         print("FILENAMES DO CENA", filenames)
 
-        if preset_name == "Original" and len(filenames) > 1:
+        # do we have similar videos or do we need to use a fixed preset?
+        codecs_match = True
+        first_info = video_infos[0]
+        for info in video_infos:
+            if not first_info.codecs_match(info):
+                codecs_match = False
+
+        if preset_name == "Original" and len(filenames) > 1 and not codecs_match:
             print("NO JOIN ON ORIGINAL")
 
             # show dialog to user
             dialog = wx.Dialog(parent=self, id=wx.ID_ANY, title="Cannot use original preset for joining")
             sizer = wx.BoxSizer(wx.VERTICAL)
-            msg = wx.StaticText(parent=dialog, id=wx.ID_ANY, label="Cannot use original preset for joining")
+            msg = wx.StaticText(parent=dialog, id=wx.ID_ANY, label="Cannot use original preset for joining two or more different kinds of files\nCodec or resolution mismatch")
             sizer.Add(msg)
             ok_btn = wx.Button(parent=dialog, id=wx.ID_OK, label="Ok")
             sizer.Add(ok_btn)

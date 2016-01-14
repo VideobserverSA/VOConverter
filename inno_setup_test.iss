@@ -2,10 +2,10 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Vo Converter TESTE"
-#define MyAppVersion "1.0.99"
+#define MyAppVersion "1.0.101"
 #define MyAppPublisher "Videobserver SA"
 #define MyAppURL "http://www.videobserver.com"
-#define MyAppExeName "voconvteste.exe"
+#define MyAppExeName "upload_aws.exe"
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.
@@ -38,8 +38,8 @@ Name: "portuguese"; MessagesFile: "compiler:Languages\Portuguese.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "C:\Users\Rui\PycharmProjects\VOConverter\dist\voconvteste.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\Rui\PycharmProjects\VOConverter\dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; AfterInstall: UpdateLanguage
+Source: "C:\Users\Rui\PycharmProjects\VOConverter\dist\upload_aws\upload_aws.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "C:\Users\Rui\PycharmProjects\VOConverter\dist\upload_aws\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; AfterInstall: UpdateLanguage
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
