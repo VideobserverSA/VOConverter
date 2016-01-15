@@ -1533,53 +1533,54 @@ class MainWindow(wx.Frame):
         # version_thr = CheckForUpdate(version, self.temp_dir)
         # version_thr.start()
 
-        # check the version
-        self.download_url = ""
-        try:
-            # grab the file from server
-            with urllib.request.urlopen("http://staging.videobserver.com/app/converter_version.json") as version_file:
-                version_json = json.loads(version_file.read().decode('utf-8'))
-                if LooseVersion(version) < LooseVersion(version_json['version']):
-                    self.download_url = version_json['url']
-                    print('Upgrade found on server... ' + version_json['version'])
+        if platform.system() != "Darwin":
+            # check the version
+            self.download_url = ""
+            try:
+                # grab the file from server
+                with urllib.request.urlopen("http://staging.videobserver.com/app/converter_version.json") as version_file:
+                    version_json = json.loads(version_file.read().decode('utf-8'))
+                    if LooseVersion(version) < LooseVersion(version_json['version']):
+                        self.download_url = version_json['url']
+                        print('Upgrade found on server... ' + version_json['version'])
 
-                    # create a dialog and bind the correct function
-                    # the OK button does not need it since we pass it the wx.ID_OK that does the job for us
-                    done_dlg = wx.Dialog(parent=self, id=wx.ID_ANY, title=t("New version on Server"))
-                    done_dlg_sizer = wx.BoxSizer(wx.VERTICAL)
-                    done_msg = wx.StaticText(parent=done_dlg, id=wx.ID_ANY,
-                                             label=t("There is a new version available for download. Do you wish to:"))
-                    self.upgrade_gauge = wx.Gauge(parent=done_dlg)
-                    download_btn = wx.Button(parent=done_dlg, id=wx.ID_ANY, label=t("Download"))
-                    done_ok_btn = wx.Button(parent=done_dlg, id=wx.ID_OK, label=t("Ignore this time"))
-                    # sizer stuff
-                    done_dlg_sizer.Add(done_msg, 0, wx.ALL, 5)
-                    done_dlg_sizer.Add(self.upgrade_gauge, 1, wx.EXPAND | wx.ALL, 5)
+                        # create a dialog and bind the correct function
+                        # the OK button does not need it since we pass it the wx.ID_OK that does the job for us
+                        done_dlg = wx.Dialog(parent=self, id=wx.ID_ANY, title=t("New version on Server"))
+                        done_dlg_sizer = wx.BoxSizer(wx.VERTICAL)
+                        done_msg = wx.StaticText(parent=done_dlg, id=wx.ID_ANY,
+                                                 label=t("There is a new version available for download. Do you wish to:"))
+                        self.upgrade_gauge = wx.Gauge(parent=done_dlg)
+                        download_btn = wx.Button(parent=done_dlg, id=wx.ID_ANY, label=t("Download"))
+                        done_ok_btn = wx.Button(parent=done_dlg, id=wx.ID_OK, label=t("Ignore this time"))
+                        # sizer stuff
+                        done_dlg_sizer.Add(done_msg, 0, wx.ALL, 5)
+                        done_dlg_sizer.Add(self.upgrade_gauge, 1, wx.EXPAND | wx.ALL, 5)
 
-                    done_dlg_btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-                    done_dlg_btn_sizer.Add(download_btn, 0, wx.RIGHT, 10)
-                    done_dlg_btn_sizer.Add(done_ok_btn)
+                        done_dlg_btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+                        done_dlg_btn_sizer.Add(download_btn, 0, wx.RIGHT, 10)
+                        done_dlg_btn_sizer.Add(done_ok_btn)
 
-                    done_dlg_sizer.Add(done_dlg_btn_sizer, 0, wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, 10)
-                    done_dlg.SetSizer(done_dlg_sizer)
-                    # auto layout TODO fix this a bit
-                    # done_dlg.SetAutoLayout(1)
-                    # done_dlg.Fit()
+                        done_dlg_sizer.Add(done_dlg_btn_sizer, 0, wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, 10)
+                        done_dlg.SetSizer(done_dlg_sizer)
+                        # auto layout TODO fix this a bit
+                        # done_dlg.SetAutoLayout(1)
+                        # done_dlg.Fit()
 
-                    done_dlg_sizer.SetSizeHints(done_dlg)
+                        done_dlg_sizer.SetSizeHints(done_dlg)
 
-                    # bind
-                    done_dlg.Bind(event=wx.EVT_BUTTON, handler=self.download_upgrade, source=download_btn)
-                    # and show
-                    done_dlg.Show()
+                        # bind
+                        done_dlg.Bind(event=wx.EVT_BUTTON, handler=self.download_upgrade, source=download_btn)
+                        # and show
+                        done_dlg.Show()
 
-                else:
-                    print('Current version installed')
+                    else:
+                        print('Current version installed')
 
-        except urllib.error.URLError as ue:
-            print('Could not reach server to check version... ' + str(ue.reason))
-        except ValueError as ve:
-            print('Invalid version json')
+            except urllib.error.URLError as ue:
+                print('Could not reach server to check version... ' + str(ue.reason))
+            except ValueError as ve:
+                print('Invalid version json')
 
     def open_dialog(self, e):
         path = ""
