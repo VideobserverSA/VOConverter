@@ -17,6 +17,7 @@ import time
 from qtfaststart import processor
 import subprocess
 import sys
+import platform
 
 api_url = "http://api.qa.videobserver.com/"
 # test_file = "teste user.mp4"
@@ -30,6 +31,16 @@ test_name = "teste-coisas"
 
 ffmpeg_path = "ffmpeg.exe"
 ffprobe_path = "ffprobe.exe"
+path_separator = "\\"
+
+if platform.system() == "Darwin":
+    os_prefix = os.getcwd() + "/VoConverter.app/Contents/Resources/"
+
+    ffmpeg_path = os_prefix + "ffmpeg"
+    ffprobe_path = os_prefix + "ffprobe"
+
+    shell_status = False
+    path_separator = "/"
 
 # lets us try to send the minimum 5 megabytes at a time
 part_size = 5 * 1024 * 1024
@@ -415,7 +426,7 @@ class JoinFiles(threading.Thread):
             video_info = frame.get_video_info(video)
 
             convert_thr = EncodeWithKeyFrames(in_video=video,
-                                              out_video=self.tmp_dir.name + "\\" + str(self.cut_number) + "_to_join.mp4",
+                                              out_video=self.tmp_dir.name + path_separator + str(self.cut_number) + "_to_join.mp4",
                                               callback=self.update_progress, preset=self.preset,
                                               in_video_info=video_info)
 
@@ -427,8 +438,8 @@ class JoinFiles(threading.Thread):
 
             # fast copy??
             fast_copy_thr = ConvertToFastCopy(self.tmp_dir, cut_number=self.cut_number,
-                                              input_video=self.tmp_dir.name + "\\" + str(self.cut_number) + "_to_join.mp4",
-                                              tmp_out=self.tmp_dir.name + "\\" + str(self.cut_number) + "_fast.mp4")
+                                              input_video=self.tmp_dir.name + path_separator + str(self.cut_number) + "_to_join.mp4",
+                                              tmp_out=self.tmp_dir.name + path_separator + str(self.cut_number) + "_fast.mp4")
             fast_copy_thr.start()
             while fast_copy_thr.is_alive():
                 dummy_event = threading.Event()
@@ -447,7 +458,7 @@ class JoinFiles(threading.Thread):
         # the concat files
         concat = "concat:"
         for x in range(0, self.cut_number):
-            concat += self.tmp_dir.name + "\\" + str(x) + "_fast.mp4" + "|"
+            concat += self.tmp_dir.name + path_separator + str(x) + "_fast.mp4" + "|"
         concat = concat[:-1]
         concat += ""
         join_args.append(concat)
@@ -605,7 +616,7 @@ class MainWindow(wx.Frame):
         self.destination_picker = wx.DirPickerCtrl(parent=self, id=wx.ID_ANY, path="",
                                                    message="Converted / joined files destination")
 
-        desktop = os.path.expanduser("~\\Desktop\\")
+        desktop = os.path.expanduser("~" + path_separator + "Desktop")
         self.destination_picker.SetPath(desktop)
 
         self.main_sizer.Add(self.destination_picker, 0, wx.EXPAND)
@@ -619,7 +630,11 @@ class MainWindow(wx.Frame):
 
         self.main_sizer.Add(self.presets_radio_box)
 
-        self.join_list_view = wx.ListView(parent=self, winid=wx.ID_ANY, style=wx.LC_REPORT, name="FILES TO JOIN!!!")
+        # should I open a bug somewhere??
+        if platform.system() == "Darwin":
+            self.join_list_view = wx.ListView(parent=self, id=wx.ID_ANY, style=wx.LC_REPORT, name="FILES TO JOIN!!!")
+        else:
+            self.join_list_view = wx.ListView(parent=self, winid=wx.ID_ANY, style=wx.LC_REPORT, name="FILES TO JOIN!!!")
         self.main_sizer.Add(self.join_list_view, wx.EXPAND)
         self.join_list_view.AppendColumn("File to convert. More than one file joins", wx.LIST_FORMAT_CENTER, 500)
 
@@ -764,8 +779,8 @@ class MainWindow(wx.Frame):
                 remain = (sum(self.upload_data_points) / len(self.upload_data_points))
                 # print(remain)
                 s = int(remain % 60)
-                m = int((remain / 60))
-                h = int((remain / (60 * 60)))
+                m = int((remain / 60) % 60)
+                h = int((remain / (60 * 60)) % 60)
 
                 self.upload_progress_label.SetLabelText(str(self.percentage) + "%      " +
                                                         str(h) + "h " + str(m) + "m " + str(s) + "s" +
@@ -774,8 +789,16 @@ class MainWindow(wx.Frame):
             wx.Yield()
             self.Update()
 
-        confirm_upload(t["token"], bucket=aws_data["Bucket"], key=self.upload_key, duration=100, size=100)
+        # get the real duration
+        final_video_info = self.get_video_info(self.upload_file_picker.GetPath())
+
+        print("file duration", final_video_info.duration)
+
+
+        confirm_upload(t["token"], bucket=aws_data["Bucket"], key=self.upload_key, duration=int(float(final_video_info.duration)), size=100)
         self.upload_progress_label.SetLabelText("Complete")
+
+        print("done confirm")
 
     def update_progress(self, progress):
         self.uploaded_size += progress
@@ -977,7 +1000,7 @@ class MainWindow(wx.Frame):
 
         self.conv_start_time = time.time()
 
-        out_video = self.destination_picker.GetPath() + "\\" + self.final_name.GetValue() + ".mp4"
+        out_video = self.destination_picker.GetPath() + path_separator + self.final_name.GetValue() + ".mp4"
 
         join_thr = JoinFiles(in_videos=filenames, out_video=out_video, tmp_dir=self.temp_dir,
                              preset=preset, callback=self.update_join_progress)
@@ -994,8 +1017,8 @@ class MainWindow(wx.Frame):
                 remain = (sum(self.conv_data_points) / len(self.conv_data_points))
                 # print(remain)
                 s = int(remain % 60)
-                m = int((remain / 60))
-                h = int((remain / (60 * 60)))
+                m = int((remain / 60) % 60)
+                h = int((remain / (60 * 60)) % 60)
 
                 self.conv_progress_label.SetLabelText(str(self.conv_progress) + "%      " +
                                                       str(h) + "h " + str(m) + "m " + str(s) + "s" +
@@ -1034,7 +1057,7 @@ class MainWindow(wx.Frame):
         # place the first file as the output sugestion
         base = os.path.basename(filenames[0])
         no_ext = base.split(".")[0]
-        final = no_ext + "_voconverted"
+        final = no_ext + "_vo_converted"
         self.final_name.SetValue(final)
 
     def add_single_file(self, e):
