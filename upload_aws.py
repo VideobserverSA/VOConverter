@@ -18,6 +18,7 @@ from qtfaststart import processor
 import subprocess
 import sys
 import platform
+import shutil
 
 api_url = "http://api.qa.videobserver.com/"
 # test_file = "teste user.mp4"
@@ -152,6 +153,10 @@ class VideoInfo:
            self.audio_codec != other_info.audio_codec:
             return False
         return True
+
+
+class FileToConvert:
+    pass
 
 
 class UploadFile(threading.Thread):
@@ -423,9 +428,9 @@ class JoinFiles(threading.Thread):
         # loop the in videos and convert according to the preset
         for video in self.in_videos:
             # use the damn preset
-            video_info = frame.get_video_info(video)
+            video_info = video.video_info
 
-            convert_thr = EncodeWithKeyFrames(in_video=video,
+            convert_thr = EncodeWithKeyFrames(in_video=video.file,
                                               out_video=self.tmp_dir.name + path_separator + str(self.cut_number) + "_to_join.mp4",
                                               callback=self.update_progress, preset=self.preset,
                                               in_video_info=video_info)
@@ -630,6 +635,8 @@ class MainWindow(wx.Frame):
 
         self.main_sizer.Add(self.presets_radio_box)
 
+        self.Bind(event=wx.EVT_RADIOBOX, handler=self.preset_changed, source=self.presets_radio_box)
+
         # should I open a bug somewhere??
         if platform.system() == "Darwin":
             self.join_list_view = wx.ListView(parent=self, id=wx.ID_ANY, style=wx.LC_REPORT, name="FILES TO JOIN!!!")
@@ -637,6 +644,11 @@ class MainWindow(wx.Frame):
             self.join_list_view = wx.ListView(parent=self, winid=wx.ID_ANY, style=wx.LC_REPORT, name="FILES TO JOIN!!!")
         self.main_sizer.Add(self.join_list_view, wx.EXPAND)
         self.join_list_view.AppendColumn("File to convert. More than one file joins", wx.LIST_FORMAT_CENTER, 500)
+
+        self.main_sizer.Add(wx.StaticText(parent=self, id=wx.ID_ANY, label="Final size preview"))
+
+        self.size_preview = wx.StaticText(parent=self, id=wx.ID_ANY, label="0 GB")
+        self.main_sizer.Add(self.size_preview)
 
         self.main_sizer.Add(wx.StaticText(parent=self, id=wx.ID_ANY, label="Final file name"))
         self.final_name = wx.TextCtrl(parent=self, id=wx.ID_ANY)
@@ -691,11 +703,6 @@ class MainWindow(wx.Frame):
 
         self.Bind(event=wx.EVT_BUTTON, handler=self.cancel_this, source=self.cancel_button)
 
-        self.test_button = wx.Button(parent=self, id=wx.ID_ANY, label="CLEAN IMCOMPLETE!!!")
-        self.main_sizer.Add(self.test_button, 0, wx.ALIGN_CENTER_HORIZONTAL)
-
-        self.Bind(event=wx.EVT_BUTTON, handler=self.clean_incomplete_uploads, source=self.test_button)
-
         self.Bind(event=wx.EVT_LIST_ITEM_SELECTED, handler=self.join_list_remove, source=self.join_list_view)
         self.Bind(event=wx.EVT_BUTTON, handler=self.join_files, source=self.join_files_btn)
         self.Bind(event=wx.EVT_BUTTON, handler=self.add_single_file, source=self.add_single_file_btn)
@@ -730,6 +737,8 @@ class MainWindow(wx.Frame):
 
         self.conv_data_points = []
         self.conv_start_time = time.time()
+
+        self.files_to_join_list = []
 
     def do_upload(self, e):
 
@@ -845,74 +854,6 @@ class MainWindow(wx.Frame):
                                                               )
         #         print(abrt_ret)
 
-    # def convert_test(self, e):
-    #
-    #     # get the preset name
-    #     preset_name = self.presets_radio_box.GetStringSelection()
-    #     # and now get the preset itself
-    #     preset = [x for x in self.presets if x.name == preset_name][0]
-    #
-    #     self.conv_start_time = time.time()
-    #
-    #     video_to_conv = self.file_picker.GetPath()
-    #
-    #     video_info = self.get_video_info(video_to_conv)
-    #
-    #     self.converted_video = self.temp_dir.name + "\\" + str(uuid.uuid4()) + "_" + str(self.t["user_id"]) + ".mp4"
-    #     print(self.converted_video)
-    #
-    #     log_file = open(self.temp_dir.name + '\\' + "conv.log", 'w')
-    #
-    #     convert_thr = EncodeWithKeyFrames(in_video=video_to_conv, in_video_info=video_info,
-    #                                       out_video=self.converted_video,
-    #                                       callback=self.update_conv_progress,
-    #                                       preset=preset)
-    #     convert_thr.start()
-    #
-    #     while convert_thr.is_alive():
-    #         dummy_event = threading.Event()
-    #         dummy_event.wait(timeout=0.01)
-    #         # self.upload_progress_gauge.SetValue(self.percentage)
-    #         self.conversion_progress_gauge.SetValue(self.conv_progress)
-    #         if len(self.conv_data_points) > 0:
-    #
-    #             remain = (sum(self.conv_data_points) / len(self.conv_data_points))
-    #             # print(remain)
-    #             s = int(remain % 60)
-    #             m = int((remain / 60))
-    #             h = int((remain / (60 * 60)))
-    #
-    #             self.conv_progress_label.SetLabelText(str(self.conv_progress) + "%      " +
-    #                                                   str(h) + "h " + str(m) + "m " + str(s) + "s" +
-    #                                                   " remaining to completion"
-    #                                                   )
-    #
-    #         wx.Yield()
-    #         self.Update()
-    #
-    #     self.conversion_progress_gauge.SetValue(100)
-    #     self.conv_progress_label.SetLabelText("Complete")
-    #     self.conversion_done = True
-    #     self.total_size = os.stat(self.converted_video).st_size
-    #
-    # def update_conv_progress(self, progress):
-    #     self.conv_progress = progress
-    #     if progress == 0:
-    #         progress = 1
-    #
-    #     # calc estimated time
-    #     delta = time.time() - self.conv_start_time
-    #     eta = (delta * 100) / progress
-    #     remaining = eta - delta
-    #
-    #     # print("d:", delta, "p:", progress, "e:", eta, "r:", remaining)
-    #
-    #     # create data point
-    #     self.conv_data_points.append(remaining)
-    #     if len(self.conv_data_points) > 5:
-    #         # remove the earliest data point
-    #         self.conv_data_points.pop(0)
-
     def get_video_info(self, video_path):
 
         print("VIDEO_PATH", video_path)
@@ -960,29 +901,16 @@ class MainWindow(wx.Frame):
 
     def join_files(self, e):
 
-        # get the preset name
-        preset_name = self.presets_radio_box.GetStringSelection()
-        # and now get the preset itself
-        preset = [x for x in self.presets if x.name == preset_name][0]
-
-        # get the files
-        filenames = []
-        video_infos = []
-        for x in range(self.join_list_view.GetItemCount()):
-            item = self.join_list_view.GetItem(x)
-            filenames.append(item.GetText())
-            video_infos.append(self.get_video_info(item.GetText()))
-
-        print("FILENAMES DO CENA", filenames)
+        preset = self.get_current_preset()
 
         # do we have similar videos or do we need to use a fixed preset?
         codecs_match = True
-        first_info = video_infos[0]
-        for info in video_infos:
-            if not first_info.codecs_match(info):
+        first_info = self.files_to_join_list[0].video_info
+        for file_to_join in self.files_to_join_list:
+            if not first_info.codecs_match(file_to_join.video_info):
                 codecs_match = False
 
-        if preset_name == "Original" and len(filenames) > 1 and not codecs_match:
+        if preset.name == "Original" and len(filenames) > 1 and not codecs_match:
             print("NO JOIN ON ORIGINAL")
 
             # show dialog to user
@@ -1002,7 +930,7 @@ class MainWindow(wx.Frame):
 
         out_video = self.destination_picker.GetPath() + path_separator + self.final_name.GetValue() + ".mp4"
 
-        join_thr = JoinFiles(in_videos=filenames, out_video=out_video, tmp_dir=self.temp_dir,
+        join_thr = JoinFiles(in_videos=self.files_to_join_list, out_video=out_video, tmp_dir=self.temp_dir,
                              preset=preset, callback=self.update_join_progress)
 
         join_thr.start()
@@ -1052,13 +980,25 @@ class MainWindow(wx.Frame):
 
     def add_files_to_join(self, filenames):
         for file in filenames:
-            self.join_list_view.Append([file])
+
+            # get the video info
+            video_info = self.get_video_info(file)
+
+            file_to_convert = FileToConvert()
+            file_to_convert.file = file
+            file_to_convert.video_info = video_info
+
+            self.files_to_join_list.append(file_to_convert)
+
+            self.join_list_view.Append([file_to_convert.file])
 
         # place the first file as the output sugestion
         base = os.path.basename(filenames[0])
         no_ext = base.split(".")[0]
         final = no_ext + "_vo_converted"
         self.final_name.SetValue(final)
+
+        self.estimate_final_size()
 
     def add_single_file(self, e):
         path = ""
@@ -1073,6 +1013,70 @@ class MainWindow(wx.Frame):
     def join_list_remove(self, e):
         print("index", e.GetIndex())
         self.join_list_view.DeleteItem(e.GetIndex())
+        to_remove = self.files_to_join_list[e.GetIndex()]
+        self.files_to_join_list.remove(to_remove)
+
+        self.estimate_final_size()
+
+    def get_current_preset(self):
+
+        # get the preset name
+        preset_name = self.presets_radio_box.GetStringSelection()
+        # and now get the preset itself
+        return [x for x in self.presets if x.name == preset_name][0]
+
+    def estimate_final_size(self):
+        preset = self.get_current_preset()
+        total_size = 0
+
+        for video in self.files_to_join_list:
+            if preset.name == "Original":
+                local_size = float(video.video_info.duration) * float(video.video_info.bitrate)
+            else:
+                local_size = float(video.video_info.duration) * float(preset.bitrate) * 1024
+
+            print("local_size", local_size)
+            total_size += local_size
+
+        print("total_size", total_size)
+
+        size_in_megas = total_size / 1024 / 1024 / 10
+        size_in_gigas = size_in_megas / 1024
+        print("in_megas", size_in_megas)
+        print("in_gigas", size_in_gigas)
+
+        if size_in_megas > 1000:
+            self.size_preview.SetLabel(str(round(size_in_gigas, 1)) + " Gb")
+        else:
+            self.size_preview.SetLabel(str(int(size_in_megas)) + " Mb")
+
+        # do we have enough space
+        if not self.has_enough_disk_space(total_size / 10):
+            self.size_preview.SetForegroundColour(wx.RED)
+            # show dialog to user
+            dialog = wx.Dialog(parent=self, id=wx.ID_ANY, title="Not Enough space")
+            sizer = wx.BoxSizer(wx.VERTICAL)
+            msg = wx.StaticText(parent=dialog, id=wx.ID_ANY, label="You do not have enough disk space for the conversion\nif you try to continue with these files and presets\nthe conversion will probably fail.")
+            sizer.Add(msg)
+            ok_btn = wx.Button(parent=dialog, id=wx.ID_OK, label="Ok")
+            sizer.Add(ok_btn)
+            dialog.SetSizer(sizer)
+            sizer.SetSizeHints(dialog)
+            dialog.ShowModal()
+        else:
+            self.size_preview.SetForegroundColour(wx.GREEN)
+
+    def preset_changed(self, e):
+        self.estimate_final_size()
+
+    def has_enough_disk_space(self, space):
+        temp_space = shutil.disk_usage(self.temp_dir.name)
+        dest_space = shutil.disk_usage(self.destination_picker.GetPath())
+
+        if temp_space.free < space or dest_space.free < space:
+            print("WE DO NOT HAVE ENOUGH SPACE")
+            return False
+        return True
 
 
 app = wx.App(False)
