@@ -1065,7 +1065,7 @@ class MainWindow(wx.Frame):
             dialog.ShowModal()
         else:
             self.size_preview.SetForegroundColour(wx.GREEN)
-
+            
     def preset_changed(self, e):
         self.estimate_final_size()
 

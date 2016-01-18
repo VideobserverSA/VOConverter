@@ -1,1 +1,1 @@
-c:\tools\pythonx86_32\Scripts\pyinstaller upload_aws.spec
+c:\tools\pythonx86_32\Scripts\pyinstaller -y upload_aws.spec
