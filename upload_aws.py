@@ -20,7 +20,9 @@ import sys
 import platform
 import shutil
 
-api_url = "http://api.qa.videobserver.com/"
+# api_url = "http://api.qa.videobserver.com/"
+# api_url = "http://api.videobserver.com/"
+api_url = "http://api.staging.videobserver.com/"
 # test_file = "teste user.mp4"
 # test_file = "d:\\adil_camara_fixa.mp4"
 # test_file = "c:\\Users\Rui\Desktop\drawing_ERROR.mp4"
@@ -658,6 +660,7 @@ class MainWindow(wx.Frame):
         self.main_sizer.Add(self.add_single_file_btn, 0, wx.ALIGN_CENTER_HORIZONTAL)
 
         self.join_files_btn = wx.Button(parent=self, id=wx.ID_ANY, label="Convert/Join these files")
+        # self.join_files_btn.SetCursor(wx.Cursor(wx.CURSOR_HAND))
         self.main_sizer.Add(self.join_files_btn, 0, wx.ALIGN_CENTER_HORIZONTAL)
 
         self.conversion_progress_gauge = wx.Gauge(parent=self, id=wx.ID_ANY, range=100, size=(400, 20))
@@ -673,7 +676,7 @@ class MainWindow(wx.Frame):
         # UPLOAD
         #
 
-        self.main_sizer.Add(wx.StaticText(parent=self, id=wx.ID_ANY, label="UPLOAD FUNCS (A apontar para o QA)"), 0, wx.BOTTOM, 10)
+        self.main_sizer.Add(wx.StaticText(parent=self, id=wx.ID_ANY, label="UPLOAD FUNCS (A apontar para STAGING)"), 0, wx.BOTTOM, 10)
 
         self.main_sizer.Add(wx.StaticText(parent=self, id=wx.ID_ANY, label="Username"))
         self.username = wx.TextCtrl(parent=self, id=wx.ID_ANY, value="soccer_teste@vo.com")
@@ -1065,7 +1068,7 @@ class MainWindow(wx.Frame):
             dialog.ShowModal()
         else:
             self.size_preview.SetForegroundColour(wx.GREEN)
-            
+
     def preset_changed(self, e):
         self.estimate_final_size()
 
@@ -1080,5 +1083,6 @@ class MainWindow(wx.Frame):
 
 
 app = wx.App(False)
-frame = MainWindow(None, "Uploadamos")
+
+frame = MainWindow(None, "Convert/Upload Test")
 app.MainLoop()
