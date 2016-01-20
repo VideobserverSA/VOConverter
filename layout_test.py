@@ -470,8 +470,14 @@ class MainWindow(wx.Frame):
         sizer.Add(destination_sizer, 0, wx.LEFT | wx.RIGHT, 10)
 
         # first the file picker
-        destination_file_picker = wx.FilePickerCtrl(parent=win, id=wx.ID_ANY)
-        destination_sizer.Add(destination_file_picker, 3, wx.CENTER)
+        destination_text = wx.TextCtrl(parent=win, id=wx.ID_ANY, size=(200, 25))
+        destination_sizer.Add(destination_text, wx.CENTER)
+
+        # then the cancel button
+        cancel_btn = self.create_small_button(parent=win, length=80, text="BROWSE",
+                                              text_color=color_white, back_color=color_dark_grey,
+                                              click_handler=None)
+        destination_sizer.Add(cancel_btn, 1, wx.LEFT, 10)
 
         # then the cancel button
         cancel_btn = self.create_small_button(parent=win, length=100, text="CANCEL",
