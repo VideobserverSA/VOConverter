@@ -600,17 +600,17 @@ class MainWindow(wx.Frame):
         button_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
         sizer.Add(button_sizer, wx.EXPAND)
 
-        button_sizer.AddSpacer(230)
+        button_sizer.AddSpacer(235)
 
         cancel_btn = self.create_small_button(parent=win, length=105, text="CANCEL",
                                               back_color=color_white, text_color=color_black,
                                               click_handler=None)
         button_sizer.Add(cancel_btn)
 
-        button_sizer.AddSpacer(85)
+        button_sizer.AddSpacer(80)
 
         upload_btn = self.create_small_button(parent=win, length=150, text="UPLOAD",
-                                              back_color=color_orange, text_color=color_black,
+                                              back_color=color_orange, text_color=color_white,
                                               click_handler=None)
         button_sizer.Add(upload_btn)
 
