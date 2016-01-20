@@ -66,6 +66,10 @@ class MainWindow(wx.Frame):
         print("CONVERT PROGRESS")
         self.replace_view(self.create_convert_progress())
 
+    def show_convert_complete(self, e):
+        print("CONVERT COMPLETE")
+        self.replace_view(self.create_convert_complete())
+
     # show the next screen
     def replace_view(self, new_view_creator):
         # remove the previous view
@@ -546,10 +550,71 @@ class MainWindow(wx.Frame):
 
         cancel_btn = self.create_small_button(parent=win, length=105, text="CANCEL",
                                               back_color=color_white, text_color=color_black,
-                                              click_handler=None)
+                                              click_handler=self.show_convert_complete)
         sizer.Add(cancel_btn, 0, wx.ALIGN_CENTER)
 
         sizer.AddSpacer(40)
+
+        # place footer
+        footer_window = self.create_footer(parent=win)
+        sizer.Add(footer_window)
+
+        return win
+
+    def create_convert_complete(self):
+        win = wx.Window(parent=self, id=wx.ID_ANY)
+        win.SetBackgroundColour(color_white)
+        # main sizer
+        sizer = wx.BoxSizer(orient=wx.VERTICAL)
+        win.SetSizer(sizer)
+
+        # place header
+        header_window = self.create_header(parent=win)
+        sizer.Add(header_window)
+
+        # what do you want to do?
+        select_window = wx.Window(parent=win, id=wx.ID_ANY, size=(600, 100))
+        select_window.SetBackgroundColour(color_white)
+        select_window_sizer = wx.BoxSizer(orient=wx.VERTICAL)
+        select_window.SetSizer(select_window_sizer)
+
+        select_text = wx.StaticText(parent=select_window, id=wx.ID_ANY, label="What do you want to do?")
+        select_text.SetFont(wx.Font(12, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
+        select_text.SetForegroundColour(color_home_headers)
+        select_window_sizer.Add(select_text, 0, wx.CENTER | wx.TOP, 40)
+        sizer.Add(select_window)
+
+        sizer.AddSpacer(45)
+
+        # done icon
+        # load bitmap from file
+        log_raw_bitmap = wx.Bitmap(name="assets/done_icon.png", type=wx.BITMAP_TYPE_PNG)
+        # to hold the raw bitmap
+        logo_bitmap = wx.StaticBitmap(parent=win, id=wx.ID_ANY)
+        logo_bitmap.SetBitmap(log_raw_bitmap)
+        # center in the middle, and give so
+        sizer.Add(logo_bitmap, 0, wx.CENTER)
+
+        sizer.AddSpacer(90)
+
+        button_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
+        sizer.Add(button_sizer, wx.EXPAND)
+
+        button_sizer.AddSpacer(230)
+
+        cancel_btn = self.create_small_button(parent=win, length=105, text="CANCEL",
+                                              back_color=color_white, text_color=color_black,
+                                              click_handler=None)
+        button_sizer.Add(cancel_btn)
+
+        button_sizer.AddSpacer(85)
+
+        upload_btn = self.create_small_button(parent=win, length=150, text="UPLOAD",
+                                              back_color=color_orange, text_color=color_black,
+                                              click_handler=None)
+        button_sizer.Add(upload_btn)
+
+        sizer.AddSpacer(55)
 
         # place footer
         footer_window = self.create_footer(parent=win)
