@@ -16,6 +16,17 @@ color_black = wx.BLACK
 color_dark_green = wx.Colour(61, 209, 2)
 
 
+class ListFileDrop(wx.FileDropTarget):
+
+    def __init__(self, callback):
+        super().__init__()
+        self.callback = callback
+
+    def OnDropFiles(self, x, y, filenames):
+        self.callback(filenames)
+        return True
+
+
 class MainWindow(wx.Frame):
 
     # main init
@@ -38,6 +49,11 @@ class MainWindow(wx.Frame):
         self.SendSizeEvent()
         self.Update()
 
+        # some necessary cruft
+        self.destination_dir = ""
+        self.filenames = []
+        self.preset = ""
+
         self.Show()
 
     # navigation
@@ -57,18 +73,60 @@ class MainWindow(wx.Frame):
 
     def show_convert(self, e):
         print("CONVERT")
+        self.filenames = []
         self.replace_view(self.create_convert_screen())
 
     def show_join(self, e):
         pass
 
     def show_convert_progress(self, e):
+        # sanity check
+        if self.destination_dir == "":
+            print("NO DESTINATION DIR")
+            return
+        if len(self.filenames) < 1:
+            print("NO FILES TO CONVERT")
+            return
+        if self.preset == "":
+            print("NO PRESET")
+            return
         print("CONVERT PROGRESS")
         self.replace_view(self.create_convert_progress())
 
     def show_convert_complete(self, e):
         print("CONVERT COMPLETE")
         self.replace_view(self.create_convert_complete())
+
+    # utility function
+    def convert_add_files(self, filenames, the_list):
+        for file in filenames:
+            the_list.Append([file])
+            self.filenames.append(file)
+
+    def convert_browse_for_files(self, the_list):
+        path = ""
+        dlg = wx.FileDialog(self, "Video file", "", "", "*.*", wx.FD_OPEN)
+        if dlg.ShowModal() == wx.ID_OK:
+            path = dlg.GetPath()
+
+        dlg.Destroy()
+        if path != "":
+            self.convert_add_files([path], the_list)
+
+    def set_destination_dir(self, text_ctrl):
+        path = ""
+        dlg = wx.DirDialog(self, "Destination Directory")
+        if dlg.ShowModal() == wx.ID_OK:
+            path = dlg.GetPath()
+
+        dlg.Destroy()
+        if path != "":
+            self.destination_dir = path
+            text_ctrl.SetLabel(path)
+
+    def set_current_preset(self, preset):
+        self.preset = preset
+        print("preset: ", preset)
 
     # show the next screen
     def replace_view(self, new_view_creator):
@@ -156,7 +214,9 @@ class MainWindow(wx.Frame):
             border_window_sizer = wx.BoxSizer(orient=wx.VERTICAL)
             border_window.SetSizer(border_window_sizer)
 
-            anchor_window_sizer.Add(border_window, 1, wx.TOP | wx.LEFT | wx.RIGHT | wx.BOTTOM, 2)
+            border_window.Bind(wx.EVT_LEFT_DOWN, click_handler)
+
+            anchor_window_sizer.Add(border_window, 1, wx.TOP | wx.LEFT | wx.RIGHT | wx.BOTTOM, 1)
 
             # the text label
             text_label = wx.StaticText(parent=border_window, id=wx.ID_ANY, label=text.upper())
@@ -200,16 +260,16 @@ class MainWindow(wx.Frame):
         anchor_window_sizer.AddStretchSpacer(1)
 
         # create the login button
-        login_window = wx.Window(parent=anchor_window, id=wx.ID_ANY, size=(125, 25))
+        login_window = wx.Window(parent=anchor_window, id=wx.ID_ANY, size=(175, 25))
         login_window.SetBackgroundColour(color_orange)
 
         login_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
         login_window.SetSizer(login_sizer)
 
-        login_raw_bitmap = wx.Bitmap(name="assets/login.png", type=wx.BITMAP_TYPE_PNG)
-        logout_bitmap = wx.StaticBitmap(parent=login_window, id=wx.ID_ANY)
-        logout_bitmap.SetBitmap(login_raw_bitmap)
-        login_sizer.Add(logout_bitmap, 0, wx.CENTER | wx.LEFT, 6)
+        # login_raw_bitmap = wx.Bitmap(name="assets/login.png", type=wx.BITMAP_TYPE_PNG)
+        # logout_bitmap = wx.StaticBitmap(parent=login_window, id=wx.ID_ANY)
+        # logout_bitmap.SetBitmap(login_raw_bitmap)
+        # login_sizer.Add(logout_bitmap, 0, wx.CENTER | wx.LEFT, 6)
 
         # and now the username
         login_user = wx.StaticText(parent=login_window, id=wx.ID_ANY, label="Username")
@@ -229,7 +289,7 @@ class MainWindow(wx.Frame):
         logout_raw_bitmap = wx.Bitmap(name="assets/logout.png", type=wx.BITMAP_TYPE_PNG)
         logout_bitmap = wx.StaticBitmap(parent=logout_window, id=wx.ID_ANY)
         logout_bitmap.SetBitmap(logout_raw_bitmap)
-        logout_sizer.Add(logout_bitmap, 0, wx.CENTER | wx.LEFT, 6)
+        logout_sizer.Add(logout_bitmap, 1, wx.CENTER)
         logout_window.SetCursor(wx.Cursor(wx.CURSOR_HAND))
         anchor_window_sizer.Add(logout_window, 0, wx.CENTER | wx.RIGHT, 10)
 
@@ -435,6 +495,10 @@ class MainWindow(wx.Frame):
         conversion_presets = wx.RadioBox(parent=win, id=wx.ID_ANY, choices=["Full HD", "HD", "DVD", "Original"],
                                          style=wx.BORDER_NONE)
         sizer.Add(conversion_presets, 0, wx.LEFT, 10)
+        conversion_presets.Bind(wx.EVT_RADIOBOX, lambda x: self.set_current_preset(conversion_presets.GetStringSelection()))
+
+        current_preset = conversion_presets.GetStringSelection()
+        self.set_current_preset(current_preset)
 
         # drag list and add a file btn
         list_add = wx.Window(parent=win, id=wx.ID_ANY, size=(600, 170))
@@ -447,9 +511,12 @@ class MainWindow(wx.Frame):
         convert_list.AppendColumn("Drag & Drop to Convert or Add a File.", wx.LIST_FORMAT_CENTER, 400)
         list_add_sizer.Add(convert_list, 3, wx.RIGHT | wx.LEFT, 10)
 
+        # test the drop target stuff?
+        list_add.SetDropTarget(ListFileDrop(callback=lambda filenames: self.convert_add_files(filenames, convert_list)))
+
         add_a_file = self.create_small_button(parent=list_add, length=150, text="ADD A FILE",
                                               text_color=color_white, back_color=color_dark_grey,
-                                              click_handler=None)
+                                              click_handler=lambda x: self.convert_browse_for_files(convert_list))
         list_add_sizer.Add(add_a_file, 1, wx.RIGHT | wx.LEFT, 10)
 
         # Estimated size
@@ -480,16 +547,19 @@ class MainWindow(wx.Frame):
         destination_text = wx.TextCtrl(parent=win, id=wx.ID_ANY, size=(200, 25))
         destination_sizer.Add(destination_text, wx.CENTER)
 
+        if self.destination_dir != "":
+            destination_text.SetLabel(self.destination_dir)
+
         # then the cancel button
         cancel_btn = self.create_small_button(parent=win, length=80, text="BROWSE",
                                               text_color=color_white, back_color=color_dark_grey,
-                                              click_handler=None)
+                                              click_handler=lambda x: self.set_destination_dir(destination_text))
         destination_sizer.Add(cancel_btn, 1, wx.LEFT, 10)
 
         # then the cancel button
-        cancel_btn = self.create_small_button(parent=win, length=100, text="CANCEL",
+        cancel_btn = self.create_small_button(parent=win, length=100, text="GO BACK",
                                               text_color=color_dark_grey, back_color=color_white,
-                                              click_handler=None,
+                                              click_handler=self.show_main,
                                               border_color=color_dark_grey)
         destination_sizer.Add(cancel_btn, 1, wx.LEFT, 10)
 
@@ -530,12 +600,12 @@ class MainWindow(wx.Frame):
         converting_label.SetForegroundColour(color_dark_grey)
         converting_header_sizer.Add(converting_label)
         # the file name
-        converting_file_label = wx.StaticText(parent=win, id=wx.ID_ANY, label="file name.mp4")
+        converting_file_label = wx.StaticText(parent=win, id=wx.ID_ANY, label=self.filenames[0])
         converting_file_label.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False))
         converting_file_label.SetForegroundColour(color_dark_grey)
         converting_header_sizer.Add(converting_file_label, 0, wx.LEFT, 10)
 
-        sizer.AddSpacer(30)
+        sizer.AddSpacer(10)
 
         # convert box
         convert_box = wx.StaticBox(parent=win, id=wx.ID_ANY, size=(475, 90))
@@ -560,7 +630,7 @@ class MainWindow(wx.Frame):
         convert_gauge = wx.Gauge(parent=convert_box, id=wx.ID_ANY, range=100, size=(375, 15))
         vertical_spacer.Add(convert_gauge, 0, wx.TOP, 10)
 
-        sizer.AddSpacer(80)
+        sizer.AddSpacer(100)
 
         cancel_btn = self.create_small_button(parent=win, length=105, text="CANCEL",
                                               back_color=color_white, text_color=color_black,
@@ -599,7 +669,7 @@ class MainWindow(wx.Frame):
         select_window_sizer.Add(select_text, 0, wx.CENTER | wx.TOP, 40)
         sizer.Add(select_window)
 
-        sizer.AddSpacer(45)
+        sizer.AddSpacer(25)
 
         # done icon
         # load bitmap from file
@@ -610,24 +680,38 @@ class MainWindow(wx.Frame):
         # center in the middle, and give so
         sizer.Add(logo_bitmap, 0, wx.CENTER)
 
-        sizer.AddSpacer(90)
+        sizer.AddSpacer(20)
+
+        # converting... file
+        converting_header_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
+        sizer.Add(converting_header_sizer, 0, wx.CENTER | wx.TOP, 20)
+        # the converting...
+        converting_label = wx.StaticText(parent=win, id=wx.ID_ANY, label="Converted: ")
+        converting_label.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
+        converting_label.SetForegroundColour(color_dark_grey)
+        converting_header_sizer.Add(converting_label)
+        # the file name
+        converting_file_label = wx.StaticText(parent=win, id=wx.ID_ANY, label="file name.mp4")
+        converting_file_label.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False))
+        converting_file_label.SetForegroundColour(color_dark_grey)
+        converting_header_sizer.Add(converting_file_label, 0, wx.LEFT, 10)
+
+        sizer.AddSpacer(55)
 
         button_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
-        sizer.Add(button_sizer, wx.EXPAND)
+        sizer.Add(button_sizer, 1, wx.CENTER)
 
-        button_sizer.AddSpacer(235)
-
-        cancel_btn = self.create_small_button(parent=win, length=105, text="CANCEL",
+        cancel_btn = self.create_small_button(parent=win, length=150, text="GO BACK",
                                               back_color=color_white, text_color=color_black,
                                               click_handler=None,
                                               border_color=color_dark_grey)
         button_sizer.Add(cancel_btn)
 
-        button_sizer.AddSpacer(80)
+        button_sizer.AddSpacer(20)
 
         upload_btn = self.create_small_button(parent=win, length=150, text="UPLOAD",
                                               back_color=color_orange, text_color=color_white,
-                                              click_handler=None)
+                                              click_handler=self.show_main)
         button_sizer.Add(upload_btn)
 
         sizer.AddSpacer(55)
