@@ -81,6 +81,8 @@ class MainWindow(wx.Frame):
 
         self.final_path = ""
 
+        self.current_thread = threading.Thread()
+
         self.Show()
 
     # progress funcs
@@ -123,6 +125,10 @@ class MainWindow(wx.Frame):
             call(["open", self.final_path])
         else:
             os.startfile(self.final_path)
+
+    # abandon thread
+    def cancel_current_thread(self, e):
+        self.current_thread.abort()
 
     # navigation
     def show_main(self, e):
@@ -175,11 +181,11 @@ class MainWindow(wx.Frame):
             file_to_convert.video_info = convert_functions.get_video_info(file)
             files_with_info.append(file_to_convert)
 
-        join_thr = convert_functions.JoinFiles(in_videos=files_with_info,
-                                               out_video=out_video,
-                                               tmp_dir=self.temp_dir,
-                                               preset=the_preset,
-                                               callback=lambda progress: self.mark_progress(progress))
+        self.current_thread = join_thr = convert_functions.JoinFiles(in_videos=files_with_info,
+                                                                     out_video=out_video,
+                                                                     tmp_dir=self.temp_dir,
+                                                                     preset=the_preset,
+                                                                     callback=lambda progress: self.mark_progress(progress))
 
         join_thr.start()
 
@@ -738,7 +744,7 @@ class MainWindow(wx.Frame):
 
         cancel_btn = self.create_small_button(parent=win, length=105, text="CANCEL",
                                               back_color=color_white, text_color=color_black,
-                                              click_handler=self.show_convert_complete,
+                                              click_handler=self.cancel_current_thread,
                                               border_color=color_dark_grey)
         sizer.Add(cancel_btn, 0, wx.ALIGN_CENTER)
 
@@ -814,8 +820,9 @@ class MainWindow(wx.Frame):
         button_sizer.AddSpacer(20)
 
         open_btn = self.create_small_button(parent=win, length=150, text="OPEN",
-                                            back_color=color_dark_grey, text_color=color_white,
-                                            click_handler=self.open_final_path)
+                                            back_color=color_white, text_color=color_black,
+                                            click_handler=self.open_final_path,
+                                            border_color=color_dark_grey)
         button_sizer.Add(open_btn)
 
         button_sizer.AddSpacer(20)

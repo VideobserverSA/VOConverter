@@ -410,8 +410,6 @@ class JoinFiles(threading.Thread):
         # put it on desktop for now
         join_args.append("" + self.out_video + "")
 
-        print("JUNTAMOS", join_args)
-
         try:
             out = check_call(join_args, stderr=STDOUT, shell=False)
         except CalledProcessError as cpe:
@@ -429,5 +427,8 @@ class JoinFiles(threading.Thread):
         # now we add the actual slice percentage to the baseline
         to_add = (progress * item_slice / 100)
         self.callback(int(baseline + to_add))
+
+    def abort(self):
+        print("ABORT THE THREAD")
 
 
