@@ -1,8 +1,26 @@
 import wx
 import webbrowser
+import os
+import platform
+import convert_functions
+import tempfile
+import threading
+import time
+import subprocess
 
-# flags_center = wx.SizerFlags(1)
-# flags_center.Center()
+# some initalization
+ffmpeg_path = "ffmpeg.exe"
+ffprobe_path = "ffprobe.exe"
+path_separator = "\\"
+
+if platform.system() == "Darwin":
+    os_prefix = os.getcwd() + "/VoConverter.app/Contents/Resources/"
+
+    ffmpeg_path = os_prefix + "ffmpeg"
+    ffprobe_path = os_prefix + "ffprobe"
+
+    shell_status = False
+    path_separator = "/"
 
 # some colors
 color_dark_grey = wx.Colour(44, 49, 56)
@@ -33,8 +51,8 @@ class MainWindow(wx.Frame):
     def __init__(self, parent, title):
 
         # we don't want to allow resizing
-        wx.Frame.__init__(self, parent, title=title, size=(600, 535),
-                          style=wx.DEFAULT_FRAME_STYLE)
+        wx.Frame.__init__(self, parent, title=title, size=(600, 530),
+                          style=wx.DEFAULT_FRAME_STYLE & ~(wx.RESIZE_BORDER | wx.MAXIMIZE_BOX))
 
         # init the main screen
         # next calls will be via the replace view method
@@ -50,11 +68,61 @@ class MainWindow(wx.Frame):
         self.Update()
 
         # some necessary cruft
-        self.destination_dir = ""
+        self.destination_dir = os.path.expanduser("~" + "\\" + "Desktop")
+        # self.destination_dir = ""
         self.filenames = []
         self.preset = ""
 
+        self.temp_dir = tempfile.TemporaryDirectory()
+
+        self.current_progress = 0
+        self.progress_start_time = time.time()
+        self.data_points = []
+
+        self.final_path = ""
+
         self.Show()
+
+    # progress funcs
+    def mark_progress(self, progress):
+        self.current_progress = progress
+        if progress == 0:
+            progress = 1
+
+        # calc estimated time
+        delta = time.time() - self.progress_start_time
+        eta = (delta * 100) / progress
+        remaining = eta - delta
+
+        # create data point
+        self.data_points.append(remaining)
+        if len(self.data_points) > 5:
+            # remove the earliest data point
+            self.data_points.pop(0)
+
+    def update_progress(self, gauge, text):
+        gauge.SetValue(self.current_progress)
+        if len(self.data_points) > 0:
+            remain = (sum(self.data_points) / len(self.data_points))
+            # print(remain)
+            s = int(remain % 60)
+            m = int((remain / 60) % 60)
+            h = int((remain / (60 * 60)) % 60)
+            time_str = str(h) + "h " + str(m) + "m " + str(s) + "s"
+            text.SetLabel("Estimated time: " + time_str + " " + str(self.current_progress) + "%")
+
+    def reset_progress(self):
+        self.current_progress = 0
+        self.progress_start_time = time.time()
+        self.data_points = []
+
+    # open the final path
+    def open_final_path(self, e):
+        # open the video file
+        if platform.system() == "Darwin":
+            call(["open", self.final_path])
+        else:
+            os.startfile(self.final_path)
 
     # navigation
     def show_main(self, e):
@@ -91,7 +159,43 @@ class MainWindow(wx.Frame):
             print("NO PRESET")
             return
         print("CONVERT PROGRESS")
-        self.replace_view(self.create_convert_progress())
+        win, gauge, text = self.create_convert_progress()
+        self.replace_view(win)
+
+        presets, choices = convert_functions.get_presets()
+        the_preset = [x for x in presets if x.name == self.preset][0]
+
+        out_video = self.destination_dir + path_separator + "TESTE COISA CENAS MERODAC" + ".mp4"
+
+        files_with_info = []
+        # get the video_infos
+        for file in self.filenames:
+            file_to_convert = convert_functions.FileToConvert()
+            file_to_convert.file = file
+            file_to_convert.video_info = convert_functions.get_video_info(file)
+            files_with_info.append(file_to_convert)
+
+        join_thr = convert_functions.JoinFiles(in_videos=files_with_info,
+                                               out_video=out_video,
+                                               tmp_dir=self.temp_dir,
+                                               preset=the_preset,
+                                               callback=lambda progress: self.mark_progress(progress))
+
+        join_thr.start()
+
+        self.reset_progress()
+
+        while join_thr.is_alive():
+            dummy_event = threading.Event()
+            dummy_event.wait(timeout=0.01)
+
+            self.update_progress(gauge, text)
+
+            wx.Yield()
+            self.Update()
+
+        self.final_path = out_video
+        self.show_convert_complete(None)
 
     def show_convert_complete(self, e):
         print("CONVERT COMPLETE")
@@ -625,7 +729,7 @@ class MainWindow(wx.Frame):
         convert_box_sizer.Add(vertical_spacer, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 20)
 
         estimate_text = wx.StaticText(parent=convert_box, id=wx.ID_ANY, label="Estimated time 10m 10%")
-        vertical_spacer.Add(estimate_text, 0, wx.ALIGN_RIGHT | wx.TOP, 10)
+        vertical_spacer.Add(estimate_text, 0, wx.ALIGN_LEFT | wx.TOP, 10)
 
         convert_gauge = wx.Gauge(parent=convert_box, id=wx.ID_ANY, range=100, size=(375, 15))
         vertical_spacer.Add(convert_gauge, 0, wx.TOP, 10)
@@ -644,7 +748,7 @@ class MainWindow(wx.Frame):
         footer_window = self.create_footer(parent=win)
         sizer.Add(footer_window)
 
-        return win
+        return win, convert_gauge, estimate_text
 
     def create_convert_complete(self):
         win = wx.Window(parent=self, id=wx.ID_ANY)
@@ -686,12 +790,12 @@ class MainWindow(wx.Frame):
         converting_header_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
         sizer.Add(converting_header_sizer, 0, wx.CENTER | wx.TOP, 20)
         # the converting...
-        converting_label = wx.StaticText(parent=win, id=wx.ID_ANY, label="Converted: ")
+        converting_label = wx.StaticText(parent=win, id=wx.ID_ANY, label="Complete: ")
         converting_label.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
         converting_label.SetForegroundColour(color_dark_grey)
         converting_header_sizer.Add(converting_label)
         # the file name
-        converting_file_label = wx.StaticText(parent=win, id=wx.ID_ANY, label="file name.mp4")
+        converting_file_label = wx.StaticText(parent=win, id=wx.ID_ANY, label=self.final_path)
         converting_file_label.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False))
         converting_file_label.SetForegroundColour(color_dark_grey)
         converting_header_sizer.Add(converting_file_label, 0, wx.LEFT, 10)
@@ -703,9 +807,16 @@ class MainWindow(wx.Frame):
 
         cancel_btn = self.create_small_button(parent=win, length=150, text="GO BACK",
                                               back_color=color_white, text_color=color_black,
-                                              click_handler=None,
+                                              click_handler=self.show_main,
                                               border_color=color_dark_grey)
         button_sizer.Add(cancel_btn)
+
+        button_sizer.AddSpacer(20)
+
+        open_btn = self.create_small_button(parent=win, length=150, text="OPEN",
+                                            back_color=color_dark_grey, text_color=color_white,
+                                            click_handler=self.open_final_path)
+        button_sizer.Add(open_btn)
 
         button_sizer.AddSpacer(20)
 
