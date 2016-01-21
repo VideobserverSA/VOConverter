@@ -139,7 +139,7 @@ class MainWindow(wx.Frame):
         self.Update()
 
     # create a small button
-    def create_small_button(self, parent, length, text, back_color, text_color, click_handler, border=False):
+    def create_small_button(self, parent, length, text, back_color, text_color, click_handler, border_color=None):
 
         # a window so we can have a colored background
         anchor_window = wx.Window(parent=parent, id=wx.ID_ANY, size=(length, 30))
@@ -148,13 +148,21 @@ class MainWindow(wx.Frame):
         anchor_window.SetSizer(anchor_window_sizer)
         anchor_window.SetBackgroundColour(back_color)
 
-        if border:
-            border_box = wx.StaticBox(parent=anchor_window, id=wx.ID_ANY, size=(length, 30))
+        if border_color is not None:
+            anchor_window.SetBackgroundColour(border_color)
+
+            border_window = wx.Window(parent=anchor_window, id=wx.ID_ANY, size=(length, 30))
+            border_window.SetBackgroundColour(back_color)
+            border_window_sizer = wx.BoxSizer(orient=wx.VERTICAL)
+            border_window.SetSizer(border_window_sizer)
+
+            anchor_window_sizer.Add(border_window, 1, wx.TOP | wx.LEFT | wx.RIGHT | wx.BOTTOM, 2)
+
             # the text label
-            text_label = wx.StaticText(parent=border_box, id=wx.ID_ANY, label=text.upper())
+            text_label = wx.StaticText(parent=border_window, id=wx.ID_ANY, label=text.upper())
             text_label.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
             text_label.SetForegroundColour(text_color)
-            anchor_window_sizer.Add(text_label, 0, wx.CENTER | wx.TOP, 8)
+            border_window_sizer.Add(text_label, 0, wx.CENTER | wx.TOP, 6)
 
         else:
             # the text label
@@ -172,7 +180,6 @@ class MainWindow(wx.Frame):
 
         # component ready to use elsewhere
         return anchor_window
-
 
     # include the header always
     def create_header(self, parent):
@@ -482,14 +489,15 @@ class MainWindow(wx.Frame):
         # then the cancel button
         cancel_btn = self.create_small_button(parent=win, length=100, text="CANCEL",
                                               text_color=color_dark_grey, back_color=color_white,
-                                              click_handler=None)
+                                              click_handler=None,
+                                              border_color=color_dark_grey)
         destination_sizer.Add(cancel_btn, 1, wx.LEFT, 10)
 
         # then the convert button
         convert_btn = self.create_small_button(parent=win, length=150, text="CONVERT",
                                                text_color=color_white, back_color=color_orange,
                                                click_handler=self.show_convert_progress)
-        destination_sizer.Add(convert_btn, 2)
+        destination_sizer.Add(convert_btn, 2, wx.RIGHT | wx.LEFT, 5)
 
         sizer.AddSpacer(20)
 
@@ -556,7 +564,8 @@ class MainWindow(wx.Frame):
 
         cancel_btn = self.create_small_button(parent=win, length=105, text="CANCEL",
                                               back_color=color_white, text_color=color_black,
-                                              click_handler=self.show_convert_complete)
+                                              click_handler=self.show_convert_complete,
+                                              border_color=color_dark_grey)
         sizer.Add(cancel_btn, 0, wx.ALIGN_CENTER)
 
         sizer.AddSpacer(40)
@@ -610,7 +619,8 @@ class MainWindow(wx.Frame):
 
         cancel_btn = self.create_small_button(parent=win, length=105, text="CANCEL",
                                               back_color=color_white, text_color=color_black,
-                                              click_handler=None)
+                                              click_handler=None,
+                                              border_color=color_dark_grey)
         button_sizer.Add(cancel_btn)
 
         button_sizer.AddSpacer(80)
