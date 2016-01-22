@@ -358,6 +358,69 @@ class MainWindow(wx.Frame):
         # component ready to use elsewhere
         return anchor_window
 
+    def create_alert_dialog(self, parent, title, message, is_ok_type=False,
+                            no_click_handler = None, yes_click_handler = None ):
+
+        dialog = wx.Dialog(parent=parent, id=wx.ID_ANY, title="", size=(395, 210))
+        dialog_sizer = wx.BoxSizer(orient=wx.VERTICAL)
+        dialog.SetSizer(dialog_sizer)
+
+        # header background
+        header_win = wx.Window(parent=dialog, id=wx.ID_ANY, size=(395, 50))
+        header_win.SetBackgroundColour(color_dark_grey)
+        dialog_sizer.Add(header_win, 0, wx.EXPAND)
+        header_win_sizer = wx.BoxSizer(orient=wx.VERTICAL)
+        header_win.SetSizer(header_win_sizer)
+
+        # header text
+        header_text = wx.StaticText(parent=header_win, id=wx.ID_ANY, label=title)
+        header_text.SetFont(wx.Font(10, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
+        header_text.SetForegroundColour(color_white)
+        header_win_sizer.Add(header_text, 0, wx.CENTER | wx.TOP, 15)
+
+        # white window
+        back_window = wx.Window(parent=dialog, id=wx.ID_ANY, size=(310, 230))
+        back_window.SetBackgroundColour(color_white)
+        back_window_sizer = wx.BoxSizer(orient=wx.VERTICAL)
+        back_window.SetSizer(back_window_sizer)
+        dialog_sizer.Add(back_window, 0, wx.EXPAND)
+
+        back_window_sizer.AddSpacer(20)
+
+        # the message
+        message_text = wx.StaticText(parent=back_window, id=wx.ID_ANY, label=message)
+        message_text.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False))
+        message_text.SetForegroundColour(color_dark_grey)
+        back_window_sizer.Add(message_text, 0, wx.CENTER | wx.TOP, 15)
+
+        button_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
+
+        if is_ok_type:
+            # just add an ok type button
+            ok_btn = self.create_small_button(parent=back_window, length=100, text="OK",
+                                              back_color=color_orange, text_color=color_white,
+                                              click_handler=lambda ev: dialog.Destroy())
+            button_sizer.Add(ok_btn, 1, wx.CENTER)
+        else:
+
+            no_btn = self.create_small_button(parent=back_window, length=100, text="NO",
+                                              back_color=color_white, text_color=color_dark_grey,
+                                              border_color=color_dark_grey,
+                                              click_handler=no_click_handler)
+            button_sizer.Add(no_btn, 1)
+
+            button_sizer.AddSpacer(10)
+
+            yes_btn = self.create_small_button(parent=back_window, length=100, text="YES",
+                                               back_color=color_orange, text_color=color_white,
+                                               click_handler=yes_click_handler)
+            button_sizer.Add(yes_btn, 1)
+
+        back_window_sizer.Add(button_sizer, 1, wx.CENTER | wx.TOP, 10)
+
+        dialog.Show()
+        return dialog
+
     # include the header always
     def create_header(self, parent):
 
@@ -451,7 +514,7 @@ class MainWindow(wx.Frame):
 
     def show_login_form(self, e):
 
-        self.login_dialog = dialog = wx.Dialog(parent=self, id=wx.ID_ANY, title="", size=(310, 270))
+        self.login_dialog = dialog = wx.Dialog(parent=self, id=wx.ID_ANY, title="", size=(310, 290))
         dialog_sizer = wx.BoxSizer(orient=wx.VERTICAL)
         dialog.SetSizer(dialog_sizer)
 
@@ -469,7 +532,7 @@ class MainWindow(wx.Frame):
         header_win_sizer.Add(header_text, 0, wx.CENTER | wx.TOP, 15)
 
         # white window
-        back_window = wx.Window(parent=dialog, id=wx.ID_ANY, size=(310, 230))
+        back_window = wx.Window(parent=dialog, id=wx.ID_ANY, size=(310, 250))
         back_window.SetBackgroundColour(color_white)
         back_window_sizer = wx.BoxSizer(orient=wx.VERTICAL)
         back_window.SetSizer(back_window_sizer)
@@ -556,6 +619,10 @@ class MainWindow(wx.Frame):
             self.username_to_display = username
 
         if code == 2:
+            dialog = self.create_alert_dialog(parent=self,
+                                              title="Login Failed",
+                                              message="Wrong user name or password",
+                                              is_ok_type=True)
             print("wrong user and pass")
 
     # create the home screen
