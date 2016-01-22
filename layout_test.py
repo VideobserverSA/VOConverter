@@ -8,6 +8,8 @@ import tempfile
 import threading
 import time
 import subprocess
+from boto3.session import Session
+import math
 
 # some initalization
 ffmpeg_path = "ffmpeg.exe"
@@ -76,6 +78,8 @@ class MainWindow(wx.Frame):
         self.aws_data = {}
         self.login_dialog = None
         self.username_to_display = ""
+
+        self.current_upload_size = 0
 
         # init the main screen
         # next calls will be via the replace view method
@@ -147,7 +151,14 @@ class MainWindow(wx.Frame):
         self.replace_view(self.create_convert_join_screen())
 
     def show_upload(self, e):
-        pass
+        print("UPLOAD")
+        if not self.logged_in:
+            self.create_alert_dialog(parent=self, title="Not logged in",
+                                     message="You must be logged in to upload files",
+                                     is_ok_type=True)
+            return
+        self.filenames = []
+        self.replace_view(self.create_upload_screen())
 
     def show_playlist(self, e):
         pass
@@ -178,7 +189,9 @@ class MainWindow(wx.Frame):
         presets, choices = convert_functions.get_presets()
         the_preset = [x for x in presets if x.name == self.preset][0]
 
-        out_video = self.destination_dir + path_separator + "TESTE COISA CENAS MERODAC" + ".mp4"
+        out_video = self.destination_dir + path_separator + os.path.basename(self.filenames[0].split(".")[0]) + ".mp4"
+        if os.path.exists(out_video):
+            out_video = out_video = self.destination_dir + path_separator + os.path.basename(self.filenames[0].split(".")[0]) + "_1.mp4"
 
         files_with_info = []
         # get the video_infos
@@ -208,6 +221,7 @@ class MainWindow(wx.Frame):
             self.Update()
 
         self.final_path = out_video
+        self.filenames = [out_video]
         self.show_convert_complete(None)
 
     def show_convert_complete(self, e):
@@ -244,6 +258,83 @@ class MainWindow(wx.Frame):
     def set_current_preset(self, preset):
         self.preset = preset
         print("preset: ", preset)
+
+    def show_upload_progress(self, e):
+        print("DO THE UPLOAD")
+
+        if not self.logged_in:
+            self.create_alert_dialog(parent=self, title="Not logged in",
+                                     message="You must be logged in to upload files",
+                                     is_ok_type=True)
+            return
+
+        upload_key = os.path.basename(self.filenames[0])
+        print("Upload key", upload_key)
+
+        win, gauge, text = self.create_upload_progress()
+        self.replace_view(win)
+
+        self.reset_progress()
+
+        # init s3 session
+        aws_session = Session(aws_access_key_id=self.aws_data["AccessKeyId"],
+                              aws_secret_access_key=self.aws_data["SecretAccessKey"],
+                              aws_session_token=self.aws_data["SessionToken"],
+                              region_name=self.aws_data["Region"])
+
+        # first create and object to send
+        client = aws_session.client(service_name="s3",
+                                    endpoint_url=self.aws_data["CloudfrontEndpoint"])
+
+        # we cheat so that the user can see some progress at start
+        gauge.Pulse()
+
+        total_size = os.stat(self.filenames[0]).st_size
+        self.current_upload_size = 0
+
+        upload_thr = aws.UploadFile(s3client=client,
+                                    bucket=self.aws_data["Bucket"],
+                                    key=upload_key,
+                                    file=self.filenames[0],
+                                    progress_callback=lambda progress: self.mark_upload_progress(progress, total_size),
+                                    resume_callback=lambda progress: self.mark_progress(progress),
+                                    name="upload-thr")
+        upload_thr.start()
+
+        while upload_thr.is_alive():
+            dummy_event = threading.Event()
+            dummy_event.wait(timeout=0.01)
+
+            if self.current_upload_size > 0:
+                self.update_progress(gauge, text)
+
+            wx.Yield()
+            self.Update()
+
+        # get the real duration
+        final_video_info = convert_functions.get_video_info(self.filenames[0])
+
+        print("file duration", final_video_info.duration)
+
+        aws.confirm_upload(self.token["token"],
+                           bucket=self.aws_data["Bucket"],
+                           key=upload_key,
+                           duration=int(float(final_video_info.duration)),
+                           size=100)
+        self.final_path = self.filenames[0]
+        self.show_upload_complete(None)
+
+        # show complete
+
+    def mark_upload_progress(self, progress, total):
+        print("UP:", progress, total)
+        self.current_upload_size += progress
+        percentage = math.ceil((self.current_upload_size / total) * 100)
+        self.mark_progress(percentage)
+
+    def show_upload_complete(self, e):
+        print("UPLOAD COMPLETE")
+        self.replace_view(self.create_upload_complete())
 
     # show the next screen
     def replace_view(self, new_view_creator):
@@ -921,7 +1012,7 @@ class MainWindow(wx.Frame):
         vertical_spacer = wx.BoxSizer(orient=wx.VERTICAL)
         convert_box_sizer.Add(vertical_spacer, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 20)
 
-        estimate_text = wx.StaticText(parent=convert_box, id=wx.ID_ANY, label="Estimated time 10m 10%")
+        estimate_text = wx.StaticText(parent=convert_box, id=wx.ID_ANY, label="Estimated time ? 0%")
         vertical_spacer.Add(estimate_text, 0, wx.ALIGN_LEFT | wx.TOP, 10)
 
         convert_gauge = wx.Gauge(parent=convert_box, id=wx.ID_ANY, range=100, size=(375, 15))
@@ -1016,8 +1107,207 @@ class MainWindow(wx.Frame):
 
         upload_btn = self.create_small_button(parent=win, length=150, text="UPLOAD",
                                               back_color=color_orange, text_color=color_white,
-                                              click_handler=self.show_main)
+                                              click_handler=self.show_upload_progress)
         button_sizer.Add(upload_btn)
+
+        sizer.AddSpacer(55)
+
+        # place footer
+        footer_window = self.create_footer(parent=win)
+        sizer.Add(footer_window)
+
+        return win
+
+        # convert just one file
+    def create_upload_screen(self):
+
+        win = wx.Window(parent=self, id=wx.ID_ANY)
+        win.SetBackgroundColour(color_white)
+        # main sizer
+        sizer = wx.BoxSizer(orient=wx.VERTICAL)
+        win.SetSizer(sizer)
+
+        # place header
+        header_window = self.create_header(parent=win)
+        sizer.Add(header_window)
+
+        # drag list and add a file btn
+        list_add = wx.Window(parent=win, id=wx.ID_ANY, size=(600, 170))
+        list_add.SetBackgroundColour(color_white)
+        list_add_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
+        list_add.SetSizer(list_add_sizer)
+        sizer.Add(list_add, 0, wx.TOP, 10)
+
+        convert_list = wx.ListView(parent=list_add, winid=wx.ID_ANY, style=wx.LC_REPORT)
+        convert_list.AppendColumn("Drag & Drop to Upload or Add a File.", wx.LIST_FORMAT_CENTER, 400)
+        list_add_sizer.Add(convert_list, 3, wx.RIGHT | wx.LEFT, 10)
+
+        # test the drop target stuff?
+        list_add.SetDropTarget(ListFileDrop(callback=lambda filenames: self.convert_add_files(filenames, convert_list)))
+
+        add_a_file = self.create_small_button(parent=list_add, length=150, text="ADD A FILE",
+                                              text_color=color_white, back_color=color_dark_grey,
+                                              click_handler=lambda x: self.convert_browse_for_files(convert_list))
+        list_add_sizer.Add(add_a_file, 1, wx.RIGHT | wx.LEFT, 10)
+
+        sizer.AddSpacer(180)
+
+        # and the destination stuff
+        destination_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
+        sizer.Add(destination_sizer, 0, wx.LEFT | wx.RIGHT, 10)
+
+        destination_sizer.AddStretchSpacer(5)
+
+        # then the cancel button
+        cancel_btn = self.create_small_button(parent=win, length=100, text="GO BACK",
+                                              text_color=color_dark_grey, back_color=color_white,
+                                              click_handler=self.show_main,
+                                              border_color=color_dark_grey)
+        destination_sizer.Add(cancel_btn, 1)
+
+        # then the convert button
+        convert_btn = self.create_small_button(parent=win, length=150, text="UPLOAD",
+                                               text_color=color_white, back_color=color_orange,
+                                               click_handler=self.show_upload_progress)
+        destination_sizer.Add(convert_btn, 2, wx.LEFT, 10)
+
+        sizer.AddSpacer(20)
+
+        # place footer
+        footer_window = self.create_footer(parent=win)
+        sizer.Add(footer_window)
+
+        return win
+
+    def create_upload_progress(self):
+        win = wx.Window(parent=self, id=wx.ID_ANY)
+        win.SetBackgroundColour(color_white)
+        # main sizer
+        sizer = wx.BoxSizer(orient=wx.VERTICAL)
+        win.SetSizer(sizer)
+
+        # place header
+        header_window = self.create_header(parent=win)
+        sizer.Add(header_window)
+
+        # some space
+        sizer.AddSpacer(115)
+
+        # converting... file
+        converting_header_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
+        sizer.Add(converting_header_sizer, 0, wx.LEFT, 65)
+        # the converting...
+        converting_label = wx.StaticText(parent=win, id=wx.ID_ANY, label="Uploading...")
+        converting_label.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
+        converting_label.SetForegroundColour(color_dark_grey)
+        converting_header_sizer.Add(converting_label)
+        # the file name
+        converting_file_label = wx.StaticText(parent=win, id=wx.ID_ANY, label=self.filenames[0])
+        converting_file_label.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False))
+        converting_file_label.SetForegroundColour(color_dark_grey)
+        converting_header_sizer.Add(converting_file_label, 0, wx.LEFT, 10)
+
+        sizer.AddSpacer(10)
+
+        # convert box
+        convert_box = wx.StaticBox(parent=win, id=wx.ID_ANY, size=(475, 90))
+        convert_box_sizer = wx.StaticBoxSizer(wx.HORIZONTAL, convert_box)
+        convert_box.SetSizer(convert_box_sizer)
+        sizer.Add(convert_box, 0, wx.LEFT, 65)
+        # convert icon
+        # load bitmap from file
+        raw_bitmap = wx.Bitmap(name="assets/progress_icon.png", type=wx.BITMAP_TYPE_PNG)
+        # to hold the raw bitmap
+        static_bitmap = wx.StaticBitmap(parent=convert_box, id=wx.ID_ANY)
+        static_bitmap.SetBitmap(raw_bitmap)
+        # center in the middle, and give so
+        convert_box_sizer.Add(static_bitmap, 0, wx.CENTER | wx.LEFT, 22)
+        # now we add vertical sizer
+        vertical_spacer = wx.BoxSizer(orient=wx.VERTICAL)
+        convert_box_sizer.Add(vertical_spacer, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 20)
+
+        estimate_text = wx.StaticText(parent=convert_box, id=wx.ID_ANY, label="Estimated time ? 0%")
+        vertical_spacer.Add(estimate_text, 0, wx.ALIGN_LEFT | wx.TOP, 10)
+
+        convert_gauge = wx.Gauge(parent=convert_box, id=wx.ID_ANY, range=100, size=(375, 15))
+        vertical_spacer.Add(convert_gauge, 0, wx.TOP, 10)
+
+        sizer.AddSpacer(100)
+
+        cancel_btn = self.create_small_button(parent=win, length=105, text="CANCEL",
+                                              back_color=color_white, text_color=color_black,
+                                              click_handler=self.cancel_current_thread,
+                                              border_color=color_dark_grey)
+        sizer.Add(cancel_btn, 0, wx.ALIGN_CENTER)
+
+        sizer.AddSpacer(40)
+
+        # place footer
+        footer_window = self.create_footer(parent=win)
+        sizer.Add(footer_window)
+
+        return win, convert_gauge, estimate_text
+
+    def create_upload_complete(self):
+        win = wx.Window(parent=self, id=wx.ID_ANY)
+        win.SetBackgroundColour(color_white)
+        # main sizer
+        sizer = wx.BoxSizer(orient=wx.VERTICAL)
+        win.SetSizer(sizer)
+
+        # place header
+        header_window = self.create_header(parent=win)
+        sizer.Add(header_window)
+
+        # what do you want to do?
+        select_window = wx.Window(parent=win, id=wx.ID_ANY, size=(600, 100))
+        select_window.SetBackgroundColour(color_white)
+        select_window_sizer = wx.BoxSizer(orient=wx.VERTICAL)
+        select_window.SetSizer(select_window_sizer)
+
+        select_text = wx.StaticText(parent=select_window, id=wx.ID_ANY, label="Upload Complete...")
+        select_text.SetFont(wx.Font(12, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
+        select_text.SetForegroundColour(color_home_headers)
+        select_window_sizer.Add(select_text, 0, wx.CENTER | wx.TOP, 40)
+        sizer.Add(select_window)
+
+        sizer.AddSpacer(25)
+
+        # done icon
+        # load bitmap from file
+        log_raw_bitmap = wx.Bitmap(name="assets/done_icon.png", type=wx.BITMAP_TYPE_PNG)
+        # to hold the raw bitmap
+        logo_bitmap = wx.StaticBitmap(parent=win, id=wx.ID_ANY)
+        logo_bitmap.SetBitmap(log_raw_bitmap)
+        # center in the middle, and give so
+        sizer.Add(logo_bitmap, 0, wx.CENTER)
+
+        sizer.AddSpacer(20)
+
+        # converting... file
+        converting_header_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
+        sizer.Add(converting_header_sizer, 0, wx.CENTER | wx.TOP, 20)
+        # the converting...
+        converting_label = wx.StaticText(parent=win, id=wx.ID_ANY, label="Complete: ")
+        converting_label.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
+        converting_label.SetForegroundColour(color_dark_grey)
+        converting_header_sizer.Add(converting_label)
+        # the file name
+        converting_file_label = wx.StaticText(parent=win, id=wx.ID_ANY, label=self.final_path)
+        converting_file_label.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False))
+        converting_file_label.SetForegroundColour(color_dark_grey)
+        converting_header_sizer.Add(converting_file_label, 0, wx.LEFT, 10)
+
+        sizer.AddSpacer(55)
+
+        button_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
+        sizer.Add(button_sizer, 1, wx.CENTER)
+
+        cancel_btn = self.create_small_button(parent=win, length=150, text="GO BACK",
+                                              back_color=color_white, text_color=color_black,
+                                              click_handler=self.show_main,
+                                              border_color=color_dark_grey)
+        button_sizer.Add(cancel_btn)
 
         sizer.AddSpacer(55)
 
