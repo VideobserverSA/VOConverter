@@ -3,6 +3,7 @@ import webbrowser
 import os
 import platform
 import convert_functions
+import aws
 import tempfile
 import threading
 import time
@@ -54,19 +55,6 @@ class MainWindow(wx.Frame):
         wx.Frame.__init__(self, parent, title=title, size=(600, 530),
                           style=wx.DEFAULT_FRAME_STYLE & ~(wx.RESIZE_BORDER | wx.MAXIMIZE_BOX))
 
-        # init the main screen
-        # next calls will be via the replace view method
-        self.main_sizer = wx.BoxSizer(orient=wx.VERTICAL)
-        self.current_window = self.create_main_screen()
-        self.main_sizer.Add(self.current_window)
-        self.SetSizer(self.main_sizer)
-
-        # redraw the window
-        self.Layout()
-        self.Refresh()
-        self.SendSizeEvent()
-        self.Update()
-
         # some necessary cruft
         self.destination_dir = os.path.expanduser("~" + "\\" + "Desktop")
         # self.destination_dir = ""
@@ -82,6 +70,25 @@ class MainWindow(wx.Frame):
         self.final_path = ""
 
         self.current_thread = threading.Thread()
+
+        self.logged_in = False
+        self.token = {}
+        self.aws_data = {}
+        self.login_dialog = None
+        self.username_to_display = ""
+
+        # init the main screen
+        # next calls will be via the replace view method
+        self.main_sizer = wx.BoxSizer(orient=wx.VERTICAL)
+        self.current_window = self.create_main_screen()
+        self.main_sizer.Add(self.current_window)
+        self.SetSizer(self.main_sizer)
+
+        # redraw the window
+        self.Layout()
+        self.Refresh()
+        self.SendSizeEvent()
+        self.Update()
 
         self.Show()
 
@@ -369,39 +376,46 @@ class MainWindow(wx.Frame):
 
         anchor_window_sizer.AddStretchSpacer(1)
 
-        # create the login button
-        login_window = wx.Window(parent=anchor_window, id=wx.ID_ANY, size=(175, 25))
-        login_window.SetBackgroundColour(color_orange)
+        if self.logged_in:
+            # create the login button
+            login_window = wx.Window(parent=anchor_window, id=wx.ID_ANY, size=(175, 25))
+            login_window.SetBackgroundColour(color_orange)
 
-        login_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
-        login_window.SetSizer(login_sizer)
+            login_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
+            login_window.SetSizer(login_sizer)
 
-        # login_raw_bitmap = wx.Bitmap(name="assets/login.png", type=wx.BITMAP_TYPE_PNG)
-        # logout_bitmap = wx.StaticBitmap(parent=login_window, id=wx.ID_ANY)
-        # logout_bitmap.SetBitmap(login_raw_bitmap)
-        # login_sizer.Add(logout_bitmap, 0, wx.CENTER | wx.LEFT, 6)
+            # login_raw_bitmap = wx.Bitmap(name="assets/login.png", type=wx.BITMAP_TYPE_PNG)
+            # logout_bitmap = wx.StaticBitmap(parent=login_window, id=wx.ID_ANY)
+            # logout_bitmap.SetBitmap(login_raw_bitmap)
+            # login_sizer.Add(logout_bitmap, 0, wx.CENTER | wx.LEFT, 6)
 
-        # and now the username
-        login_user = wx.StaticText(parent=login_window, id=wx.ID_ANY, label="Username")
-        login_user.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
-        login_user.SetForegroundColour(color_white)
-        login_sizer.Add(login_user, 0, wx.CENTER | wx.LEFT, 5)
+            # and now the username
+            login_user = wx.StaticText(parent=login_window, id=wx.ID_ANY, label=self.username_to_display)
+            login_user.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
+            login_user.SetForegroundColour(color_white)
+            login_sizer.Add(login_user, 0, wx.CENTER | wx.LEFT, 5)
 
-        anchor_window_sizer.Add(login_window, 0, wx.CENTER | wx.RIGHT, 5)
+            anchor_window_sizer.Add(login_window, 0, wx.CENTER | wx.RIGHT, 5)
 
-        # create the log out button
-        logout_window = wx.Window(parent=anchor_window, id=wx.ID_ANY, size=(25, 25))
-        logout_window.SetBackgroundColour(color_orange)
+            # create the log out button
+            logout_window = wx.Window(parent=anchor_window, id=wx.ID_ANY, size=(25, 25))
+            logout_window.SetBackgroundColour(color_orange)
 
-        logout_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
-        logout_window.SetSizer(logout_sizer)
+            logout_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
+            logout_window.SetSizer(logout_sizer)
 
-        logout_raw_bitmap = wx.Bitmap(name="assets/logout.png", type=wx.BITMAP_TYPE_PNG)
-        logout_bitmap = wx.StaticBitmap(parent=logout_window, id=wx.ID_ANY)
-        logout_bitmap.SetBitmap(logout_raw_bitmap)
-        logout_sizer.Add(logout_bitmap, 1, wx.CENTER)
-        logout_window.SetCursor(wx.Cursor(wx.CURSOR_HAND))
-        anchor_window_sizer.Add(logout_window, 0, wx.CENTER | wx.RIGHT, 10)
+            logout_raw_bitmap = wx.Bitmap(name="assets/logout.png", type=wx.BITMAP_TYPE_PNG)
+            logout_bitmap = wx.StaticBitmap(parent=logout_window, id=wx.ID_ANY)
+            logout_bitmap.SetBitmap(logout_raw_bitmap)
+            logout_sizer.Add(logout_bitmap, 1, wx.CENTER)
+            logout_window.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+            anchor_window_sizer.Add(logout_window, 0, wx.CENTER | wx.RIGHT, 10)
+        else:
+            login_btn = self.create_small_button(parent=anchor_window, length=150, text="LOGIN",
+                                                 text_color=color_orange, back_color=color_dark_grey,
+                                                 border_color=color_orange,
+                                                 click_handler=self.show_login_form)
+            anchor_window_sizer.Add(login_btn, 0, wx.CENTER | wx.RIGHT, 10)
 
         anchor_window.SetSizer(anchor_window_sizer)
 
@@ -435,8 +449,114 @@ class MainWindow(wx.Frame):
 
         return anchor_window
 
+    def show_login_form(self, e):
+
+        self.login_dialog = dialog = wx.Dialog(parent=self, id=wx.ID_ANY, title="", size=(310, 270))
+        dialog_sizer = wx.BoxSizer(orient=wx.VERTICAL)
+        dialog.SetSizer(dialog_sizer)
+
+        # header background
+        header_win = wx.Window(parent=dialog, id=wx.ID_ANY, size=(310, 50))
+        header_win.SetBackgroundColour(color_dark_grey)
+        dialog_sizer.Add(header_win, 0, wx.EXPAND)
+        header_win_sizer = wx.BoxSizer(orient=wx.VERTICAL)
+        header_win.SetSizer(header_win_sizer)
+
+        # header text
+        header_text = wx.StaticText(parent=header_win, id=wx.ID_ANY, label="LOGIN")
+        header_text.SetFont(wx.Font(10, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
+        header_text.SetForegroundColour(color_white)
+        header_win_sizer.Add(header_text, 0, wx.CENTER | wx.TOP, 15)
+
+        # white window
+        back_window = wx.Window(parent=dialog, id=wx.ID_ANY, size=(310, 230))
+        back_window.SetBackgroundColour(color_white)
+        back_window_sizer = wx.BoxSizer(orient=wx.VERTICAL)
+        back_window.SetSizer(back_window_sizer)
+        dialog_sizer.Add(back_window, 0, wx.EXPAND)
+
+        # space before
+        back_window_sizer.AddSpacer(10)
+
+        # username
+        username_label = wx.StaticText(parent=back_window, id=wx.ID_ANY, label="Email")
+        username_label.SetFont(wx.Font(8, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False))
+        username_label.SetForegroundColour(color_dark_grey)
+        back_window_sizer.Add(username_label, 0, wx.LEFT, 20)
+        username = wx.TextCtrl(parent=back_window, id=wx.ID_ANY, size=(270, 25), value="soccer_teste@vo.com")
+        back_window_sizer.Add(username, 0, wx.CENTER | wx.LEFT | wx.RIGHT, 20)
+
+        # space before
+        back_window_sizer.AddSpacer(10)
+
+        # password
+        password_label = wx.StaticText(parent=back_window, id=wx.ID_ANY, label="Password")
+        password_label.SetFont(wx.Font(8, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False))
+        password_label.SetForegroundColour(color_dark_grey)
+        back_window_sizer.Add(password_label, 0, wx.LEFT, 20)
+        password = wx.TextCtrl(parent=back_window, id=wx.ID_ANY, size=(270, 25), style=wx.TE_PASSWORD, value="password")
+        back_window_sizer.Add(password, 0, wx.CENTER | wx.LEFT | wx.RIGHT, 20)
+
+        # space before
+        back_window_sizer.AddSpacer(15)
+
+        # keep me logged in and forgot password
+        remember_me_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
+        back_window_sizer.Add(remember_me_sizer, 0, wx.LEFT | wx.RIGHT, 20)
+
+        remember_cb = wx.CheckBox(parent=back_window, id=wx.ID_ANY, label="Keep me logged in.")
+        remember_cb.SetValue(True)
+        remember_me_sizer.Add(remember_cb, 1)
+
+        remember_me_sizer.AddStretchSpacer(1)
+
+        lost_pass = wx.StaticText(parent=back_window, id=wx.ID_ANY, label="Forgot Password")
+        lost_pass.SetFont(wx.Font(8, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, True))
+        lost_pass.SetForegroundColour(color_dark_grey)
+        lost_pass.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+        lost_pass.Bind(event=wx.EVT_LEFT_DOWN, handler=self.lost_pass)
+        remember_me_sizer.Add(lost_pass)
+
+        # space before
+        back_window_sizer.AddSpacer(15)
+
+        # cancel and login button
+        button_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
+        back_window_sizer.Add(button_sizer, 0, wx.LEFT | wx.RIGHT, 20)
+
+        cancel_btn = self.create_small_button(parent=back_window, length=110, text="CANCEL",
+                                              back_color=color_white, text_color=color_dark_grey,
+                                              border_color=color_dark_grey,
+                                              click_handler=lambda ev: dialog.Destroy())
+        button_sizer.Add(cancel_btn, 1)
+
+        button_sizer.AddStretchSpacer(2)
+
+        login_btn = self.create_small_button(parent=back_window, length=100, text="LOGIN",
+                                             back_color=color_orange, text_color=color_white,
+                                             click_handler=lambda wv: self.do_login(username.GetValue(),
+                                                                                    password.GetValue(),
+                                                                                    remember_cb.GetValue()))
+        button_sizer.Add(login_btn, 1)
+
+        dialog.Show()
+
     def go_to_help(self, e):
         webbrowser.open("http://faqs.videobserver.com/", new=0, autoraise=True)
+
+    def lost_pass(self, e):
+        webbrowser.open("https://www.videobserver.com/forgot-password", new=0, autoraise=True)
+
+    def do_login(self, username, password, remember):
+        code, self.token = aws.get_token(username, password)
+        if code == 200:
+            self.login_dialog.Destroy()
+            self.aws_data = aws.get_aws_data(self.token["token"])
+            self.logged_in = True
+            self.username_to_display = username
+
+        if code == 2:
+            print("wrong user and pass")
 
     # create the home screen
     def create_main_screen(self):
