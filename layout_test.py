@@ -10,6 +10,13 @@ import time
 import subprocess
 from boto3.session import Session
 import math
+import sys
+
+# we need this because: https://github.com/pyinstaller/pyinstaller/wiki/Recipe-subprocess
+if getattr(sys, 'frozen', False):
+    isFrozen = True
+else:
+    isFrozen = False
 
 # some initalization
 ffmpeg_path = "ffmpeg.exe"
@@ -637,7 +644,7 @@ class MainWindow(wx.Frame):
         username_label.SetFont(wx.Font(8, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False))
         username_label.SetForegroundColour(color_dark_grey)
         back_window_sizer.Add(username_label, 0, wx.LEFT, 20)
-        username = wx.TextCtrl(parent=back_window, id=wx.ID_ANY, size=(270, 25), value="soccer_teste@vo.com")
+        username = wx.TextCtrl(parent=back_window, id=wx.ID_ANY, size=(270, 25), value="")
         back_window_sizer.Add(username, 0, wx.CENTER | wx.LEFT | wx.RIGHT, 20)
 
         # space before
@@ -648,7 +655,7 @@ class MainWindow(wx.Frame):
         password_label.SetFont(wx.Font(8, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False))
         password_label.SetForegroundColour(color_dark_grey)
         back_window_sizer.Add(password_label, 0, wx.LEFT, 20)
-        password = wx.TextCtrl(parent=back_window, id=wx.ID_ANY, size=(270, 25), style=wx.TE_PASSWORD, value="password")
+        password = wx.TextCtrl(parent=back_window, id=wx.ID_ANY, size=(270, 25), style=wx.TE_PASSWORD, value="")
         back_window_sizer.Add(password, 0, wx.CENTER | wx.LEFT | wx.RIGHT, 20)
 
         # space before

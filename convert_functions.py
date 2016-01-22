@@ -8,14 +8,6 @@ import json
 import sys
 import os
 
-
-# we need this because: https://github.com/pyinstaller/pyinstaller/wiki/Recipe-subprocess
-if getattr(sys, 'frozen', False):
-    isFrozen = True
-else:
-    isFrozen = False
-
-
 def subprocess_args(include_stdout=True):
     # The following is true only on Windows.
     if hasattr(subprocess, 'STARTUPINFO'):
