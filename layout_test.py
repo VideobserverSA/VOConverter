@@ -46,12 +46,13 @@ color_dark_green = wx.Colour(61, 209, 2)
 
 class ListFileDrop(wx.FileDropTarget):
 
-    def __init__(self, callback):
+    def __init__(self, callback, estimate=None):
         super().__init__()
         self.callback = callback
+        self.estimate = estimate
 
     def OnDropFiles(self, x, y, filenames):
-        self.callback(filenames)
+        self.callback(filenames, self.estimate)
         return True
 
 
@@ -173,7 +174,8 @@ class MainWindow(wx.Frame):
     def show_convert(self, e):
         print("CONVERT")
         self.filenames = []
-        self.replace_view(self.create_convert_screen())
+        win, estimate = self.create_convert_screen()
+        self.replace_view(win)
 
     def show_join(self, e):
         pass
@@ -190,42 +192,40 @@ class MainWindow(wx.Frame):
             print("NO PRESET")
             return
         print("CONVERT PROGRESS")
-        win, gauge, text = self.create_convert_progress()
+        win, gauge, estimate_text, current_file = self.create_convert_progress()
         self.replace_view(win)
 
         presets, choices = convert_functions.get_presets()
-        the_preset = [x for x in presets if x.name == self.preset][0]
+        the_preset = convert_functions.get_preset(self.preset)
 
-        out_video = self.destination_dir + path_separator + os.path.basename(self.filenames[0].split(".")[0]) + ".mp4"
-        if os.path.exists(out_video):
-            out_video = out_video = self.destination_dir + path_separator + os.path.basename(self.filenames[0].split(".")[0]) + "_1.mp4"
+        current_number = 1
+        for one_file in self.filenames:
 
-        files_with_info = []
-        # get the video_infos
-        for file in self.filenames:
-            file_to_convert = convert_functions.FileToConvert()
-            file_to_convert.file = file
-            file_to_convert.video_info = convert_functions.get_video_info(file)
-            files_with_info.append(file_to_convert)
+            current_file.SetLabel(str(current_number) + "/" + str(len(self.filenames)) + " " + one_file.file)
 
-        self.current_thread = join_thr = convert_functions.JoinFiles(in_videos=files_with_info,
-                                                                     out_video=out_video,
-                                                                     tmp_dir=self.temp_dir,
-                                                                     preset=the_preset,
-                                                                     callback=lambda progress: self.mark_progress(progress))
+            out_video = self.destination_dir + path_separator + os.path.basename(one_file.file.split(".")[0]) + ".mp4"
+            if os.path.exists(out_video):
+                out_video = out_video = self.destination_dir + path_separator + os.path.basename(one_file.file.split(".")[0]) + "_1.mp4"
 
-        join_thr.start()
+            self.current_thread = join_thr = convert_functions.JoinFiles(in_videos=[one_file],
+                                                                         out_video=out_video,
+                                                                         tmp_dir=self.temp_dir,
+                                                                         preset=the_preset,
+                                                                         callback=lambda progress: self.mark_progress(progress))
 
-        self.reset_progress()
+            join_thr.start()
 
-        while join_thr.is_alive():
-            dummy_event = threading.Event()
-            dummy_event.wait(timeout=0.01)
+            self.reset_progress()
 
-            self.update_progress(gauge, text)
+            while join_thr.is_alive():
+                dummy_event = threading.Event()
+                dummy_event.wait(timeout=0.01)
 
-            wx.Yield()
-            self.Update()
+                self.update_progress(gauge, estimate_text)
+
+                wx.Yield()
+                self.Update()
+            current_number += 1
 
         self.final_path = out_video
         self.filenames = [out_video]
@@ -236,10 +236,54 @@ class MainWindow(wx.Frame):
         self.replace_view(self.create_convert_complete())
 
     # utility function
-    def convert_add_files(self, filenames, the_list):
+    def convert_add_files(self, filenames, the_list, estimate):
         for file in filenames:
             the_list.Append([file])
-            self.filenames.append(file)
+            file_to_convert = convert_functions.FileToConvert()
+            file_to_convert.file = file
+            file_to_convert.video_info = convert_functions.get_video_info(file)
+            self.filenames.append(file_to_convert)
+        self.calculate_conversion_estimates(estimate)
+
+    def calculate_conversion_estimates(self, estimate):
+        total_size = 0
+        preset = convert_functions.get_preset(preset=self.preset)
+        for video in self.filenames:
+            if preset.name == "Original":
+                local_size = float(video.video_info.duration) * float(video.video_info.bitrate)
+            else:
+                local_size = float(video.video_info.duration) * float(preset.bitrate) * 1024
+
+            print("local_size", local_size)
+            total_size += local_size
+
+        print("total_size", total_size)
+
+        size_in_megas = total_size / 1024 / 1024 / 10
+        size_in_gigas = size_in_megas / 1024
+        print("in_megas", size_in_megas)
+        print("in_gigas", size_in_gigas)
+
+        if size_in_megas > 1000:
+            estimate.SetLabel(str(round(size_in_gigas, 1)) + " Gb")
+        else:
+            estimate.SetLabel(str(int(size_in_megas)) + " Mb")
+
+        # # do we have enough space
+        # if not self.has_enough_disk_space(total_size / 10):
+        #     self.size_preview.SetForegroundColour(wx.RED)
+        #     # show dialog to user
+        #     dialog = wx.Dialog(parent=self, id=wx.ID_ANY, title="Not Enough space")
+        #     sizer = wx.BoxSizer(wx.VERTICAL)
+        #     msg = wx.StaticText(parent=dialog, id=wx.ID_ANY, label="You do not have enough disk space for the conversion\nif you try to continue with these files and presets\nthe conversion will probably fail.")
+        #     sizer.Add(msg)
+        #     ok_btn = wx.Button(parent=dialog, id=wx.ID_OK, label="Ok")
+        #     sizer.Add(ok_btn)
+        #     dialog.SetSizer(sizer)
+        #     sizer.SetSizeHints(dialog)
+        #     dialog.ShowModal()
+        # else:
+        #     self.size_preview.SetForegroundColour(wx.GREEN)
 
     def convert_browse_for_files(self, the_list):
         path = ""
@@ -911,9 +955,6 @@ class MainWindow(wx.Frame):
         convert_list.AppendColumn("Drag & Drop to Convert or Add a File.", wx.LIST_FORMAT_CENTER, 400)
         list_add_sizer.Add(convert_list, 3, wx.RIGHT | wx.LEFT, 10)
 
-        # test the drop target stuff?
-        list_add.SetDropTarget(ListFileDrop(callback=lambda filenames: self.convert_add_files(filenames, convert_list)))
-
         add_a_file = self.create_small_button(parent=list_add, length=150, text="ADD A FILE",
                                               text_color=color_white, back_color=color_dark_grey,
                                               click_handler=lambda x: self.convert_browse_for_files(convert_list))
@@ -932,6 +973,11 @@ class MainWindow(wx.Frame):
         estimated_size_indicator.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
         estimated_size_indicator.SetForegroundColour(color_dark_green)
         estimated_size_sizer.Add(estimated_size_indicator)
+
+        # test the drop target stuff?
+        list_add.SetDropTarget(ListFileDrop(callback=lambda filenames, estimate: self.convert_add_files(filenames,
+                                                                                                        convert_list,
+                                                                                                        estimated_size_indicator)))
 
         sizer.AddSpacer(70)
 
@@ -975,7 +1021,7 @@ class MainWindow(wx.Frame):
         footer_window = self.create_footer(parent=win)
         sizer.Add(footer_window)
 
-        return win
+        return win, estimated_size_indicator
 
     def create_convert_progress(self):
         win = wx.Window(parent=self, id=wx.ID_ANY)
@@ -1000,7 +1046,7 @@ class MainWindow(wx.Frame):
         converting_label.SetForegroundColour(color_dark_grey)
         converting_header_sizer.Add(converting_label)
         # the file name
-        converting_file_label = wx.StaticText(parent=win, id=wx.ID_ANY, label=self.filenames[0])
+        converting_file_label = wx.StaticText(parent=win, id=wx.ID_ANY, label=self.filenames[0].file)
         converting_file_label.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False))
         converting_file_label.SetForegroundColour(color_dark_grey)
         converting_header_sizer.Add(converting_file_label, 0, wx.LEFT, 10)
@@ -1044,7 +1090,7 @@ class MainWindow(wx.Frame):
         footer_window = self.create_footer(parent=win)
         sizer.Add(footer_window)
 
-        return win, convert_gauge, estimate_text
+        return win, convert_gauge, estimate_text, converting_file_label
 
     def create_convert_complete(self):
         win = wx.Window(parent=self, id=wx.ID_ANY)

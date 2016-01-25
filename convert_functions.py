@@ -152,6 +152,11 @@ def get_presets():
     return presets, preset_choices
 
 
+def get_preset(preset):
+    presets, choices = get_presets()
+    return [x for x in presets if x.name == preset][0]
+
+
 def get_video_info(video_path):
 
         print("VIDEO_PATH", video_path)
