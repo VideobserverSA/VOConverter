@@ -346,7 +346,8 @@ class MainWindow(wx.Frame):
     # show the next screen
     def replace_view(self, new_view_creator):
         # remove the previous view
-        self.current_window.Destroy()
+        # use deferred destruction or mac os will crash frequently
+        self.current_window.DestroyLater()
         # recreate a blank sizer to occupy the whole screen
         self.main_sizer = wx.BoxSizer(orient=wx.VERTICAL)
         # get the window we were passed
@@ -902,7 +903,11 @@ class MainWindow(wx.Frame):
         list_add.SetSizer(list_add_sizer)
         sizer.Add(list_add, 0, wx.TOP, 10)
 
-        convert_list = wx.ListView(parent=list_add, winid=wx.ID_ANY, style=wx.LC_REPORT)
+        if platform.system() == "Darwin":
+            # convert_list = wx.ListView(parent=list_add, id=wx.ID_ANY, style=wx.LC_REPORT)
+            convert_list = wx.ListView(list_add, -1)
+        else:
+            convert_list = wx.ListView(parent=list_add, winid=wx.ID_ANY, style=wx.LC_REPORT)
         convert_list.AppendColumn("Drag & Drop to Convert or Add a File.", wx.LIST_FORMAT_CENTER, 400)
         list_add_sizer.Add(convert_list, 3, wx.RIGHT | wx.LEFT, 10)
 
@@ -1145,7 +1150,10 @@ class MainWindow(wx.Frame):
         list_add.SetSizer(list_add_sizer)
         sizer.Add(list_add, 0, wx.TOP, 10)
 
-        convert_list = wx.ListView(parent=list_add, winid=wx.ID_ANY, style=wx.LC_REPORT)
+        if platform.system() == "Darwin":
+            convert_list = wx.ListView(list_add, -1)
+        else:
+            convert_list = wx.ListView(parent=list_add, winid=wx.ID_ANY, style=wx.LC_REPORT)
         convert_list.AppendColumn("Drag & Drop to Upload or Add a File.", wx.LIST_FORMAT_CENTER, 400)
         list_add_sizer.Add(convert_list, 3, wx.RIGHT | wx.LEFT, 10)
 
