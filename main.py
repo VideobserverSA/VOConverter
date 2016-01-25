@@ -216,7 +216,7 @@ class AddSeparator(threading.Thread):
 
 class BurnLogo(threading.Thread):
 
-    def __init__(self, temp_dir, cut_number, input_video, time_start, duration, tmp_out, video_info):
+    def __init__(self, temp_dir, cut_number, input_video, time_start, duration, tmp_out, video_info, watermark):
 
         super().__init__()
 
@@ -227,12 +227,18 @@ class BurnLogo(threading.Thread):
         self.duration = duration
         self.tmp_out = tmp_out
         self.video_info = video_info
+        self.watermark = watermark
 
     def run(self):
 
         # video height - image height - 20 padding
         bottom = self.video_info.height - 22 - 20
         left = 20
+
+        if self.watermark:
+            watermark_file = "watermark.png"
+        else:
+            watermark_file = "trans_watermark.png"
 
         # add the overlay to the pause image
         try:
@@ -248,7 +254,7 @@ class BurnLogo(threading.Thread):
                 self.input_video,
                 # image input
                 "-i",
-                os_prefix + "watermark.png",
+                os_prefix + watermark_file,
                 # filter
                 "-filter_complex",
                 "[0:v][1:v] overlay=" + str(left) + ":" + str(bottom),
@@ -271,7 +277,8 @@ class BurnLogo(threading.Thread):
 
 class AddOverlay(threading.Thread):
 
-    def __init__(self, temp_dir, cut_number, input_video, video_info, video_time, image_path, tmp_out, pause_time):
+    def __init__(self, temp_dir, cut_number, input_video, video_info, video_time, image_path,
+                 tmp_out, pause_time, watermark):
 
         super().__init__()
 
@@ -283,6 +290,7 @@ class AddOverlay(threading.Thread):
         self.video_info = video_info
         self.image_path = image_path
         self.pause_time = pause_time
+        self.watermark = watermark
 
     def run(self):
 
@@ -290,6 +298,11 @@ class AddOverlay(threading.Thread):
         # video height - image height - 20 padding
         bottom = self.video_info.height - 22 - 20
         left = 20
+
+        if self.watermark:
+            watermark_file = "watermark.png"
+        else:
+            watermark_file = "trans_watermark.png"
 
         # lets resize the image
         ori_img = Image.open(self.image_path)
@@ -337,7 +350,7 @@ class AddOverlay(threading.Thread):
                 self.temp_dir.name + path_separator + str(self.cut_number) + "_overlay_res.png",
                 # logo
                 "-i",
-                os_prefix + "watermark.png",
+                os_prefix + watermark_file,
                 # filter
                 "-filter_complex",
                 "overlay [tmp]; [tmp] overlay=" + str(left) + ":" + str(bottom),
@@ -396,7 +409,7 @@ class AddOverlay(threading.Thread):
                 self.input_video,
                 # watermark
                 "-i",
-                os_prefix + "watermark.png",
+                os_prefix + watermark_file,
                 # duration
                 "-t",
                 str(max(self.video_time, 1)),
@@ -427,7 +440,7 @@ class AddOverlay(threading.Thread):
             self.input_video,
             # watermark
             "-i",
-            os_prefix + "watermark.png",
+            os_prefix + watermark_file,
             # start time
             "-ss",
             str(max(self.video_time, 1)),
@@ -577,7 +590,8 @@ class AddOverlay(threading.Thread):
 
 class AddMultipleDrawings(threading.Thread):
 
-    def __init__(self, temp_dir, cut_number, input_video, video_info, tmp_out, drawings, pause_time, duration):
+    def __init__(self, temp_dir, cut_number, input_video, video_info, tmp_out, drawings, pause_time,
+                 duration, watermark):
 
         super().__init__()
 
@@ -589,6 +603,7 @@ class AddMultipleDrawings(threading.Thread):
         self.drawings = drawings
         self.pause_time = pause_time
         self.duration = duration
+        self.watermark = watermark
 
     def run(self):
 
@@ -596,6 +611,11 @@ class AddMultipleDrawings(threading.Thread):
         # video height - image height - 20 padding
         bottom = self.video_info.height - 22 - 20
         left = 20
+
+        if self.watermark:
+            watermark_file = "watermark.png"
+        else:
+            watermark_file = "trans_watermark.png"
 
         # sort the drawings by time
         self.drawings = sorted(self.drawings, key=lambda drw: drw.drawing_time)
@@ -613,7 +633,7 @@ class AddMultipleDrawings(threading.Thread):
                 self.input_video,
                 # watermark
                 "-i",
-                os_prefix + "watermark.png",
+                os_prefix + watermark_file,
                 # duration
                 "-t",
                 str(max(self.drawings[0].drawing_time, 1)),
@@ -644,7 +664,7 @@ class AddMultipleDrawings(threading.Thread):
             self.input_video,
             # watermark
             "-i",
-            os_prefix + "watermark.png",
+            os_prefix + watermark_file,
             # start time
             "-ss",
             str(max(self.drawings[len(self.drawings) - 1].drawing_time, 1)),
@@ -737,7 +757,7 @@ class AddMultipleDrawings(threading.Thread):
                     self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) + "_overlay_res.png",
                     # logo
                     "-i",
-                    os_prefix + "watermark.png",
+                    os_prefix + watermark_file,
                     # filter
                     "-filter_complex",
                     "overlay [tmp]; [tmp] overlay=" + str(left) + ":" + str(bottom),
@@ -803,7 +823,7 @@ class AddMultipleDrawings(threading.Thread):
                     self.input_video,
                     # watermark
                     "-i",
-                    os_prefix + "watermark.png",
+                    os_prefix + watermark_file,
                     # start time
                     "-ss",
                     str(max(middle_start, 1)),
@@ -1259,7 +1279,8 @@ class CutWithKeyFrames(threading.Thread):
 
 class EncodeSubtitles(threading.Thread):
 
-    def __init__(self, temp_dir, cut_number, video_path, video_info, time_start, duration, comments, tmp_out, font_size):
+    def __init__(self, temp_dir, cut_number, video_path, video_info, time_start, duration, comments, tmp_out,
+                 font_size, watermark):
 
         super().__init__()
 
@@ -1272,6 +1293,7 @@ class EncodeSubtitles(threading.Thread):
         self.temp_dir = temp_dir
         self.video_info = video_info
         self.font_size = font_size
+        self.watermark = watermark
 
     def run(self):
 
@@ -1282,6 +1304,11 @@ class EncodeSubtitles(threading.Thread):
         # video height - image height - 20 padding
         bottom = self.video_info.height - 22 - 20
         left = 20
+
+        if self.watermark:
+            watermark_file = "watermark.png"
+        else:
+            watermark_file = "trans_watermark.png"
 
         ass_contents = "[Script Info]\n"
         ass_contents += "PlayResY: 600\n"
@@ -1352,7 +1379,7 @@ class EncodeSubtitles(threading.Thread):
                 self.temp_dir.name + path_separator + str(self.cut_number) + "_no_water.mp4",
                 # watermark
                 "-i",
-                os_prefix + "watermark.png",
+                os_prefix + watermark_file,
                 # filter
                 "-filter_complex",
                 "[0:v][1:v] overlay=" + str(left) + ":" + str(bottom),
@@ -1377,7 +1404,7 @@ class MainWindow(wx.Frame):
     def __init__(self, parent, title):
 
         # we don't want to allow resizing
-        wx.Frame.__init__(self, parent, title=title, size=(600, 350),
+        wx.Frame.__init__(self, parent, title=title, size=(600, 370),
                           style=wx.DEFAULT_FRAME_STYLE & ~(wx.RESIZE_BORDER | wx.MAXIMIZE_BOX))
 
         self.panel = wx.Panel(self, wx.ID_ANY)
@@ -1454,6 +1481,12 @@ class MainWindow(wx.Frame):
         self.slow_check_box = wx.CheckBox(parent=self.panel, id=wx.ID_ANY, label=t("Slow but better"))
         self.slow_sizer.Add(self.slow_check_box, 1, wx.ALL, 10)
         self.main_sizer.Add(self.slow_sizer)
+
+        # sizer for watermark
+        self.water_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.water_check_box = wx.CheckBox(parent=self.panel, id=wx.ID_ANY, label=t("Watermark"))
+        self.water_sizer.Add(self.water_check_box, 1, wx.ALL, 10)
+        self.main_sizer.Add(self.water_sizer)
 
         # progress bar
         self.meter_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -1854,6 +1887,7 @@ class MainWindow(wx.Frame):
             tmp_out = self.temp_dir.name + path_separator + str(cut_number) + ".mp4"
 
             # now we see what we need to do...
+            watermark = self.water_check_box.GetValue()
 
             #  first check for comments
             if (comments is not None and enable_comments == "true") or self.slow_check_box.GetValue() is True:
@@ -1863,7 +1897,7 @@ class MainWindow(wx.Frame):
                     burn_thr = BurnLogo(temp_dir=self.temp_dir, cut_number=cut_number, input_video=video_path,
                                         time_start=time_start, duration=duration,
                                         tmp_out=self.temp_dir.name + path_separator + str(cut_number) + "_comments.mp4",
-                                        video_info=self.video_info)
+                                        video_info=self.video_info, watermark=watermark)
                     burn_thr.start()
                     while burn_thr.is_alive():
                         wx.Yield()
@@ -1879,7 +1913,8 @@ class MainWindow(wx.Frame):
                                               video_info=self.video_info,
                                               time_start=time_start, duration=duration, comments=comments,
                                               tmp_out=self.temp_dir.name + path_separator + str(cut_number) + "_comments.mp4",
-                                              font_size=self.font_size.GetValue())
+                                              font_size=self.font_size.GetValue(),
+                                              watermark=watermark)
                     sub_thr.start()
                     while sub_thr.is_alive():
                         wx.Yield()
@@ -1945,7 +1980,8 @@ class MainWindow(wx.Frame):
                                          video_time=video_time,
                                          tmp_out=self.temp_dir.name + path_separator + str(cut_number) + "_overlay.mp4",
                                          image_path=self.temp_dir.name + path_separator + str(cut_number) + "_composite.png",
-                                         pause_time=self.pause_duration.get())
+                                         pause_time=self.pause_duration.get(),
+                                         watermark=watermark)
                 overlay_thr.start()
                 while overlay_thr.is_alive():
                     wx.Yield()
@@ -1962,7 +1998,8 @@ class MainWindow(wx.Frame):
                                                    tmp_out=self.temp_dir.name + path_separator + str(cut_number) + "_overlay.mp4",
                                                    drawings=multiple_drawings,
                                                    pause_time=self.pause_duration.GetValue(),
-                                                   duration=real_duration)
+                                                   duration=real_duration,
+                                                   watermark=watermark)
                 multiple_thr.start()
                 while multiple_thr.is_alive():
                     wx.Yield()
