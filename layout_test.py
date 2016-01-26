@@ -12,6 +12,10 @@ from boto3.session import Session
 import math
 import sys
 from easysettings import EasySettings
+import xml.etree.ElementTree as xmlParser
+import urllib
+import base64
+from PIL import Image
 
 # we need this because: https://github.com/pyinstaller/pyinstaller/wiki/Recipe-subprocess
 if getattr(sys, 'frozen', False):
@@ -102,6 +106,12 @@ class MainWindow(wx.Frame):
 
         self.current_upload_size = 0
 
+        # playlist cruft
+        self.watermark = False
+        self.slow_and_better = False
+        self.pause_duration = 4
+        self.font_size = 30
+
         # init the main screen
         # next calls will be via the replace view method
         self.main_sizer = wx.BoxSizer(orient=wx.VERTICAL)
@@ -154,7 +164,7 @@ class MainWindow(wx.Frame):
     def open_final_path(self, e):
         # open the video file
         if platform.system() == "Darwin":
-            call(["open", self.final_path])
+            subprocess.check_call(["open", self.final_path])
         else:
             os.startfile(self.final_path)
 
@@ -182,7 +192,9 @@ class MainWindow(wx.Frame):
         self.replace_view(self.create_upload_screen())
 
     def show_playlist(self, e):
-        pass
+        print("PLAYLIST")
+        self.filenames = []
+        self.replace_view(self.create_playlist_screen())
 
     def show_convert(self, e):
         print("CONVERT")
@@ -488,6 +500,466 @@ class MainWindow(wx.Frame):
     def show_upload_complete(self, e):
         print("UPLOAD COMPLETE")
         self.replace_view(self.create_upload_complete())
+
+    def show_playlist_progress(self, e):
+        # sanity check
+        if self.destination_dir == "":
+            print("NO DESTINATION DIR")
+            return
+        if len(self.filenames) < 1:
+            print("NO FILES TO CONVERT")
+            return
+        print("PLAYLIST PROGRESS")
+        win, gauge, estimate_text, current_file = self.create_playlist_progress()
+        self.replace_view(win)
+
+        current_number = 1
+        for one_file in self.filenames:
+
+            current_file.SetLabel(str(current_number) + "/" + str(len(self.filenames)) + " " + os.path.basename(one_file))
+
+            tree = xmlParser.parse(one_file)
+            base = tree.getroot()
+
+            # if the file name has spaces we end up with %20 in the url
+            video_path = urllib.parse.unquote(base.get("video_path"))
+
+            if platform.system() == "Darwin":
+                # now if we have the file:// present we remove it
+                video_path = video_path.replace("file://", "")
+            else:
+                video_path = video_path.replace("file:///", "")
+
+            # first we check for the file existence
+            if not os.path.isfile(video_path):
+
+                wildcard_ext = "*.mp4;*.mov;*.avi;*.mkv"
+                wildcard = "Video Files" + " (" + wildcard_ext + ")" + "|" + wildcard_ext + "|" + "All Files" +\
+                           " (*.*)" + "|" + "*.*"
+
+                dlg = wx.FileDialog(self, "Video file not found, please select another", "", "",
+                                    wildcard, wx.FD_OPEN)
+                if dlg.ShowModal() == wx.ID_OK:
+                    path = dlg.GetPath()
+                    # self.PushStatusText(path + " video loaded...")
+
+                    video_path = path
+                    # self.parse_playlist(filename=path)
+
+                dlg.Destroy()
+
+            self.reset_progress()
+
+            # we have a name so make sure we create the dir
+            if not os.path.exists(self.temp_dir.name):
+                os.makedirs(self.temp_dir.name)
+
+            # self.base_name = base.get("name")
+            # if self.base_name is None:
+            #     self.base_name = os.path.basename(one_file)
+
+            # self.username = base.get("username")
+            # settings.set("username", self.username)
+            # settings.save()
+
+            # get playlist length
+            play_len = len(base.findall('.items/item'))
+            # we say that the join is the last step
+            play_len += 1
+            num_items = play_len
+
+            video_info = convert_functions.get_video_info(video_path)
+
+            cut_number = 0
+            # start parsing each item
+            for child in base.findall('.items/item'):
+
+                # status_text = t("Processing item %i") % (cut_number + 1)
+                # self.PushStatusText(status_text)
+
+                item_type = child.find("type").text
+                # print("ItemType>> ", item_type)
+
+                time_start = ""
+                time_end = ""
+                real_time_start = ""
+                real_time_end = ""
+
+                comments = ""
+                enable_comments = True
+                has_comments = False
+
+                has_drawing = False
+                drawing = ""
+                drawing_time = ""
+                screenshot = ""
+
+                has_multiple_drawings = False
+                multiple_drawings = []
+
+                if item_type == "ga":
+                    real_time_start = float(child.find("game_action").find("video_time_start").text)
+                    time_start = int(real_time_start)
+                    real_time_end = float(child.find("game_action").find("video_time_end").text)
+                    time_end = int(real_time_end)
+                    comments = child.find("game_action").find("comments").text
+                    ec = child.find("game_action").find("comments_enabled")
+                    if ec is not None:
+                        enable_comments = ec.text
+                    # one drawing only for backwards compatibility
+                    drw = child.find("game_action").find("drawing")
+                    if drw is not None:
+                        drawing = drw.find("bitmap").text
+                        drawing_time = float(drw.find("time").text) - real_time_start
+                        screenshot = drw.find("screenshot").text
+
+                        the_drawing = convert_functions.Drawing(uid="None", screenshot=screenshot,
+                                                                bitmap=drawing, drawing_time=drawing_time)
+                        multiple_drawings.append(the_drawing)
+
+                        has_multiple_drawings = True
+                    # multiple drawings going forward
+                    temp_multiple_drawings = child.find("game_action").find("drawings")
+                    if temp_multiple_drawings is not None:
+                        has_multiple_drawings = True
+                        # loop the drawings and add to array
+                        for temp_drawing in temp_multiple_drawings:
+                            temp_uid = temp_drawing.find("uid").text
+                            temp_screenshot = temp_drawing.find("screenshot").text
+                            temp_bitmap = temp_drawing.find("bitmap").text
+                            # we need the time within the clip and not relative to the full video
+                            temp_time = float(temp_drawing.find("time").text) - real_time_start
+                            the_drawing = convert_functions.Drawing(uid=temp_uid, screenshot=temp_screenshot,
+                                                                    bitmap=temp_bitmap, drawing_time=temp_time)
+                            multiple_drawings.append(the_drawing)
+
+                if item_type == "cue":
+                    real_time_start = float(child.find("action_cue").find("starting_time").text)
+                    time_start = int(real_time_start)
+                    real_time_end = float(child.find("action_cue").find("ending_time").text)
+                    time_end = int(real_time_end)
+                    comments = child.find("action_cue").find("comments").text
+                    ec = child.find("action_cue").find("comments_enabled")
+                    if ec is not None:
+                        enable_comments = ec.text
+                    drw = child.find("action_cue").find("drawing")
+                    if drw is not None:
+                        drawing = drw.find("bitmap").text
+                        drawing_time = float(drw.find("time").text) - real_time_start
+                        screenshot = drw.find("screenshot").text
+
+                        the_drawing = convert_functions.Drawing(uid="None", screenshot=screenshot,
+                                                                bitmap=drawing, drawing_time=drawing_time)
+                        multiple_drawings.append(the_drawing)
+
+                        has_multiple_drawings = True
+                    # multiple drawings going forward
+                    temp_multiple_drawings = child.find("action_cue").find("drawings")
+                    if temp_multiple_drawings is not None:
+                        has_multiple_drawings = True
+                        # loop the drawings and add to array
+                        for temp_drawing in temp_multiple_drawings:
+                            temp_uid = temp_drawing.find("uid").text
+                            temp_screenshot = temp_drawing.find("screenshot").text
+                            temp_bitmap = temp_drawing.find("bitmap").text
+                            # we need the time within the clip and not relative to the full video
+                            temp_time = float(temp_drawing.find("time").text) - real_time_start
+                            the_drawing = convert_functions.Drawing(uid=temp_uid, screenshot=temp_screenshot,
+                                                                    bitmap=temp_bitmap, drawing_time=temp_time)
+                            multiple_drawings.append(the_drawing)
+
+                # add some padding
+                # time_start += 2
+                # time_end += 2
+
+                # print("TimeStart>> ", time_start)
+                # print("TimeEnd>> ", time_end)
+                # print("Comments>> ", comments)
+                # print("Enable Comments>> ", enable_comments)
+                #
+                # print("")
+
+                # for drw in multiple_drawings:
+                #    print(drw.drawing_time)
+
+                duration = time_end - time_start
+                real_duration = real_time_end - real_time_start
+                tmp_out = self.temp_dir.name + path_separator + str(cut_number) + ".mp4"
+
+                #  first check for comments
+                if (comments is not None and enable_comments == "true") or self.slow_and_better:
+                    if self.slow_and_better is True and comments is None:
+                        # self.PushStatusText(t("Better converting %i") % (cut_number + 1))
+
+                        burn_thr = convert_functions.BurnLogo(temp_dir=self.temp_dir, cut_number=cut_number, input_video=video_path,
+                                                              time_start=time_start, duration=duration,
+                                                              tmp_out=self.temp_dir.name + path_separator + str(cut_number) + "_comments.mp4",
+                                                              video_info=video_info, watermark=self.watermark)
+                        burn_thr.start()
+                        while burn_thr.is_alive():
+                            wx.Yield()
+                            self.Update()
+                            dummy_event = threading.Event()
+                            dummy_event.wait(timeout=0.01)
+
+                    else:
+                        # self.PushStatusText(t("Adding subtitles to item %i") % (cut_number + 1))
+
+                        has_comments = True
+                        sub_thr = convert_functions.EncodeSubtitles(temp_dir=self.temp_dir, cut_number=cut_number, video_path=video_path,
+                                                                    video_info=video_info,
+                                                                    time_start=time_start, duration=duration, comments=comments,
+                                                                    tmp_out=self.temp_dir.name + path_separator + str(cut_number) + "_comments.mp4",
+                                                                    font_size=self.font_size,
+                                                                    watermark=self.watermark)
+                        sub_thr.start()
+                        while sub_thr.is_alive():
+                            wx.Yield()
+                            self.Update()
+                            dummy_event = threading.Event()
+                            dummy_event.wait(timeout=0.01)
+
+                elif has_drawing or has_multiple_drawings:
+                    # we need to convert without fast copy so that the further cuts work out right
+                    key_thr = convert_functions.CutWithKeyFrames(temp_dir=self.temp_dir, cut_number=cut_number, video_path=video_path,
+                                                                 time_start=real_time_start, duration=real_duration,
+                                                                 tmp_out=self.temp_dir.name + path_separator + str(cut_number) + "_comments.mp4",
+                                                                 key_frames=12)
+                    key_thr.start()
+                    while key_thr.is_alive():
+                        wx.Yield()
+                        self.Update()
+                        dummy_event = threading.Event()
+                        dummy_event.wait(timeout=0.01)
+                else:
+                    # just cut in time since we need no further processing
+                    # status_text = t("Fast cutting item %i") % (cut_number + 1)
+                    # self.PushStatusText(status_text)
+                    fast_cut_thr = convert_functions.CutFastCopy(temp_dir=self.temp_dir, cut_number=cut_number, video_path=video_path,
+                                                                 time_start=time_start, duration=duration,
+                                                                 tmp_out=self.temp_dir.name + path_separator + str(cut_number) + "_comments.mp4")
+                    fast_cut_thr.start()
+                    while fast_cut_thr.is_alive():
+                        wx.Yield()
+                        self.Update()
+                        dummy_event = threading.Event()
+                        dummy_event.wait(timeout=0.01)
+
+                # do we add an overlay?
+                if has_drawing:
+                    # self.PushStatusText(t("Adding drawing to item %i") % (cut_number + 1))
+                    raw_png = base64.b64decode(drawing)
+                    f = open(self.temp_dir.name + path_separator + str(cut_number) + "_overlay.png", "wb")
+                    f.write(raw_png)
+                    f.close()
+                    pil_png = Image.open(self.temp_dir.name + path_separator + str(cut_number) + "_overlay.png")
+
+                    raw_jpeg = base64.b64decode(screenshot)
+                    jf = open(self.temp_dir.name + path_separator + str(cut_number) + "_screenshot.png", "wb")
+                    jf.write(raw_jpeg)
+                    jf.close()
+                    pil_jpeg = Image.open(self.temp_dir.name + path_separator + str(cut_number) + "_screenshot.png")
+                    pil_jpeg_converted = pil_jpeg.convert(mode="RGBA")
+
+                    # and now join the two?
+                    pil_composite = Image.alpha_composite(pil_jpeg_converted, pil_png)
+                    pil_composite.save(self.temp_dir.name + path_separator + str(cut_number) + "_composite.png", "PNG")
+
+                    # sanity check so that if we have time after the end of the clop the conversion still works
+                    # more or less that is...
+                    video_time = float(drawing_time) - time_start
+                    if video_time > duration:
+                        video_time = duration - 1
+
+                    overlay_thr = convert_functions.AddOverlay(temp_dir=self.temp_dir, cut_number=cut_number,
+                                                               input_video=self.temp_dir.name + path_separator + str(cut_number) + "_comments.mp4",
+                                                               video_info=video_info,
+                                                               video_time=video_time,
+                                                               tmp_out=self.temp_dir.name + path_separator + str(cut_number) + "_overlay.mp4",
+                                                               image_path=self.temp_dir.name + path_separator + str(cut_number) + "_composite.png",
+                                                               pause_time=self.pause_duration.get(),
+                                                               watermark=self.watermark)
+                    overlay_thr.start()
+                    while overlay_thr.is_alive():
+                        wx.Yield()
+                        self.Update()
+                        dummy_event = threading.Event()
+                        dummy_event.wait(timeout=0.01)
+
+                if has_multiple_drawings:
+                    multiple_thr = convert_functions.AddMultipleDrawings(temp_dir=self.temp_dir,
+                                                                         cut_number=cut_number,
+                                                                         input_video=self.temp_dir.name + path_separator + str(cut_number) +
+                                                                         "_comments.mp4",
+                                                                         video_info=video_info,
+                                                                         tmp_out=self.temp_dir.name + path_separator + str(cut_number) + "_overlay.mp4",
+                                                                         drawings=multiple_drawings,
+                                                                         pause_time=self.pause_duration,
+                                                                         duration=real_duration,
+                                                                         watermark=self.watermark)
+                    multiple_thr.start()
+                    while multiple_thr.is_alive():
+                        wx.Yield()
+                        self.Update()
+                        dummy_event = threading.Event()
+                        dummy_event.wait(timeout=0.01)
+
+                # lastly we convert to fast copy for the final join
+                if has_drawing or has_multiple_drawings:
+                    fast_copy_input = self.temp_dir.name + path_separator + str(cut_number) + "_overlay.mp4"
+                else:
+                    fast_copy_input = self.temp_dir.name + path_separator + str(cut_number) + "_comments.mp4"
+
+                fast_copy_thr = convert_functions.ConvertToFastCopy(temp_dir=self.temp_dir, cut_number=cut_number,
+                                                                    input_video=fast_copy_input, tmp_out=tmp_out)
+                fast_copy_thr.start()
+                while fast_copy_thr.is_alive():
+                    wx.Yield()
+                    # self.PushStatusText(t("Finishing item %i") % (cut_number + 1))
+                    self.Update()
+                    dummy_event = threading.Event()
+                    dummy_event.wait(timeout=0.01)
+
+                # calc progress
+                progress = cut_number / num_items
+                # progress_str = str(math.ceil(progress * 100))
+                # TODO solve this
+                # self.meter.set(progress, t("Converting: ") + self.base_name + " " + progress_str + "%")
+                # self.meter.SetValue(progress * 100)
+
+                self.mark_progress(progress)
+
+                wx.Yield()
+
+                cut_number += 1
+
+            # self.PushStatusText(t("Joining final video"))
+            # JOIN THE THINGS
+            join_args = []
+            # path to ffmpeg
+            join_args.append(ffmpeg_path)
+            # overwrite
+            join_args.append("-y")
+            # input
+            join_args.append("-i")
+            # the concat files
+            concat = "concat:"
+            for x in range(0, cut_number):
+                concat += self.temp_dir.name + path_separator + str(x) + ".mp4" + "|"
+            concat = concat[:-1]
+            concat += ""
+            join_args.append(concat)
+
+            # fast copy concatneation
+            join_args.append("-c")
+            join_args.append("copy")
+            join_args.append("-bsf:a")
+            join_args.append("aac_adtstoasc")
+            join_args.append("-movflags")
+            join_args.append("faststart")
+
+            # outfile
+            out_filename = os.path.basename(one_file).replace(".vopl", "")
+
+            out_path = self.destination_dir + path_separator + out_filename + ".mp4"
+
+            if os.path.isfile(out_path):
+                # ask for overwrite?
+                overwrite_dlg = wx.Dialog(parent=self, id=wx.ID_ANY, title="Overwrite final file?")
+                overwrite_dlg_sizer = wx.BoxSizer(wx.VERTICAL)
+                overwrite_msg = wx.StaticText(parent=overwrite_dlg, id=wx.ID_ANY,
+                                              label="There is already a file with that name on the destination directory... Do you wish to:")
+                overwrite_btn = wx.Button(parent=overwrite_dlg, id=wx.ID_ANY, label="Overwrite")
+                rename_btn = wx.Button(parent=overwrite_dlg, id=wx.ID_OK, label="Rename")
+                # sizer stuff
+                overwrite_dlg_sizer.Add(overwrite_msg, 0, wx.ALL, 5)
+
+                done_dlg_btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+                done_dlg_btn_sizer.Add(overwrite_btn, 0, wx.RIGHT, 10)
+                done_dlg_btn_sizer.Add(rename_btn)
+
+                overwrite_dlg_sizer.Add(done_dlg_btn_sizer, 0, wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, 10)
+                overwrite_dlg.SetSizer(overwrite_dlg_sizer)
+                # auto layout TODO fix this a bit
+                # done_dlg.SetAutoLayout(1)
+                # done_dlg.Fit()
+
+                overwrite_dlg_sizer.SetSizeHints(overwrite_dlg)
+
+                # bind
+                overwrite_dlg.Bind(event=wx.EVT_BUTTON, handler=self.overwrite_out_path, source=overwrite_btn)
+                overwrite_dlg.Bind(event=wx.EVT_BUTTON, handler=self.rename_out_path, source=rename_btn)
+                # and show
+                overwrite_dlg.ShowModal()
+
+            # put it on desktop for now
+            join_args.append(out_path)
+
+            # sys.stdout.write("JOINARGS>>" + ' '.join(join_args))
+
+            # join_log_path = self.temp_dir.name + path_separator + "join.log"
+            # join_log_file = open(join_log_path, "wb")
+
+            try:
+                out = subprocess.check_call(join_args, stderr=subprocess.STDOUT, shell=False)
+            except subprocess.CalledProcessError as cpe:
+                print("ERROR>>", cpe.output)
+            # TODO solve this
+            # self.meter.set(1, t("Done: ") + self.base_name + " " + "100" + "%")
+            # self.meter.SetValue(100)
+
+            # self.end_time = time.time()
+            # time_delta = self.end_time - self.start_time
+            #
+            # seconds = int(time_delta % 60)
+            # minutes = int(time_delta / 60)
+            # hours = int(time_delta / (60 * 60))
+            #
+            # self.PushStatusText(t("Done in %s:%s:%s ...") % (format(hours, "02d"),
+            #                     format(minutes, "02d"), format(seconds, "02d")))
+            #
+            # print("")
+            # print("")
+            # print("")
+            # print("")
+            # print("")
+            # print(t("Done in"), format(hours, "02d"), ":", format(minutes, "02d"), ":", format(seconds, "02d"))
+
+            # create a dialog and bind the correct function
+            # the OK button does not need it since we pass it the wx.ID_OK that does the job for us
+            # done_dlg = wx.Dialog(parent=self, id=wx.ID_ANY, title="Playlist done...")
+            # done_dlg_sizer = wx.BoxSizer(wx.VERTICAL)
+            # done_msg = wx.StaticText(parent=done_dlg, id=wx.ID_ANY, label="Playlist done...")
+            # done_open_btn = wx.Button(parent=done_dlg, id=wx.ID_ANY, label="Open Video")
+            # done_ok_btn = wx.Button(parent=done_dlg, id=wx.ID_OK, label="Ok")
+            # # sizer stuff
+            # done_dlg_sizer.Add(done_msg, 0, wx.ALL, 15)
+            # done_dlg_sizer.Add(done_open_btn, 0, wx.LEFT | wx.RIGHT | wx.ALIGN_CENTER_HORIZONTAL, 15)
+            # done_dlg_sizer.Add(done_ok_btn, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 15)
+            # done_dlg.SetSizer(done_dlg_sizer)
+            # # auto layout TODO fix this a bit
+            # done_dlg.SetAutoLayout(1)
+            # done_dlg.Fit()
+            # # bind
+            # done_dlg.Bind(event=wx.EVT_BUTTON, handler=self.open_file_with_app, source=done_open_btn)
+            # # and show
+            # done_dlg.Show()
+
+            current_number += 1
+
+        self.final_path = out_path
+        self.filenames = [out_path]
+        self.show_playlist_complete(None)
+
+    # utility function
+    def playlist_add_files(self, filenames, the_list, estimate):
+        for file in filenames:
+            the_list.Append([file])
+            self.filenames.append(file)
+
+    def show_playlist_complete(self, e):
+        print("CONVERT COMPLETE")
+        self.replace_view(self.create_playlist_complete())
 
     # show the next screen
     def replace_view(self, new_view_creator):
@@ -1769,6 +2241,267 @@ class MainWindow(wx.Frame):
                                               click_handler=self.show_main,
                                               border_color=color_dark_grey)
         button_sizer.Add(cancel_btn)
+
+        sizer.AddSpacer(55)
+
+        # place footer
+        footer_window = self.create_footer(parent=win)
+        sizer.Add(footer_window)
+
+        return win
+
+    # convert just one file
+    def create_playlist_screen(self):
+
+        win = wx.Window(parent=self, id=wx.ID_ANY)
+        win.SetBackgroundColour(color_white)
+        # main sizer
+        sizer = wx.BoxSizer(orient=wx.VERTICAL)
+        win.SetSizer(sizer)
+
+        # place header
+        header_window = self.create_header(parent=win)
+        sizer.Add(header_window)
+
+        # # conversion header
+        # conversion_header = wx.StaticText(parent=win, id=wx.ID_ANY, label="Conversion Options")
+        # sizer.Add(conversion_header, 0, wx.TOP | wx.LEFT, 10)
+        #
+        # # presets
+        # presets, choices = convert_functions.get_presets()
+        # conversion_presets = wx.RadioBox(parent=win, id=wx.ID_ANY, choices=choices,
+        #                                  style=wx.BORDER_NONE)
+        # sizer.Add(conversion_presets, 0, wx.LEFT, 10)
+        # conversion_presets.Bind(wx.EVT_RADIOBOX,
+        #                         lambda x: self.set_current_preset(conversion_presets.GetStringSelection(),
+        #                                                           estimated_size_indicator))
+
+        # drag list and add a file btn
+        list_add = wx.Window(parent=win, id=wx.ID_ANY, size=(600, 170))
+        list_add.SetBackgroundColour(color_white)
+        list_add_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
+        list_add.SetSizer(list_add_sizer)
+        sizer.Add(list_add, 0, wx.TOP, 10)
+
+        if platform.system() == "Darwin":
+            # convert_list = wx.ListView(parent=list_add, id=wx.ID_ANY, style=wx.LC_REPORT)
+            convert_list = wx.ListView(list_add, -1)
+        else:
+            convert_list = wx.ListView(parent=list_add, winid=wx.ID_ANY, style=wx.LC_REPORT)
+        convert_list.AppendColumn("Drag & Drop to Create a Playlist or Add a File.", wx.LIST_FORMAT_CENTER, 400)
+        list_add_sizer.Add(convert_list, 3, wx.RIGHT | wx.LEFT, 10)
+
+        # and the real label, so we can refer to it later
+        estimated_size_indicator = wx.StaticText(parent=win, id=wx.ID_ANY, label="0 Mb")
+        estimated_size_indicator.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
+        estimated_size_indicator.SetForegroundColour(color_dark_green)
+
+        add_a_file = self.create_small_button(parent=list_add, length=150, text="ADD A FILE",
+                                              text_color=color_white, back_color=color_dark_grey,
+                                              click_handler=lambda x: self.convert_browse_for_files(convert_list,
+                                                                                                    estimated_size_indicator))
+        list_add_sizer.Add(add_a_file, 1, wx.RIGHT | wx.LEFT, 10)
+
+        # Estimated size
+        estimated_size_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
+        sizer.Add(estimated_size_sizer, 0, wx.LEFT, 10)
+        # the header
+        estimated_size_header = wx.StaticText(parent=win, id=wx.ID_ANY, label="Estimated Size ")
+        estimated_size_header.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
+        estimated_size_header.SetForegroundColour(color_dark_green)
+        estimated_size_sizer.Add(estimated_size_header)
+        # we add it now
+        estimated_size_sizer.Add(estimated_size_indicator)
+
+        # current_preset = conversion_presets.GetStringSelection()
+        # self.set_current_preset(current_preset, estimated_size_indicator)
+
+        # test the drop target stuff?
+        list_add.SetDropTarget(ConvertFileDrop(callback=lambda filenames, estimate: self.playlist_add_files(filenames,
+                                                                                                           convert_list,
+                                                                                                           estimated_size_indicator)))
+
+        sizer.AddSpacer(70)
+
+        # now the destination header
+        destination_header = wx.StaticText(parent=win, id=wx.ID_ANY, label="Destination")
+        sizer.Add(destination_header, 0, wx.LEFT, 10)
+
+        # and the destination stuff
+        destination_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
+        sizer.Add(destination_sizer, 0, wx.LEFT | wx.RIGHT, 10)
+
+        # first the file picker
+        destination_text = wx.TextCtrl(parent=win, id=wx.ID_ANY, size=(200, 25))
+        destination_sizer.Add(destination_text, wx.CENTER)
+
+        if self.destination_dir != "":
+            destination_text.SetLabel(self.destination_dir)
+
+        # then the cancel button
+        cancel_btn = self.create_small_button(parent=win, length=80, text="BROWSE",
+                                              text_color=color_white, back_color=color_dark_grey,
+                                              click_handler=lambda x: self.set_destination_dir(destination_text))
+        destination_sizer.Add(cancel_btn, 1, wx.LEFT, 10)
+
+        # then the cancel button
+        cancel_btn = self.create_small_button(parent=win, length=100, text="GO BACK",
+                                              text_color=color_dark_grey, back_color=color_white,
+                                              click_handler=self.show_main,
+                                              border_color=color_dark_grey)
+        destination_sizer.Add(cancel_btn, 1, wx.LEFT, 10)
+
+        # then the convert button
+        convert_btn = self.create_small_button(parent=win, length=150, text="CREATE PLAYLIST",
+                                               text_color=color_white, back_color=color_orange,
+                                               click_handler=self.show_playlist_progress)
+        destination_sizer.Add(convert_btn, 2, wx.RIGHT | wx.LEFT, 5)
+
+        sizer.AddSpacer(20)
+
+        # place footer
+        footer_window = self.create_footer(parent=win)
+        sizer.Add(footer_window)
+
+        return win
+
+    def create_playlist_progress(self):
+        win = wx.Window(parent=self, id=wx.ID_ANY)
+        win.SetBackgroundColour(color_white)
+        # main sizer
+        sizer = wx.BoxSizer(orient=wx.VERTICAL)
+        win.SetSizer(sizer)
+
+        # place header
+        header_window = self.create_header(parent=win)
+        sizer.Add(header_window)
+
+        # some space
+        sizer.AddSpacer(115)
+
+        # converting... file
+        converting_header_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
+        sizer.Add(converting_header_sizer, 0, wx.LEFT, 65)
+        # the converting...
+        converting_label = wx.StaticText(parent=win, id=wx.ID_ANY, label="Converting...")
+        converting_label.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
+        converting_label.SetForegroundColour(color_dark_grey)
+        converting_header_sizer.Add(converting_label)
+        # the file name
+        converting_file_label = wx.StaticText(parent=win, id=wx.ID_ANY, label=self.filenames[0])
+        converting_file_label.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False))
+        converting_file_label.SetForegroundColour(color_dark_grey)
+        converting_header_sizer.Add(converting_file_label, 0, wx.LEFT, 10)
+
+        sizer.AddSpacer(10)
+
+        # convert box
+        convert_box = wx.StaticBox(parent=win, id=wx.ID_ANY, size=(475, 90))
+        convert_box_sizer = wx.StaticBoxSizer(wx.HORIZONTAL, convert_box)
+        convert_box.SetSizer(convert_box_sizer)
+        sizer.Add(convert_box, 0, wx.LEFT, 65)
+        # convert icon
+        # load bitmap from file
+        raw_bitmap = wx.Bitmap(name="assets/progress_icon.png", type=wx.BITMAP_TYPE_PNG)
+        # to hold the raw bitmap
+        static_bitmap = wx.StaticBitmap(parent=convert_box, id=wx.ID_ANY)
+        static_bitmap.SetBitmap(raw_bitmap)
+        # center in the middle, and give so
+        convert_box_sizer.Add(static_bitmap, 0, wx.CENTER | wx.LEFT, 22)
+        # now we add vertical sizer
+        vertical_spacer = wx.BoxSizer(orient=wx.VERTICAL)
+        convert_box_sizer.Add(vertical_spacer, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 20)
+
+        estimate_text = wx.StaticText(parent=convert_box, id=wx.ID_ANY, label="Estimated time ? 0%")
+        vertical_spacer.Add(estimate_text, 0, wx.ALIGN_LEFT | wx.TOP, 10)
+
+        convert_gauge = wx.Gauge(parent=convert_box, id=wx.ID_ANY, range=100, size=(375, 15))
+        vertical_spacer.Add(convert_gauge, 0, wx.TOP, 10)
+
+        sizer.AddSpacer(100)
+
+        cancel_btn = self.create_small_button(parent=win, length=105, text="CANCEL",
+                                              back_color=color_white, text_color=color_black,
+                                              click_handler=self.cancel_current_thread,
+                                              border_color=color_dark_grey)
+        sizer.Add(cancel_btn, 0, wx.ALIGN_CENTER)
+
+        sizer.AddSpacer(40)
+
+        # place footer
+        footer_window = self.create_footer(parent=win)
+        sizer.Add(footer_window)
+
+        return win, convert_gauge, estimate_text, converting_file_label
+
+    def create_playlist_complete(self):
+        win = wx.Window(parent=self, id=wx.ID_ANY)
+        win.SetBackgroundColour(color_white)
+        # main sizer
+        sizer = wx.BoxSizer(orient=wx.VERTICAL)
+        win.SetSizer(sizer)
+
+        # place header
+        header_window = self.create_header(parent=win)
+        sizer.Add(header_window)
+
+        # what do you want to do?
+        select_window = wx.Window(parent=win, id=wx.ID_ANY, size=(600, 100))
+        select_window.SetBackgroundColour(color_white)
+        select_window_sizer = wx.BoxSizer(orient=wx.VERTICAL)
+        select_window.SetSizer(select_window_sizer)
+
+        select_text = wx.StaticText(parent=select_window, id=wx.ID_ANY, label="What do you want to do?")
+        select_text.SetFont(wx.Font(12, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
+        select_text.SetForegroundColour(color_home_headers)
+        select_window_sizer.Add(select_text, 0, wx.CENTER | wx.TOP, 40)
+        sizer.Add(select_window)
+
+        sizer.AddSpacer(25)
+
+        # done icon
+        # load bitmap from file
+        log_raw_bitmap = wx.Bitmap(name="assets/done_icon.png", type=wx.BITMAP_TYPE_PNG)
+        # to hold the raw bitmap
+        logo_bitmap = wx.StaticBitmap(parent=win, id=wx.ID_ANY)
+        logo_bitmap.SetBitmap(log_raw_bitmap)
+        # center in the middle, and give so
+        sizer.Add(logo_bitmap, 0, wx.CENTER)
+
+        sizer.AddSpacer(20)
+
+        # converting... file
+        converting_header_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
+        sizer.Add(converting_header_sizer, 0, wx.CENTER | wx.TOP, 20)
+        # the converting...
+        converting_label = wx.StaticText(parent=win, id=wx.ID_ANY, label="Complete: ")
+        converting_label.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
+        converting_label.SetForegroundColour(color_dark_grey)
+        converting_header_sizer.Add(converting_label)
+        # the file name
+        converting_file_label = wx.StaticText(parent=win, id=wx.ID_ANY, label=self.final_path)
+        converting_file_label.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False))
+        converting_file_label.SetForegroundColour(color_dark_grey)
+        converting_header_sizer.Add(converting_file_label, 0, wx.LEFT, 10)
+
+        sizer.AddSpacer(55)
+
+        button_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
+        sizer.Add(button_sizer, 1, wx.CENTER)
+
+        cancel_btn = self.create_small_button(parent=win, length=150, text="GO BACK",
+                                              back_color=color_white, text_color=color_black,
+                                              click_handler=self.show_main,
+                                              border_color=color_dark_grey)
+        button_sizer.Add(cancel_btn)
+
+        button_sizer.AddSpacer(20)
+
+        open_btn = self.create_small_button(parent=win, length=150, text="OPEN",
+                                            back_color=color_white, text_color=color_black,
+                                            click_handler=self.open_final_path,
+                                            border_color=color_dark_grey)
+        button_sizer.Add(open_btn)
 
         sizer.AddSpacer(55)
 
