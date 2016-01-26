@@ -340,6 +340,18 @@ class MainWindow(wx.Frame):
         self.preset = preset
         self.calculate_conversion_estimates(estimate=estimate)
 
+    def set_font_size(self, size):
+        self.font_size = size
+
+    def set_pause_time(self, duration):
+        self.pause_duration = duration
+
+    def set_watermark_enabled(self, enabled):
+        self.watermark = (enabled == 1)
+
+    def set_slow_but_better_enabled(self, enabled):
+        self.slow_and_better = (enabled == 1)
+
     def show_join_progress(self, e):
         # sanity check
         if self.destination_dir == "":
@@ -2224,7 +2236,7 @@ class MainWindow(wx.Frame):
         #                                                           estimated_size_indicator))
 
         # drag list and add a file btn
-        list_add = wx.Window(parent=win, id=wx.ID_ANY, size=(600, 170))
+        list_add = wx.Window(parent=win, id=wx.ID_ANY, size=(600, 245))
         list_add.SetBackgroundColour(color_white)
         list_add_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
         list_add.SetSizer(list_add_sizer)
@@ -2234,7 +2246,7 @@ class MainWindow(wx.Frame):
             # convert_list = wx.ListView(parent=list_add, id=wx.ID_ANY, style=wx.LC_REPORT)
             convert_list = wx.ListView(list_add, -1)
         else:
-            convert_list = wx.ListView(parent=list_add, winid=wx.ID_ANY, style=wx.LC_REPORT)
+            convert_list = wx.ListView(parent=list_add, winid=wx.ID_ANY, style=wx.LC_REPORT, size=(400, 230))
         convert_list.AppendColumn("Drag & Drop to Create a Playlist or Add a File.", wx.LIST_FORMAT_CENTER, 400)
         list_add_sizer.Add(convert_list, 3, wx.RIGHT | wx.LEFT, 10)
 
@@ -2243,11 +2255,34 @@ class MainWindow(wx.Frame):
         estimated_size_indicator.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
         estimated_size_indicator.SetForegroundColour(color_dark_green)
 
+        half_part = wx.BoxSizer(orient=wx.VERTICAL)
+        list_add_sizer.Add(half_part, 1, wx.RIGHT | wx.LEFT, 10)
+
         add_a_file = self.create_small_button(parent=list_add, length=150, text="ADD A FILE",
                                               text_color=color_white, back_color=color_dark_grey,
                                               click_handler=lambda x: self.convert_browse_for_files(convert_list,
                                                                                                     estimated_size_indicator))
-        list_add_sizer.Add(add_a_file, 1, wx.RIGHT | wx.LEFT, 10)
+        half_part.Add(add_a_file, 1)
+
+        font_size_label = wx.StaticText(parent=list_add, id=wx.ID_ANY, label="Font Size:")
+        half_part.Add(font_size_label, 1, wx.TOP, 5)
+        font_size_slider = wx.Slider(parent=list_add, id=wx.ID_ANY, value=25, minValue=10, maxValue=50)
+        half_part.Add(font_size_slider, 1, wx.EXPAND)
+        font_size_slider.Bind(event=wx.EVT_SLIDER, handler=lambda evt: self.set_font_size(evt.GetInt()))
+
+        pause_size_label = wx.StaticText(parent=list_add, id=wx.ID_ANY, label="Pause Time:")
+        half_part.Add(pause_size_label, 1)
+        pause_time_slider = wx.Slider(parent=list_add, id=wx.ID_ANY, value=4, minValue=1, maxValue=10)
+        half_part.Add(pause_time_slider, 1, wx.EXPAND)
+        pause_time_slider.Bind(event=wx.EVT_SLIDER, handler=lambda evt: self.set_slow_but_better_enabled(evt.GetInt()))
+
+        watermark_cb = wx.CheckBox(parent=list_add, id=wx.ID_ANY, label="Watermark")
+        half_part.Add(watermark_cb, 1)
+        watermark_cb.Bind(event=wx.EVT_CHECKBOX, handler=lambda evt: self.set_watermark_enabled(evt.GetInt()))
+
+        slow_but_better_cb = wx.CheckBox(parent=list_add, id=wx.ID_ANY, label="Slow but better")
+        half_part.Add(slow_but_better_cb, 1, wx.TOP, 10)
+        slow_but_better_cb.Bind(event=wx.EVT_CHECKBOX, handler=lambda evt: self.set_watermark_enabled(evt.GetInt()))
 
         # Estimated size
         estimated_size_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)

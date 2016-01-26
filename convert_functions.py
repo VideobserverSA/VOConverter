@@ -800,8 +800,8 @@ class AddMultipleDrawings(threading.Thread):
 
                 # all the others except the last but including the first
                 if x < len(self.drawings) - 1:
-                    self.callback((((len(self.drawings) / x) * 100) / 2) + 50)
-                    print("cenas", (((len(self.drawings) / x) * 100) / 2) + 50)
+                    self.callback(((x / len(self.drawings) * 100) / 2) + 50)
+                    print("cenas", ((x / len(self.drawings) * 100) / 2) + 50)
                     # add the middle between this drawing and the next
                     try:
                         check_call([
@@ -959,8 +959,8 @@ class AddMultipleDrawings(threading.Thread):
 
                 # all the others except the last but including the first
                 if x < len(self.drawings) - 1:
-                    self.callback((((len(self.drawings) / x) * 100) / 2) + 50)
-                    print("cenas", (((len(self.drawings) / x) * 100) / 2) + 50)
+                    self.callback(((x / len(self.drawings) * 100) / 2) + 50)
+                    print("cenas", ((x / len(self.drawings) * 100) / 2) + 50)
                     # add the middle between this drawing and the next
                     try:
                         check_call([
