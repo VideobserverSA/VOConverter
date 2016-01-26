@@ -285,7 +285,7 @@ class MainWindow(wx.Frame):
         # else:
         #     self.size_preview.SetForegroundColour(wx.GREEN)
 
-    def convert_browse_for_files(self, the_list):
+    def convert_browse_for_files(self, the_list, estimate):
         path = ""
         dlg = wx.FileDialog(self, "Video file", "", "", "*.*", wx.FD_OPEN)
         if dlg.ShowModal() == wx.ID_OK:
@@ -293,7 +293,7 @@ class MainWindow(wx.Frame):
 
         dlg.Destroy()
         if path != "":
-            self.convert_add_files([path], the_list)
+            self.convert_add_files([path], the_list, estimate=estimate)
 
     def set_destination_dir(self, text_ctrl):
         path = ""
@@ -306,9 +306,9 @@ class MainWindow(wx.Frame):
             self.destination_dir = path
             text_ctrl.SetLabel(path)
 
-    def set_current_preset(self, preset):
+    def set_current_preset(self, preset, estimate):
         self.preset = preset
-        print("preset: ", preset)
+        self.calculate_conversion_estimates(estimate=estimate)
 
     def show_upload_progress(self, e):
         print("DO THE UPLOAD")
@@ -932,13 +932,13 @@ class MainWindow(wx.Frame):
         sizer.Add(conversion_header, 0, wx.TOP | wx.LEFT, 10)
 
         # presets
-        conversion_presets = wx.RadioBox(parent=win, id=wx.ID_ANY, choices=["Full HD", "HD", "DVD", "Original"],
+        presets, choices = convert_functions.get_presets()
+        conversion_presets = wx.RadioBox(parent=win, id=wx.ID_ANY, choices=choices,
                                          style=wx.BORDER_NONE)
         sizer.Add(conversion_presets, 0, wx.LEFT, 10)
-        conversion_presets.Bind(wx.EVT_RADIOBOX, lambda x: self.set_current_preset(conversion_presets.GetStringSelection()))
-
-        current_preset = conversion_presets.GetStringSelection()
-        self.set_current_preset(current_preset)
+        conversion_presets.Bind(wx.EVT_RADIOBOX,
+                                lambda x: self.set_current_preset(conversion_presets.GetStringSelection(),
+                                                                  estimated_size_indicator))
 
         # drag list and add a file btn
         list_add = wx.Window(parent=win, id=wx.ID_ANY, size=(600, 170))
@@ -955,9 +955,15 @@ class MainWindow(wx.Frame):
         convert_list.AppendColumn("Drag & Drop to Convert or Add a File.", wx.LIST_FORMAT_CENTER, 400)
         list_add_sizer.Add(convert_list, 3, wx.RIGHT | wx.LEFT, 10)
 
+        # and the real label, so we can refer to it later
+        estimated_size_indicator = wx.StaticText(parent=win, id=wx.ID_ANY, label="0 Mb")
+        estimated_size_indicator.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
+        estimated_size_indicator.SetForegroundColour(color_dark_green)
+
         add_a_file = self.create_small_button(parent=list_add, length=150, text="ADD A FILE",
                                               text_color=color_white, back_color=color_dark_grey,
-                                              click_handler=lambda x: self.convert_browse_for_files(convert_list))
+                                              click_handler=lambda x: self.convert_browse_for_files(convert_list,
+                                                                                                    estimated_size_indicator))
         list_add_sizer.Add(add_a_file, 1, wx.RIGHT | wx.LEFT, 10)
 
         # Estimated size
@@ -968,11 +974,11 @@ class MainWindow(wx.Frame):
         estimated_size_header.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
         estimated_size_header.SetForegroundColour(color_dark_green)
         estimated_size_sizer.Add(estimated_size_header)
-        # and the real label
-        estimated_size_indicator = wx.StaticText(parent=win, id=wx.ID_ANY, label="0 Mb")
-        estimated_size_indicator.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
-        estimated_size_indicator.SetForegroundColour(color_dark_green)
+        # we add it now
         estimated_size_sizer.Add(estimated_size_indicator)
+
+        current_preset = conversion_presets.GetStringSelection()
+        self.set_current_preset(current_preset, estimated_size_indicator)
 
         # test the drop target stuff?
         list_add.SetDropTarget(ListFileDrop(callback=lambda filenames, estimate: self.convert_add_files(filenames,
