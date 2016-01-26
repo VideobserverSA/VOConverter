@@ -11,6 +11,7 @@ import subprocess
 from boto3.session import Session
 import math
 import sys
+from easysettings import EasySettings
 
 # we need this because: https://github.com/pyinstaller/pyinstaller/wiki/Recipe-subprocess
 if getattr(sys, 'frozen', False):
@@ -77,7 +78,7 @@ class MainWindow(wx.Frame):
                           style=wx.DEFAULT_FRAME_STYLE & ~(wx.RESIZE_BORDER | wx.MAXIMIZE_BOX))
 
         # some necessary cruft
-        self.destination_dir = os.path.expanduser("~" + "\\" + "Desktop")
+        self.destination_dir = settings.get("destination_dir", os.path.expanduser("~" + "\\" + "Desktop"))
         # self.destination_dir = ""
         self.filenames = []
         self.preset = ""
@@ -311,6 +312,8 @@ class MainWindow(wx.Frame):
         dlg = wx.DirDialog(self, "Destination Directory")
         if dlg.ShowModal() == wx.ID_OK:
             path = dlg.GetPath()
+            settings.set("destination_dir", path)
+            settings.save()
 
         dlg.Destroy()
         if path != "":
@@ -713,7 +716,8 @@ class MainWindow(wx.Frame):
         username_label.SetFont(wx.Font(8, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False))
         username_label.SetForegroundColour(color_dark_grey)
         back_window_sizer.Add(username_label, 0, wx.LEFT, 20)
-        username = wx.TextCtrl(parent=back_window, id=wx.ID_ANY, size=(270, 25), value="")
+        saved_user = settings.get("login_user", "")
+        username = wx.TextCtrl(parent=back_window, id=wx.ID_ANY, size=(270, 25), value=saved_user)
         back_window_sizer.Add(username, 0, wx.CENTER | wx.LEFT | wx.RIGHT, 20)
 
         # space before
@@ -724,7 +728,8 @@ class MainWindow(wx.Frame):
         password_label.SetFont(wx.Font(8, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False))
         password_label.SetForegroundColour(color_dark_grey)
         back_window_sizer.Add(password_label, 0, wx.LEFT, 20)
-        password = wx.TextCtrl(parent=back_window, id=wx.ID_ANY, size=(270, 25), style=wx.TE_PASSWORD, value="")
+        saved_pass = settings.get("login_pass", "")
+        password = wx.TextCtrl(parent=back_window, id=wx.ID_ANY, size=(270, 25), style=wx.TE_PASSWORD, value=saved_pass)
         back_window_sizer.Add(password, 0, wx.CENTER | wx.LEFT | wx.RIGHT, 20)
 
         # space before
@@ -784,6 +789,12 @@ class MainWindow(wx.Frame):
             self.aws_data = aws.get_aws_data(self.token["token"])
             self.logged_in = True
             self.username_to_display = username
+
+            if remember:
+                # save the user in the settings
+                settings.set("login_user", username)
+                settings.set("login_pass", password)
+                settings.save()
 
         if code == 2:
             dialog = self.create_alert_dialog(parent=self,
@@ -1409,6 +1420,9 @@ class MainWindow(wx.Frame):
         return win
 
 app = wx.App(False)
+
+settings_path = os.path.expanduser("~/voconverter.conf")
+settings = EasySettings(settings_path)
 
 frame = MainWindow(None, "Layout Test")
 app.MainLoop()
