@@ -90,6 +90,7 @@ class MainWindow(wx.Frame):
         self.data_points = []
 
         self.final_path = ""
+        self.final_filename = ""
 
         self.current_thread = threading.Thread()
 
@@ -190,7 +191,10 @@ class MainWindow(wx.Frame):
         self.replace_view(win)
 
     def show_join(self, e):
-        pass
+        print("JOIN!")
+        self.filenames = []
+        win, estimate, final_file_name = self.create_join_screen()
+        self.replace_view(win)
 
     def show_convert_progress(self, e):
         # sanity check
@@ -323,6 +327,77 @@ class MainWindow(wx.Frame):
     def set_current_preset(self, preset, estimate):
         self.preset = preset
         self.calculate_conversion_estimates(estimate=estimate)
+
+    def show_join_progress(self, e):
+        # sanity check
+        if self.destination_dir == "":
+            print("NO DESTINATION DIR")
+            return
+        if len(self.filenames) < 1:
+            print("NO FILES TO CONVERT")
+            return
+        if self.preset == "":
+            print("NO PRESET")
+            return
+        print("CONVERT PROGRESS")
+        win, gauge, estimate_text, current_file = self.create_join_progress()
+        self.replace_view(win)
+
+        presets, choices = convert_functions.get_presets()
+        the_preset = convert_functions.get_preset(self.preset)
+
+        files_to_join_label = ""
+        for file in self.filenames:
+            files_to_join_label += os.path.basename(file.file) + " , "
+
+        current_file.SetLabel(files_to_join_label[:-3])
+
+        out_video = self.destination_dir + path_separator + self.final_filename + ".mp4"
+        if os.path.exists(out_video):
+            out_video = out_video = self.destination_dir + path_separator + self.final_filename + "_1_.mp4"
+
+        self.current_thread = join_thr = convert_functions.JoinFiles(in_videos=self.filenames,
+                                                                     out_video=out_video,
+                                                                     tmp_dir=self.temp_dir,
+                                                                     preset=the_preset,
+                                                                     callback=lambda progress: self.mark_progress(progress))
+
+        join_thr.start()
+
+        self.reset_progress()
+
+        while join_thr.is_alive():
+            dummy_event = threading.Event()
+            dummy_event.wait(timeout=0.01)
+
+            self.update_progress(gauge, estimate_text)
+
+            wx.Yield()
+            self.Update()
+
+        self.final_path = out_video
+        self.filenames = [out_video]
+        self.show_join_complete(None)
+
+    def show_join_complete(self, e):
+        print("JOIN COMPLETE")
+        self.replace_view(self.create_join_complete())
+
+    # utility function
+    def join_add_files(self, filenames, the_list, estimate, final_name):
+        for file in filenames:
+            the_list.Append([file])
+            file_to_convert = convert_functions.FileToConvert()
+            file_to_convert.file = file
+            file_to_convert.video_info = convert_functions.get_video_info(file)
+            self.filenames.append(file_to_convert)
+        self.calculate_conversion_estimates(estimate)
+
+        new_file_name = os.path.basename(filenames[0]).split(".")[0] + "_joined"
+        final_name.SetValue(new_file_name)
+
+    def set_final_filename(self, event):
+        self.final_filename = event.String
 
     def show_upload_progress(self, e):
         print("DO THE UPLOAD")
@@ -1217,7 +1292,283 @@ class MainWindow(wx.Frame):
 
         return win
 
-        # convert just one file
+        # join several files
+    def create_join_screen(self):
+
+        win = wx.Window(parent=self, id=wx.ID_ANY)
+        win.SetBackgroundColour(color_white)
+        # main sizer
+        sizer = wx.BoxSizer(orient=wx.VERTICAL)
+        win.SetSizer(sizer)
+
+        # place header
+        header_window = self.create_header(parent=win)
+        sizer.Add(header_window)
+
+        # conversion header
+        conversion_header = wx.StaticText(parent=win, id=wx.ID_ANY, label="Conversion Options")
+        sizer.Add(conversion_header, 0, wx.TOP | wx.LEFT, 10)
+
+        # presets
+        presets, choices = convert_functions.get_presets()
+        conversion_presets = wx.RadioBox(parent=win, id=wx.ID_ANY, choices=choices,
+                                         style=wx.BORDER_NONE)
+        sizer.Add(conversion_presets, 0, wx.LEFT, 10)
+        conversion_presets.Bind(wx.EVT_RADIOBOX,
+                                lambda x: self.set_current_preset(conversion_presets.GetStringSelection(),
+                                                                  estimated_size_indicator))
+
+        # drag list and add a file btn
+        list_add = wx.Window(parent=win, id=wx.ID_ANY, size=(600, 170))
+        list_add.SetBackgroundColour(color_white)
+        list_add_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
+        list_add.SetSizer(list_add_sizer)
+        sizer.Add(list_add, 0, wx.TOP, 10)
+
+        if platform.system() == "Darwin":
+            # convert_list = wx.ListView(parent=list_add, id=wx.ID_ANY, style=wx.LC_REPORT)
+            convert_list = wx.ListView(list_add, -1)
+        else:
+            convert_list = wx.ListView(parent=list_add, winid=wx.ID_ANY, style=wx.LC_REPORT)
+        convert_list.AppendColumn("Drag & Drop to Join or Add a File.", wx.LIST_FORMAT_CENTER, 400)
+        list_add_sizer.Add(convert_list, 3, wx.RIGHT | wx.LEFT, 10)
+
+        # and the real label, so we can refer to it later
+        estimated_size_indicator = wx.StaticText(parent=win, id=wx.ID_ANY, label="0 Mb")
+        estimated_size_indicator.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
+        estimated_size_indicator.SetForegroundColour(color_dark_green)
+
+        add_a_file = self.create_small_button(parent=list_add, length=150, text="ADD A FILE",
+                                              text_color=color_white, back_color=color_dark_grey,
+                                              click_handler=lambda x: self.convert_browse_for_files(convert_list,
+                                                                                                    estimated_size_indicator))
+        list_add_sizer.Add(add_a_file, 1, wx.RIGHT | wx.LEFT, 10)
+
+        # Estimated size
+        estimated_size_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
+        sizer.Add(estimated_size_sizer, 0, wx.LEFT, 10)
+        # the header
+        estimated_size_header = wx.StaticText(parent=win, id=wx.ID_ANY, label="Estimated Size ")
+        estimated_size_header.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
+        estimated_size_header.SetForegroundColour(color_dark_green)
+        estimated_size_sizer.Add(estimated_size_header)
+        # we add it now
+        estimated_size_sizer.Add(estimated_size_indicator)
+
+        current_preset = conversion_presets.GetStringSelection()
+        self.set_current_preset(current_preset, estimated_size_indicator)
+
+        # test the drop target stuff?
+        list_add.SetDropTarget(ConvertFileDrop(callback=lambda filenames, estimate: self.join_add_files(filenames,
+                                                                                                        convert_list,
+                                                                                                        estimated_size_indicator,
+                                                                                                        final_file_name)))
+
+        final_file_name_label = wx.StaticText(parent=win, id=wx.ID_ANY, label="Final file name:")
+        sizer.Add(final_file_name_label, 0, wx.LEFT | wx.TOP, 10)
+
+        final_file_name = wx.TextCtrl(parent=win, id=wx.ID_ANY)
+        sizer.Add(final_file_name, 0, wx.LEFT | wx.RIGHT | wx.TOP | wx.EXPAND, 10)
+        final_file_name.Bind(wx.EVT_TEXT, lambda evt: self.set_final_filename(evt))
+
+        sizer.AddSpacer(15)
+
+        # now the destination header
+        destination_header = wx.StaticText(parent=win, id=wx.ID_ANY, label="Destination")
+        sizer.Add(destination_header, 0, wx.LEFT, 10)
+
+        # and the destination stuff
+        destination_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
+        sizer.Add(destination_sizer, 0, wx.LEFT | wx.RIGHT, 10)
+
+        # first the file picker
+        destination_text = wx.TextCtrl(parent=win, id=wx.ID_ANY, size=(200, 25))
+        destination_sizer.Add(destination_text, wx.CENTER)
+
+        if self.destination_dir != "":
+            destination_text.SetLabel(self.destination_dir)
+
+        # then the cancel button
+        cancel_btn = self.create_small_button(parent=win, length=80, text="BROWSE",
+                                              text_color=color_white, back_color=color_dark_grey,
+                                              click_handler=lambda x: self.set_destination_dir(destination_text))
+        destination_sizer.Add(cancel_btn, 1, wx.LEFT, 10)
+
+        # then the cancel button
+        cancel_btn = self.create_small_button(parent=win, length=100, text="GO BACK",
+                                              text_color=color_dark_grey, back_color=color_white,
+                                              click_handler=self.show_main,
+                                              border_color=color_dark_grey)
+        destination_sizer.Add(cancel_btn, 1, wx.LEFT, 10)
+
+        # then the convert button
+        convert_btn = self.create_small_button(parent=win, length=150, text="JOIN",
+                                               text_color=color_white, back_color=color_orange,
+                                               click_handler=self.show_join_progress)
+        destination_sizer.Add(convert_btn, 2, wx.RIGHT | wx.LEFT, 5)
+
+        sizer.AddSpacer(20)
+
+        # place footer
+        footer_window = self.create_footer(parent=win)
+        sizer.Add(footer_window)
+
+        return win, estimated_size_indicator, final_file_name
+
+    def create_join_progress(self):
+        win = wx.Window(parent=self, id=wx.ID_ANY)
+        win.SetBackgroundColour(color_white)
+        # main sizer
+        sizer = wx.BoxSizer(orient=wx.VERTICAL)
+        win.SetSizer(sizer)
+
+        # place header
+        header_window = self.create_header(parent=win)
+        sizer.Add(header_window)
+
+        # some space
+        sizer.AddSpacer(115)
+
+        # converting... file
+        converting_header_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
+        sizer.Add(converting_header_sizer, 0, wx.LEFT, 65)
+        # the converting...
+        converting_label = wx.StaticText(parent=win, id=wx.ID_ANY, label="Joining...")
+        converting_label.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
+        converting_label.SetForegroundColour(color_dark_grey)
+        converting_header_sizer.Add(converting_label)
+        # the file name
+        converting_file_label = wx.StaticText(parent=win, id=wx.ID_ANY, label=self.filenames[0].file)
+        converting_file_label.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False))
+        converting_file_label.SetForegroundColour(color_dark_grey)
+        converting_header_sizer.Add(converting_file_label, 0, wx.LEFT, 10)
+
+        sizer.AddSpacer(10)
+
+        # convert box
+        convert_box = wx.StaticBox(parent=win, id=wx.ID_ANY, size=(475, 90))
+        convert_box_sizer = wx.StaticBoxSizer(wx.HORIZONTAL, convert_box)
+        convert_box.SetSizer(convert_box_sizer)
+        sizer.Add(convert_box, 0, wx.LEFT, 65)
+        # convert icon
+        # load bitmap from file
+        raw_bitmap = wx.Bitmap(name="assets/progress_icon.png", type=wx.BITMAP_TYPE_PNG)
+        # to hold the raw bitmap
+        static_bitmap = wx.StaticBitmap(parent=convert_box, id=wx.ID_ANY)
+        static_bitmap.SetBitmap(raw_bitmap)
+        # center in the middle, and give so
+        convert_box_sizer.Add(static_bitmap, 0, wx.CENTER | wx.LEFT, 22)
+        # now we add vertical sizer
+        vertical_spacer = wx.BoxSizer(orient=wx.VERTICAL)
+        convert_box_sizer.Add(vertical_spacer, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 20)
+
+        estimate_text = wx.StaticText(parent=convert_box, id=wx.ID_ANY, label="Estimated time ? 0%")
+        vertical_spacer.Add(estimate_text, 0, wx.ALIGN_LEFT | wx.TOP, 10)
+
+        convert_gauge = wx.Gauge(parent=convert_box, id=wx.ID_ANY, range=100, size=(375, 15))
+        vertical_spacer.Add(convert_gauge, 0, wx.TOP, 10)
+
+        sizer.AddSpacer(100)
+
+        cancel_btn = self.create_small_button(parent=win, length=105, text="CANCEL",
+                                              back_color=color_white, text_color=color_black,
+                                              click_handler=self.cancel_current_thread,
+                                              border_color=color_dark_grey)
+        sizer.Add(cancel_btn, 0, wx.ALIGN_CENTER)
+
+        sizer.AddSpacer(40)
+
+        # place footer
+        footer_window = self.create_footer(parent=win)
+        sizer.Add(footer_window)
+
+        return win, convert_gauge, estimate_text, converting_file_label
+
+    def create_join_complete(self):
+        win = wx.Window(parent=self, id=wx.ID_ANY)
+        win.SetBackgroundColour(color_white)
+        # main sizer
+        sizer = wx.BoxSizer(orient=wx.VERTICAL)
+        win.SetSizer(sizer)
+
+        # place header
+        header_window = self.create_header(parent=win)
+        sizer.Add(header_window)
+
+        # what do you want to do?
+        select_window = wx.Window(parent=win, id=wx.ID_ANY, size=(600, 100))
+        select_window.SetBackgroundColour(color_white)
+        select_window_sizer = wx.BoxSizer(orient=wx.VERTICAL)
+        select_window.SetSizer(select_window_sizer)
+
+        select_text = wx.StaticText(parent=select_window, id=wx.ID_ANY, label="What do you want to do?")
+        select_text.SetFont(wx.Font(12, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
+        select_text.SetForegroundColour(color_home_headers)
+        select_window_sizer.Add(select_text, 0, wx.CENTER | wx.TOP, 40)
+        sizer.Add(select_window)
+
+        sizer.AddSpacer(25)
+
+        # done icon
+        # load bitmap from file
+        log_raw_bitmap = wx.Bitmap(name="assets/done_icon.png", type=wx.BITMAP_TYPE_PNG)
+        # to hold the raw bitmap
+        logo_bitmap = wx.StaticBitmap(parent=win, id=wx.ID_ANY)
+        logo_bitmap.SetBitmap(log_raw_bitmap)
+        # center in the middle, and give so
+        sizer.Add(logo_bitmap, 0, wx.CENTER)
+
+        sizer.AddSpacer(20)
+
+        # converting... file
+        converting_header_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
+        sizer.Add(converting_header_sizer, 0, wx.CENTER | wx.TOP, 20)
+        # the converting...
+        converting_label = wx.StaticText(parent=win, id=wx.ID_ANY, label="Complete: ")
+        converting_label.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
+        converting_label.SetForegroundColour(color_dark_grey)
+        converting_header_sizer.Add(converting_label)
+        # the file name
+        converting_file_label = wx.StaticText(parent=win, id=wx.ID_ANY, label=self.final_path)
+        converting_file_label.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False))
+        converting_file_label.SetForegroundColour(color_dark_grey)
+        converting_header_sizer.Add(converting_file_label, 0, wx.LEFT, 10)
+
+        sizer.AddSpacer(55)
+
+        button_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
+        sizer.Add(button_sizer, 1, wx.CENTER)
+
+        cancel_btn = self.create_small_button(parent=win, length=150, text="GO BACK",
+                                              back_color=color_white, text_color=color_black,
+                                              click_handler=self.show_main,
+                                              border_color=color_dark_grey)
+        button_sizer.Add(cancel_btn)
+
+        button_sizer.AddSpacer(20)
+
+        open_btn = self.create_small_button(parent=win, length=150, text="OPEN",
+                                            back_color=color_white, text_color=color_black,
+                                            click_handler=self.open_final_path,
+                                            border_color=color_dark_grey)
+        button_sizer.Add(open_btn)
+
+        button_sizer.AddSpacer(20)
+
+        upload_btn = self.create_small_button(parent=win, length=150, text="UPLOAD",
+                                              back_color=color_orange, text_color=color_white,
+                                              click_handler=self.show_upload_progress)
+        button_sizer.Add(upload_btn)
+
+        sizer.AddSpacer(55)
+
+        # place footer
+        footer_window = self.create_footer(parent=win)
+        sizer.Add(footer_window)
+
+        return win
+
+    # upload multiple files
     def create_upload_screen(self):
 
         win = wx.Window(parent=self, id=wx.ID_ANY)
