@@ -44,7 +44,7 @@ color_black = wx.BLACK
 color_dark_green = wx.Colour(61, 209, 2)
 
 
-class ListFileDrop(wx.FileDropTarget):
+class ConvertFileDrop(wx.FileDropTarget):
 
     def __init__(self, callback, estimate=None):
         super().__init__()
@@ -53,6 +53,17 @@ class ListFileDrop(wx.FileDropTarget):
 
     def OnDropFiles(self, x, y, filenames):
         self.callback(filenames, self.estimate)
+        return True
+
+
+class UploadFileDrop(wx.FileDropTarget):
+
+    def __init__(self, callback):
+        super().__init__()
+        self.callback = callback
+
+    def OnDropFiles(self, x, y, filenames):
+        self.callback(filenames)
         return True
 
 
@@ -319,13 +330,8 @@ class MainWindow(wx.Frame):
                                      is_ok_type=True)
             return
 
-        upload_key = os.path.basename(self.filenames[0])
-        print("Upload key", upload_key)
-
-        win, gauge, text = self.create_upload_progress()
+        win, gauge, text, label = self.create_upload_progress()
         self.replace_view(win)
-
-        self.reset_progress()
 
         # init s3 session
         aws_session = Session(aws_access_key_id=self.aws_data["AccessKeyId"],
@@ -337,45 +343,63 @@ class MainWindow(wx.Frame):
         client = aws_session.client(service_name="s3",
                                     endpoint_url=self.aws_data["CloudfrontEndpoint"])
 
-        # we cheat so that the user can see some progress at start
-        gauge.Pulse()
+        current_number = 1
+        for file in self.filenames:
 
-        total_size = os.stat(self.filenames[0]).st_size
-        self.current_upload_size = 0
+            label.SetLabel(str(current_number) + "/" + str(len(self.filenames)) + " " + file)
 
-        upload_thr = aws.UploadFile(s3client=client,
-                                    bucket=self.aws_data["Bucket"],
-                                    key=upload_key,
-                                    file=self.filenames[0],
-                                    progress_callback=lambda progress: self.mark_upload_progress(progress, total_size),
-                                    resume_callback=lambda progress: self.mark_progress(progress),
-                                    name="upload-thr")
-        upload_thr.start()
+            upload_key = os.path.basename(file)
+            print("Upload key", upload_key)
 
-        while upload_thr.is_alive():
-            dummy_event = threading.Event()
-            dummy_event.wait(timeout=0.01)
+            self.reset_progress()
 
-            if self.current_upload_size > 0:
-                self.update_progress(gauge, text)
+            # we cheat so that the user can see some progress at start
+            gauge.Pulse()
 
-            wx.Yield()
-            self.Update()
+            total_size = os.stat(file).st_size
+            self.current_upload_size = 0
 
-        # get the real duration
-        final_video_info = convert_functions.get_video_info(self.filenames[0])
+            upload_thr = aws.UploadFile(s3client=client,
+                                        bucket=self.aws_data["Bucket"],
+                                        key=upload_key,
+                                        file=file,
+                                        progress_callback=lambda progress: self.mark_upload_progress(progress, total_size),
+                                        resume_callback=lambda progress: self.mark_progress(progress),
+                                        name="upload-thr")
+            upload_thr.start()
 
-        print("file duration", final_video_info.duration)
+            while upload_thr.is_alive():
+                dummy_event = threading.Event()
+                dummy_event.wait(timeout=0.01)
 
-        aws.confirm_upload(self.token["token"],
-                           bucket=self.aws_data["Bucket"],
-                           key=upload_key,
-                           duration=int(float(final_video_info.duration)),
-                           size=100)
+                if self.current_upload_size > 0:
+                    self.update_progress(gauge, text)
+
+                wx.Yield()
+                self.Update()
+
+            # get the real duration
+            final_video_info = convert_functions.get_video_info(file)
+
+            print("file duration", final_video_info.duration)
+
+            aws.confirm_upload(self.token["token"],
+                               bucket=self.aws_data["Bucket"],
+                               key=upload_key,
+                               duration=int(float(final_video_info.duration)),
+                               size=100)
+            current_number += 1
+
         self.final_path = self.filenames[0]
         self.show_upload_complete(None)
 
         # show complete
+
+    # utility function
+    def upload_add_files(self, filenames, the_list):
+        for file in filenames:
+            the_list.Append([file])
+            self.filenames.append(file)
 
     def mark_upload_progress(self, progress, total):
         print("UP:", progress, total)
@@ -981,9 +1005,9 @@ class MainWindow(wx.Frame):
         self.set_current_preset(current_preset, estimated_size_indicator)
 
         # test the drop target stuff?
-        list_add.SetDropTarget(ListFileDrop(callback=lambda filenames, estimate: self.convert_add_files(filenames,
-                                                                                                        convert_list,
-                                                                                                        estimated_size_indicator)))
+        list_add.SetDropTarget(ConvertFileDrop(callback=lambda filenames, estimate: self.convert_add_files(filenames,
+                                                                                                           convert_list,
+                                                                                                           estimated_size_indicator)))
 
         sizer.AddSpacer(70)
 
@@ -1210,7 +1234,7 @@ class MainWindow(wx.Frame):
         list_add_sizer.Add(convert_list, 3, wx.RIGHT | wx.LEFT, 10)
 
         # test the drop target stuff?
-        list_add.SetDropTarget(ListFileDrop(callback=lambda filenames: self.convert_add_files(filenames, convert_list)))
+        list_add.SetDropTarget(UploadFileDrop(callback=lambda filenames: self.upload_add_files(filenames, convert_list)))
 
         add_a_file = self.create_small_button(parent=list_add, length=150, text="ADD A FILE",
                                               text_color=color_white, back_color=color_dark_grey,
@@ -1313,7 +1337,7 @@ class MainWindow(wx.Frame):
         footer_window = self.create_footer(parent=win)
         sizer.Add(footer_window)
 
-        return win, convert_gauge, estimate_text
+        return win, convert_gauge, estimate_text, converting_file_label
 
     def create_upload_complete(self):
         win = wx.Window(parent=self, id=wx.ID_ANY)
