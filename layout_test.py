@@ -323,6 +323,26 @@ class MainWindow(wx.Frame):
         if path != "":
             self.convert_add_files([path], the_list, estimate=estimate)
 
+    def upload_browse_for_files(self, the_list):
+        path = ""
+        dlg = wx.FileDialog(self, "Video file", "", "", "*.mp4", wx.FD_OPEN)
+        if dlg.ShowModal() == wx.ID_OK:
+            path = dlg.GetPath()
+
+        dlg.Destroy()
+        if path != "":
+            self.upload_add_files([path], the_list)
+
+    def playlist_browse_for_files(self, the_list):
+        path = ""
+        dlg = wx.FileDialog(self, "Playlist FIle", "", "", "*.vopl", wx.FD_OPEN)
+        if dlg.ShowModal() == wx.ID_OK:
+            path = dlg.GetPath()
+
+        dlg.Destroy()
+        if path != "":
+            self.playlist_add_files([path], the_list, None)
+
     def set_destination_dir(self, text_ctrl):
         path = ""
         dlg = wx.DirDialog(self, "Destination Directory")
@@ -2039,7 +2059,7 @@ class MainWindow(wx.Frame):
 
         add_a_file = self.create_small_button(parent=list_add, length=150, text="ADD A FILE",
                                               text_color=color_white, back_color=color_dark_grey,
-                                              click_handler=lambda x: self.convert_browse_for_files(convert_list))
+                                              click_handler=lambda x: self.upload_browse_for_files(convert_list))
         list_add_sizer.Add(add_a_file, 1, wx.RIGHT | wx.LEFT, 10)
 
         sizer.AddSpacer(180)
@@ -2260,8 +2280,7 @@ class MainWindow(wx.Frame):
 
         add_a_file = self.create_small_button(parent=list_add, length=150, text="ADD A FILE",
                                               text_color=color_white, back_color=color_dark_grey,
-                                              click_handler=lambda x: self.convert_browse_for_files(convert_list,
-                                                                                                    estimated_size_indicator))
+                                              click_handler=lambda x: self.playlist_browse_for_files(convert_list))
         half_part.Add(add_a_file, 1)
 
         font_size_label = wx.StaticText(parent=list_add, id=wx.ID_ANY, label="Font Size:")
