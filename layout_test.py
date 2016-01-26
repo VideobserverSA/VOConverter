@@ -718,6 +718,10 @@ class MainWindow(wx.Frame):
             logout_sizer.Add(logout_bitmap, 1, wx.CENTER)
             logout_window.SetCursor(wx.Cursor(wx.CURSOR_HAND))
             anchor_window_sizer.Add(logout_window, 0, wx.CENTER | wx.RIGHT, 10)
+
+            logout_window.Bind(wx.EVT_LEFT_DOWN, self.do_logout)
+            logout_bitmap.Bind(wx.EVT_LEFT_DOWN, self.do_logout)
+
         else:
             login_btn = self.create_small_button(parent=anchor_window, length=150, text="LOGIN",
                                                  text_color=color_orange, back_color=color_dark_grey,
@@ -877,6 +881,10 @@ class MainWindow(wx.Frame):
                                               message="Wrong user name or password",
                                               is_ok_type=True)
             print("wrong user and pass")
+
+    def do_logout(self, e):
+        print("Do LOGOUT")
+        self.logged_in = False
 
     # create the home screen
     def create_main_screen(self):
