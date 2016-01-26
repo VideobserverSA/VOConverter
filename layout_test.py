@@ -796,9 +796,11 @@ class MainWindow(wx.Frame):
                                                                          drawings=multiple_drawings,
                                                                          pause_time=self.pause_duration,
                                                                          duration=real_duration,
-                                                                         watermark=self.watermark)
+                                                                         watermark=self.watermark,
+                                                                         callback=lambda p: self.update_drawing_progress(p, cut_number + 1, num_items))
                     multiple_thr.start()
                     while multiple_thr.is_alive():
+                        self.update_progress(gauge, estimate_text)
                         wx.Yield()
                         self.Update()
                         dummy_event = threading.Event()
@@ -827,9 +829,11 @@ class MainWindow(wx.Frame):
                 # self.meter.set(progress, t("Converting: ") + self.base_name + " " + progress_str + "%")
                 # self.meter.SetValue(progress * 100)
 
-                self.mark_progress(progress)
+                self.mark_progress(int(progress * 100))
 
+                self.update_progress(gauge, estimate_text)
                 wx.Yield()
+                self.Update()
 
                 cut_number += 1
 
@@ -860,90 +864,20 @@ class MainWindow(wx.Frame):
 
             # outfile
             out_filename = os.path.basename(one_file).replace(".vopl", "")
-
             out_path = self.destination_dir + path_separator + out_filename + ".mp4"
 
             if os.path.isfile(out_path):
-                # ask for overwrite?
-                overwrite_dlg = wx.Dialog(parent=self, id=wx.ID_ANY, title="Overwrite final file?")
-                overwrite_dlg_sizer = wx.BoxSizer(wx.VERTICAL)
-                overwrite_msg = wx.StaticText(parent=overwrite_dlg, id=wx.ID_ANY,
-                                              label="There is already a file with that name on the destination directory... Do you wish to:")
-                overwrite_btn = wx.Button(parent=overwrite_dlg, id=wx.ID_ANY, label="Overwrite")
-                rename_btn = wx.Button(parent=overwrite_dlg, id=wx.ID_OK, label="Rename")
-                # sizer stuff
-                overwrite_dlg_sizer.Add(overwrite_msg, 0, wx.ALL, 5)
-
-                done_dlg_btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-                done_dlg_btn_sizer.Add(overwrite_btn, 0, wx.RIGHT, 10)
-                done_dlg_btn_sizer.Add(rename_btn)
-
-                overwrite_dlg_sizer.Add(done_dlg_btn_sizer, 0, wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, 10)
-                overwrite_dlg.SetSizer(overwrite_dlg_sizer)
-                # auto layout TODO fix this a bit
-                # done_dlg.SetAutoLayout(1)
-                # done_dlg.Fit()
-
-                overwrite_dlg_sizer.SetSizeHints(overwrite_dlg)
-
-                # bind
-                overwrite_dlg.Bind(event=wx.EVT_BUTTON, handler=self.overwrite_out_path, source=overwrite_btn)
-                overwrite_dlg.Bind(event=wx.EVT_BUTTON, handler=self.rename_out_path, source=rename_btn)
-                # and show
-                overwrite_dlg.ShowModal()
+                out_filename = os.path.basename(one_file).replace(".vopl", "")
+                out_path = self.destination_dir + path_separator + out_filename + "_1_.mp4"
 
             # put it on desktop for now
             join_args.append(out_path)
-
-            # sys.stdout.write("JOINARGS>>" + ' '.join(join_args))
-
-            # join_log_path = self.temp_dir.name + path_separator + "join.log"
-            # join_log_file = open(join_log_path, "wb")
 
             try:
                 out = subprocess.check_call(join_args, stderr=subprocess.STDOUT, shell=False)
             except subprocess.CalledProcessError as cpe:
                 print("ERROR>>", cpe.output)
             # TODO solve this
-            # self.meter.set(1, t("Done: ") + self.base_name + " " + "100" + "%")
-            # self.meter.SetValue(100)
-
-            # self.end_time = time.time()
-            # time_delta = self.end_time - self.start_time
-            #
-            # seconds = int(time_delta % 60)
-            # minutes = int(time_delta / 60)
-            # hours = int(time_delta / (60 * 60))
-            #
-            # self.PushStatusText(t("Done in %s:%s:%s ...") % (format(hours, "02d"),
-            #                     format(minutes, "02d"), format(seconds, "02d")))
-            #
-            # print("")
-            # print("")
-            # print("")
-            # print("")
-            # print("")
-            # print(t("Done in"), format(hours, "02d"), ":", format(minutes, "02d"), ":", format(seconds, "02d"))
-
-            # create a dialog and bind the correct function
-            # the OK button does not need it since we pass it the wx.ID_OK that does the job for us
-            # done_dlg = wx.Dialog(parent=self, id=wx.ID_ANY, title="Playlist done...")
-            # done_dlg_sizer = wx.BoxSizer(wx.VERTICAL)
-            # done_msg = wx.StaticText(parent=done_dlg, id=wx.ID_ANY, label="Playlist done...")
-            # done_open_btn = wx.Button(parent=done_dlg, id=wx.ID_ANY, label="Open Video")
-            # done_ok_btn = wx.Button(parent=done_dlg, id=wx.ID_OK, label="Ok")
-            # # sizer stuff
-            # done_dlg_sizer.Add(done_msg, 0, wx.ALL, 15)
-            # done_dlg_sizer.Add(done_open_btn, 0, wx.LEFT | wx.RIGHT | wx.ALIGN_CENTER_HORIZONTAL, 15)
-            # done_dlg_sizer.Add(done_ok_btn, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 15)
-            # done_dlg.SetSizer(done_dlg_sizer)
-            # # auto layout TODO fix this a bit
-            # done_dlg.SetAutoLayout(1)
-            # done_dlg.Fit()
-            # # bind
-            # done_dlg.Bind(event=wx.EVT_BUTTON, handler=self.open_file_with_app, source=done_open_btn)
-            # # and show
-            # done_dlg.Show()
 
             current_number += 1
 
@@ -960,6 +894,19 @@ class MainWindow(wx.Frame):
     def show_playlist_complete(self, e):
         print("CONVERT COMPLETE")
         self.replace_view(self.create_playlist_complete())
+
+    def update_drawing_progress(self, progress, cut_number, total_items):
+
+        # print("prog, cut, num", progress, cut_number, total_items)
+        # get the lower and upper bound
+        interval = 100 / total_items
+        upper = (cut_number / total_items) * 100
+        lower = upper - interval
+        # print("int, low, up", interval, upper, lower)
+        relative_progress = (progress * interval) / 100
+        actual_progress = lower + relative_progress
+        # print("rel, act", relative_progress, actual_progress)
+        self.mark_progress(int(actual_progress))
 
     # show the next screen
     def replace_view(self, new_view_creator):

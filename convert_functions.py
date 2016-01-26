@@ -495,7 +495,7 @@ class CutWithKeyFrames(threading.Thread):
 class AddMultipleDrawings(threading.Thread):
 
     def __init__(self, temp_dir, cut_number, input_video, video_info, tmp_out, drawings, pause_time,
-                 duration, watermark):
+                 duration, watermark, callback):
 
         super().__init__()
 
@@ -508,6 +508,7 @@ class AddMultipleDrawings(threading.Thread):
         self.pause_time = pause_time
         self.duration = duration
         self.watermark = watermark
+        self.callback = callback
 
     def run(self):
 
@@ -587,6 +588,7 @@ class AddMultipleDrawings(threading.Thread):
             shell=shell_status)
 
         drawing_number = 0
+        self.callback(0)
         print("DRAWWWINGS >>>>>>>>>>>>>>>>")
         for drawing in self.drawings:
             print(drawing.drawing_time)
@@ -748,6 +750,8 @@ class AddMultipleDrawings(threading.Thread):
                     stderr=STDOUT,
                     shell=shell_status)
 
+            progress = int(((drawing_number / len(self.drawings)) * 100) / 2)
+            self.callback(progress)
             # do the next drawing
             drawing_number += 1
 
@@ -759,6 +763,7 @@ class AddMultipleDrawings(threading.Thread):
 
                 # first drawing
                 if x == 0:
+                    self.callback(50)
                     # start by concatenating the start to the first thumb
                     try:
                         check_call([
@@ -795,6 +800,8 @@ class AddMultipleDrawings(threading.Thread):
 
                 # all the others except the last but including the first
                 if x < len(self.drawings) - 1:
+                    self.callback((((len(self.drawings) / x) * 100) / 2) + 50)
+                    print("cenas", (((len(self.drawings) / x) * 100) / 2) + 50)
                     # add the middle between this drawing and the next
                     try:
                         check_call([
@@ -870,6 +877,7 @@ class AddMultipleDrawings(threading.Thread):
                 if last_drawing_delta > 1:
                     # last drawing
                     if x == len(self.drawings) - 1:
+                        self.callback(100)
                         # just add the end, since this drawing was joined in the last step
                         try:
                             check_call([
@@ -917,6 +925,7 @@ class AddMultipleDrawings(threading.Thread):
 
                 # first drawing
                 if x == 0:
+                    self.callback(50)
                     # start by concatenating the start to the first thumb
                     try:
                         check_call([
@@ -950,6 +959,8 @@ class AddMultipleDrawings(threading.Thread):
 
                 # all the others except the last but including the first
                 if x < len(self.drawings) - 1:
+                    self.callback((((len(self.drawings) / x) * 100) / 2) + 50)
+                    print("cenas", (((len(self.drawings) / x) * 100) / 2) + 50)
                     # add the middle between this drawing and the next
                     try:
                         check_call([
@@ -1016,6 +1027,7 @@ class AddMultipleDrawings(threading.Thread):
 
                 # last drawing
                 if x == len(self.drawings) - 1:
+                    self.callback(100)
                     # just add the end, since this drawing was joined in the last step
                     try:
                         check_call([
