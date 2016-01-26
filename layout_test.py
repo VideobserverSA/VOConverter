@@ -969,7 +969,7 @@ class MainWindow(wx.Frame):
         estimated_size_header.SetForegroundColour(color_dark_green)
         estimated_size_sizer.Add(estimated_size_header)
         # and the real label
-        estimated_size_indicator = wx.StaticText(parent=win, id=wx.ID_ANY, label="XXXX Mb")
+        estimated_size_indicator = wx.StaticText(parent=win, id=wx.ID_ANY, label="0 Mb")
         estimated_size_indicator.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
         estimated_size_indicator.SetForegroundColour(color_dark_green)
         estimated_size_sizer.Add(estimated_size_indicator)
