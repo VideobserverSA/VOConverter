@@ -1563,6 +1563,8 @@ class MainWindow(wx.Frame):
         self.final_path = ""
         self.file_crl = wx.FileCtrl()
 
+        self.overwrite_cut_number = 0
+
         # version_thr = CheckForUpdate(version, self.temp_dir)
         # version_thr.start()
 
@@ -2033,6 +2035,47 @@ class MainWindow(wx.Frame):
 
             cut_number += 1
 
+        # outfile
+        out_filename = self.base_name.replace(".vopl", "")
+
+        self.out_path = self.destination_picker.GetPath() + path_separator + out_filename + ".mp4"
+        self.final_path = self.out_path
+
+        if os.path.isfile(self.out_path):
+            self.overwrite_cut_number = cut_number
+            # ask for overwrite?
+            overwrite_dlg = wx.Dialog(parent=self, id=wx.ID_ANY, title=t("Overwrite final file?"))
+            overwrite_dlg_sizer = wx.BoxSizer(wx.VERTICAL)
+            overwrite_msg = wx.StaticText(parent=overwrite_dlg, id=wx.ID_ANY,
+                                     label=t("There is already a file with that name on the destination directory... Do you wish to:"))
+            overwrite_btn = wx.Button(parent=overwrite_dlg, id=wx.ID_ANY, label=t("Overwrite"))
+            rename_btn = wx.Button(parent=overwrite_dlg, id=wx.ID_ANY, label=t("Rename"))
+            # sizer stuff
+            overwrite_dlg_sizer.Add(overwrite_msg, 0, wx.ALL, 5)
+
+            done_dlg_btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            done_dlg_btn_sizer.Add(overwrite_btn, 0, wx.RIGHT, 10)
+            done_dlg_btn_sizer.Add(rename_btn)
+
+            overwrite_dlg_sizer.Add(done_dlg_btn_sizer, 0, wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, 10)
+            overwrite_dlg.SetSizer(overwrite_dlg_sizer)
+            # auto layout TODO fix this a bit
+            # done_dlg.SetAutoLayout(1)
+            # done_dlg.Fit()
+
+            overwrite_dlg_sizer.SetSizeHints(overwrite_dlg)
+
+            # bind
+            overwrite_dlg.Bind(event=wx.EVT_BUTTON, handler=self.overwrite_out_path, source=overwrite_btn)
+            overwrite_dlg.Bind(event=wx.EVT_BUTTON, handler=self.rename_out_path, source=rename_btn)
+            # and show
+            overwrite_dlg.ShowModal()
+        else:
+            self.do_final_join(cut_number)
+
+    def do_final_join(self, cut_number):
+        print("WE NOW HAVE FINAL PATH", self.final_path)
+
         self.PushStatusText(t("Joining final video"))
         # JOIN THE THINGS
         join_args = []
@@ -2057,41 +2100,6 @@ class MainWindow(wx.Frame):
         join_args.append("aac_adtstoasc")
         join_args.append("-movflags")
         join_args.append("faststart")
-
-        # outfile
-        out_filename = self.base_name.replace(".vopl", "")
-
-        self.out_path = self.destination_picker.GetPath() + path_separator + out_filename + ".mp4"
-        self.final_path = self.out_path
-
-        if os.path.isfile(self.out_path):
-            # ask for overwrite?
-            overwrite_dlg = wx.Dialog(parent=self, id=wx.ID_ANY, title=t("Overwrite final file?"))
-            overwrite_dlg_sizer = wx.BoxSizer(wx.VERTICAL)
-            overwrite_msg = wx.StaticText(parent=overwrite_dlg, id=wx.ID_ANY,
-                                     label=t("There is already a file with that name on the destination directory... Do you wish to:"))
-            overwrite_btn = wx.Button(parent=overwrite_dlg, id=wx.ID_ANY, label=t("Overwrite"))
-            rename_btn = wx.Button(parent=overwrite_dlg, id=wx.ID_OK, label=t("Rename"))
-            # sizer stuff
-            overwrite_dlg_sizer.Add(overwrite_msg, 0, wx.ALL, 5)
-
-            done_dlg_btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-            done_dlg_btn_sizer.Add(overwrite_btn, 0, wx.RIGHT, 10)
-            done_dlg_btn_sizer.Add(rename_btn)
-
-            overwrite_dlg_sizer.Add(done_dlg_btn_sizer, 0, wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, 10)
-            overwrite_dlg.SetSizer(overwrite_dlg_sizer)
-            # auto layout TODO fix this a bit
-            # done_dlg.SetAutoLayout(1)
-            # done_dlg.Fit()
-
-            overwrite_dlg_sizer.SetSizeHints(overwrite_dlg)
-
-            # bind
-            overwrite_dlg.Bind(event=wx.EVT_BUTTON, handler=self.overwrite_out_path, source=overwrite_btn)
-            overwrite_dlg.Bind(event=wx.EVT_BUTTON, handler=self.rename_out_path, source=rename_btn)
-            # and show
-            overwrite_dlg.ShowModal()
 
         # put it on desktop for now
         join_args.append("" + self.final_path + "")
@@ -2149,11 +2157,14 @@ class MainWindow(wx.Frame):
     def overwrite_out_path(self, e):
         # close the choice modal and set final path to overwrite
         self.final_path = self.out_path
-        e.EventObject.Parent.Destroy()
+        e.EventObject.Parent.EndModal(0)
+        e.EventObject.Parent.DestroyLater()
+        self.do_final_join(self.overwrite_cut_number)
 
     def rename_out_path(self, e):
         # close the choice modal
-        e.EventObject.Parent.Destroy()
+        e.EventObject.Parent.EndModal(0)
+        e.EventObject.Parent.DestroyLater()
 
         # dialog to choose new file
         rename_dlg = wx.Dialog(parent=self, id=wx.ID_ANY, title=t("Select new file"))
@@ -2163,7 +2174,7 @@ class MainWindow(wx.Frame):
         self.file_crl = wx.FileCtrl(parent=rename_dlg, id=wx.ID_ANY, defaultDirectory=path_dir,
                                     defaultFilename=path_file)
         rename_sizer.Add(self.file_crl)
-        ok_btn = wx.Button(parent=rename_dlg, id=wx.ID_ANY, label=t("Ok"))
+        ok_btn = wx.Button(parent=rename_dlg, id=wx.ID_OK, label=t("Ok"))
         rename_sizer.Add(ok_btn, 0, wx.ALL | wx.ALIGN_CENTER_HORIZONTAL, 10)
         rename_dlg.SetSizer(rename_sizer)
         rename_dlg.SetAutoLayout(1)
@@ -2175,7 +2186,10 @@ class MainWindow(wx.Frame):
         # get the path
         self.final_path = self.file_crl.GetPath()
         # and destroy the new file name dialog
-        e.EventObject.Parent.Destroy()
+        e.EventObject.Parent.EndModal(0)
+        e.EventObject.Parent.DestroyLater()
+
+        self.do_final_join(self.overwrite_cut_number)
 
     def open_file_with_app(self, e):
         # destroy the calling dialog
