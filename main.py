@@ -2187,7 +2187,7 @@ class MainWindow(wx.Frame):
             os.startfile(self.final_path)
 
 # init the app amd make it read to read resources
-app = wx.App(False)
+app = wx.App(True)
 
 #
 # FUCKING IMPORTANT, we need to do this code here or else the app does not see its resources
