@@ -22,5 +22,13 @@
     "bitrate": 1750,
     "framerate" : 25,
     "keyframes" : 25
+  },
+    {
+    "name" : "Fast",
+    "width" : 1280,
+    "height" : 720,
+    "bitrate": 1000,
+    "framerate" : 25,
+    "keyframes" : 750
   }
 ]
