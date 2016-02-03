@@ -20,6 +20,7 @@ from distutils.version import LooseVersion
 import platform
 import random
 import shutil
+import re
 
 __author__ = 'Rui'
 
@@ -1290,67 +1291,125 @@ class EncodeSubtitles(threading.Thread):
         else:
             escaped_ass_path = ass_path.replace("\\", "\\\\").replace(":", "\:").replace(" ", "\ ")
 
-        try:
-            check_call([
-                ffmpeg_path,
-                # overwrite
-                "-y",
-                # start time
-                "-ss",
-                str(self.time_start),
-                # input file
-                "-i",
-                self.video_path,
-                "-t",
-                str(self.duration),
-                # codec
-                "-codec:v",
-                "libx264",
-                "-crf",
-                "23",
-                "-codec:a",
-                "copy",
-                "-vf",
-                "ass=" + "'" + escaped_ass_path + "'",
-                # self.tmp_out
-                self.temp_dir.name + path_separator + str(self.cut_number) + "_no_water.mp4"
-            ],
-                shell=shell_status,
-                universal_newlines=True,
-                #stderr=STDOUT,
-            )
-        except CalledProcessError as cpe:
-            print("SUB ASS OUT", cpe.output)
+        cmd = [
+            ffmpeg_path,
+            # overwrite
+            "-y",
+            # start time
+            "-ss",
+            str(self.time_start),
+            # input file
+            "-i",
+            self.video_path,
+            "-t",
+            str(self.duration),
+            # codec
+            "-codec:v",
+            "libx264",
+            "-crf",
+            "23",
+            "-codec:a",
+            "copy",
+            "-vf",
+            "ass=" + "'" + escaped_ass_path + "'",
+            # self.tmp_out
+            self.temp_dir.name + path_separator + str(self.cut_number) + "_no_water.mp4"
+        ]
 
-        try:
-            check_call([
-                ffmpeg_path,
-                # overwrite
-                "-y",
-                # start time
-                # input file
-                "-i",
-                self.temp_dir.name + path_separator + str(self.cut_number) + "_no_water.mp4",
-                # watermark
-                "-i",
-                os_prefix + watermark_file,
-                # filter
-                "-filter_complex",
-                "[0:v][1:v] overlay=" + str(left) + ":" + str(bottom),
-                "-pix_fmt",
-                "yuv420p",
-                # pass the audio
-                "-c:a",
-                "copy",
-                # self.tmp_out
-                self.tmp_out
-            ],
-                shell=shell_status,
-                universal_newlines=True,
-                # stderr=STDOUT,
-            )
-        except CalledProcessError as cpe:
-            print("SUB ASS OUT", cpe.output)
+        p = Popen(cmd,
+              stderr=STDOUT,
+              stdout=PIPE,
+              universal_newlines=True
+              )
+
+        reg = re.compile("time=[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9]")
+
+        had_one_hundred = False
+
+        first_pass_last_perc = -1
+
+        for line in iter(p.stdout.readline, b''):
+            # print(">>> " + str(line.rstrip()))
+            m = reg.search(str(line.rstrip()))
+            if m is not None:
+                time_str = m.group().replace("time=", "")[:-3]
+                splitted = time_str.split(":")
+                seconds = 60 * 60 * int(splitted[0]) + 60 * int(splitted[1]) + int(splitted[2])
+                # print("time:", time_str, " seconds:" + str(seconds))
+                percentage = int((seconds * 100) / int(float(self.duration)))
+                if first_pass_last_perc != percentage:
+                    print("subs first pass %:", percentage)
+                    first_pass_last_perc = percentage
+                if percentage == 100:
+                    had_one_hundred = True
+                    print(" ")
+                 # self.callback(percentage)
+            else:
+                if had_one_hundred:
+                    # the process Popen does not terminate correctly with universal newlines
+                    # so we kill it
+                    # this happens and p.stdout.readling keeps returning empty strings
+                    # so we need to avoid it
+                    p.terminate()
+                    break
+
+        cmd = [
+            ffmpeg_path,
+            # overwrite
+            "-y",
+            # start time
+            # input file
+            "-i",
+            self.temp_dir.name + path_separator + str(self.cut_number) + "_no_water.mp4",
+            # watermark
+            "-i",
+            os_prefix + watermark_file,
+            # filter
+            "-filter_complex",
+            "[0:v][1:v] overlay=" + str(left) + ":" + str(bottom),
+            "-pix_fmt",
+            "yuv420p",
+            # pass the audio
+            "-c:a",
+            "copy",
+            # self.tmp_out
+            self.tmp_out
+        ]
+
+        p = Popen(cmd,
+              stderr=STDOUT,
+              stdout=PIPE,
+              universal_newlines=True
+              )
+
+        had_one_hundred = False
+
+        first_pass_last_perc = -1
+
+        for line in iter(p.stdout.readline, b''):
+            # print(">>> " + str(line.rstrip()))
+            m = reg.search(str(line.rstrip()))
+            if m is not None:
+                time_str = m.group().replace("time=", "")[:-3]
+                splitted = time_str.split(":")
+                seconds = 60 * 60 * int(splitted[0]) + 60 * int(splitted[1]) + int(splitted[2])
+                # print("time:", time_str, " seconds:" + str(seconds))
+                percentage = int((seconds * 100) / int(float(self.duration)))
+                if first_pass_last_perc != percentage:
+                    print("subs second pass %:", percentage)
+                    first_pass_last_perc = percentage
+                if percentage == 100:
+                    had_one_hundred = True
+                    print(" ")
+                 # self.callback(percentage)
+            else:
+                if had_one_hundred:
+                    # the process Popen does not terminate correctly with universal newlines
+                    # so we kill it
+                    # this happens and p.stdout.readling keeps returning empty strings
+                    # so we need to avoid it
+                    p.terminate()
+                    break
 
 
 class MainWindow(wx.Frame):
