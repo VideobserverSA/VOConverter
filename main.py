@@ -116,8 +116,7 @@ class GetScreenshot(threading.Thread):
                 "-vframes",
                 "1",
                 self.out_file
-            ], stderr=STDOUT,
-                shell=shell_status)
+            ], shell=shell_status)
         except CalledProcessError as cpe:
             print("SCREEN OUT", cpe.output)
 
@@ -156,8 +155,7 @@ class AddSeparator(threading.Thread):
                 "-vf",
                 "scale=" + str(self.video_info.width) + "x" + str(self.video_info.height) + ",setsar=1:1",
                 self.temp_dir.name + path_separator + str(self.cut_number) + "_sep_no_sound.mp4"
-            ], stderr=STDOUT,
-                shell=shell_status)
+            ], shell=shell_status)
         except CalledProcessError as cpe:
             print("IMAGE OUT", cpe.output)
 
@@ -184,8 +182,7 @@ class AddSeparator(threading.Thread):
                 "-strict",
                 "-2",
                 self.temp_dir.name + path_separator + str(self.cut_number) + "_sep.mp4"
-            ], stderr=STDOUT,
-                shell=shell_status)
+            ], shell=shell_status)
         except CalledProcessError as cpe:
             print("SOUND OUT", cpe.output)
 
@@ -208,8 +205,7 @@ class AddSeparator(threading.Thread):
                 "-filter_complex",
                 "[0:0] [0:1] [1:0] [1:1] concat=n=2:v=1:a=1 [v] [a]",
                 self.tmp_out
-            ], stderr=STDOUT,
-                shell=shell_status)
+            ], shell=shell_status)
         except CalledProcessError as cpe:
             print("CAT OUT", cpe.output)
 
@@ -269,8 +265,7 @@ class BurnLogo(threading.Thread):
                 # output
                 self.tmp_out
 
-            ], stderr=STDOUT,
-                shell=shell_status)
+            ], shell=shell_status)
         except CalledProcessError as cpe:
             print("BURN LOGO", cpe.output)
 
@@ -331,8 +326,7 @@ class AddOverlay(threading.Thread):
                 "-vf",
                 "scale=" + str(self.video_info.width) + "x" + str(self.video_info.height) + ",setsar=1:1",
                 self.temp_dir.name + path_separator + str(self.cut_number) + "_thumb.mp4"
-            ], stderr=STDOUT,
-                shell=shell_status)
+            ], shell=shell_status)
         except CalledProcessError as cpe:
             print("IMAGE OUT", cpe.output)
 
@@ -362,8 +356,7 @@ class AddOverlay(threading.Thread):
                 # output
                 self.temp_dir.name + path_separator + str(self.cut_number) + "_thumb_overlay.mp4",
 
-            ], stderr=STDOUT,
-                shell=shell_status)
+            ], shell=shell_status)
         except CalledProcessError as cpe:
             print("OVERLAY OUT", cpe.output)
 
@@ -391,8 +384,7 @@ class AddOverlay(threading.Thread):
                 "-strict",
                 "-2",
                 self.temp_dir.name + path_separator + str(self.cut_number) + "_thumb_overlay_sound.mp4"
-            ], stderr=STDOUT,
-                shell=shell_status)
+            ], shell=shell_status)
         except CalledProcessError as cpe:
             print("SOUND OUT", cpe.output)
 
@@ -423,9 +415,7 @@ class AddOverlay(threading.Thread):
                 "copy",
                 # output file
                 self.temp_dir.name + path_separator + str(self.cut_number) + "_start.mp4"
-            ],
-                stderr=STDOUT,
-                shell=shell_status)
+            ], shell=shell_status)
         except CalledProcessError as cpe:
             print("START OUT", cpe.output)
 
@@ -454,9 +444,7 @@ class AddOverlay(threading.Thread):
             "copy",
             # output file
             self.temp_dir.name + path_separator + str(self.cut_number) + "_end.mp4"
-        ],
-            stderr=STDOUT,
-            shell=shell_status)
+        ], shell=shell_status)
 
         print(" ", " ", " ", " ", " VIDEO TIME: ", self.video_time)
 
@@ -489,8 +477,7 @@ class AddOverlay(threading.Thread):
                     "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
                     "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
                     self.temp_dir.name + path_separator + str(self.cut_number) + "_start_and_over.mp4"
-                ], stderr=STDOUT,
-                    shell=shell_status)
+                ], shell=shell_status)
             except CalledProcessError as cpe:
                 print("CAT OUT", cpe.output)
 
@@ -521,8 +508,7 @@ class AddOverlay(threading.Thread):
                     "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
                     "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
                     self.tmp_out,
-                ], stderr=STDOUT,
-                    shell=shell_status)
+                ], shell=shell_status)
             except CalledProcessError as cpe:
                 print("CAT OUT", cpe.output)
 
@@ -553,8 +539,7 @@ class AddOverlay(threading.Thread):
                     "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
                     "[in1][in2] concat [v]",
                     self.temp_dir.name + path_separator + str(self.cut_number) + "_start_and_over.mp4"
-                ], stderr=STDOUT,
-                    shell=shell_status)
+                ], shell=shell_status)
             except CalledProcessError as cpe:
                 print("CAT OUT", cpe.output)
 
@@ -582,8 +567,7 @@ class AddOverlay(threading.Thread):
                     "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
                     "[in1][in2] concat [v]",
                     self.tmp_out,
-                ], stderr=STDOUT,
-                    shell=shell_status)
+                ], shell=shell_status)
             except CalledProcessError as cpe:
                 print("CAT OUT", cpe.output)
 
@@ -647,9 +631,7 @@ class AddMultipleDrawings(threading.Thread):
                 "copy",
                 # output file
                 self.temp_dir.name + path_separator + str(self.cut_number) + "_start.mp4"
-            ],
-                stderr=STDOUT,
-                shell=shell_status)
+            ], shell=shell_status)
         except CalledProcessError as cpe:
             print("START OUT", cpe.output)
 
@@ -678,9 +660,7 @@ class AddMultipleDrawings(threading.Thread):
             "copy",
             # output file
             self.temp_dir.name + path_separator + str(self.cut_number) + "_end.mp4"
-        ],
-            stderr=STDOUT,
-            shell=shell_status)
+        ], shell=shell_status)
 
         drawing_number = 0
         print("DRAWWWINGS >>>>>>>>>>>>>>>>")
@@ -738,8 +718,7 @@ class AddMultipleDrawings(threading.Thread):
                     "-vf",
                     "scale=" + str(self.video_info.width) + "x" + str(self.video_info.height) + ",setsar=1:1",
                     self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) + "_thumb.mp4"
-                ], stderr=STDOUT,
-                    shell=shell_status)
+                ], shell=shell_status)
             except CalledProcessError as cpe:
                 print("IMAGE OUT", cpe.output)
 
@@ -769,8 +748,7 @@ class AddMultipleDrawings(threading.Thread):
                     # output
                     self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) + "_thumb_overlay.mp4",
 
-                ], stderr=STDOUT,
-                    shell=shell_status)
+                ], shell=shell_status)
             except CalledProcessError as cpe:
                 print("OVERLAY OUT", cpe.output)
 
@@ -799,8 +777,7 @@ class AddMultipleDrawings(threading.Thread):
                     "-2",
                     self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) +
                     "_thumb_overlay_sound.mp4"
-                ], stderr=STDOUT,
-                    shell=shell_status)
+                ], shell=shell_status)
             except CalledProcessError as cpe:
                 print("SOUND OUT", cpe.output)
 
@@ -840,9 +817,7 @@ class AddMultipleDrawings(threading.Thread):
                     "copy",
                     # output file
                     self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) + "_middle.mp4"
-                ],
-                    stderr=STDOUT,
-                    shell=shell_status)
+                ], shell=shell_status)
 
             # do the next drawing
             drawing_number += 1
@@ -883,9 +858,7 @@ class AddMultipleDrawings(threading.Thread):
                             "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
                             "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
                             self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_done.mp4"
-                        ],
-                            stderr=STDOUT,
-                            shell=shell_status)
+                        ], shell=shell_status)
                     except CalledProcessError as cpe:
                         print("DRAWING JOIN START", cpe.output)
 
@@ -920,9 +893,7 @@ class AddMultipleDrawings(threading.Thread):
                             "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
                             self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_" +
                             "_after_middle.mp4"
-                        ],
-                            stderr=STDOUT,
-                            shell=shell_status)
+                        ], shell=shell_status)
                     except CalledProcessError as cpe:
                         print("DRAWING JOIN MIDDLE " + str(x), cpe.output)
 
@@ -955,9 +926,7 @@ class AddMultipleDrawings(threading.Thread):
                             "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
                             "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
                             self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_done.mp4"
-                        ],
-                            stderr=STDOUT,
-                            shell=shell_status)
+                        ], shell=shell_status)
                     except CalledProcessError as cpe:
                         print("DRAWING JOIN START", cpe.output)
 
@@ -993,9 +962,7 @@ class AddMultipleDrawings(threading.Thread):
                                 "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
                                 "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
                                 self.tmp_out,
-                            ],
-                                stderr=STDOUT,
-                                shell=shell_status)
+                            ], shell=shell_status)
                         except CalledProcessError as cpe:
                             print("DRAWING JOIN START", cpe.output)
                 else:
@@ -1038,9 +1005,7 @@ class AddMultipleDrawings(threading.Thread):
                             "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
                             "[in1][in2] concat [v]",
                             self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_done.mp4"
-                        ],
-                            stderr=STDOUT,
-                            shell=shell_status)
+                        ], shell=shell_status)
                     except CalledProcessError as cpe:
                         print("DRAWING JOIN START", cpe.output)
 
@@ -1072,9 +1037,7 @@ class AddMultipleDrawings(threading.Thread):
                             "[in1][in2] concat [v]",
                             self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_" +
                             "_after_middle.mp4"
-                        ],
-                            stderr=STDOUT,
-                            shell=shell_status)
+                        ], shell=shell_status)
                     except CalledProcessError as cpe:
                         print("DRAWING JOIN MIDDLE " + str(x), cpe.output)
 
@@ -1104,9 +1067,7 @@ class AddMultipleDrawings(threading.Thread):
                             "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
                             "[in1][in2] concat [v]",
                             self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_done.mp4"
-                        ],
-                            stderr=STDOUT,
-                            shell=shell_status)
+                        ], shell=shell_status)
                     except CalledProcessError as cpe:
                         print("DRAWING JOIN START", cpe.output)
 
@@ -1136,9 +1097,7 @@ class AddMultipleDrawings(threading.Thread):
                             "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
                             "[in1][in2] concat [v]",
                             self.tmp_out,
-                        ],
-                            stderr=STDOUT,
-                            shell=shell_status)
+                        ], shell=shell_status)
                     except CalledProcessError as cpe:
                         print("DRAWING JOIN START", cpe.output)
 
@@ -1177,8 +1136,7 @@ class ConvertToFastCopy(threading.Thread):
             "mpegts",
             # output file
             self.tmp_out
-        ],  stderr=STDOUT,
-            shell=shell_status)
+        ], shell=shell_status)
 
 
 class CutFastCopy(threading.Thread):
@@ -1222,9 +1180,7 @@ class CutFastCopy(threading.Thread):
             str(self.time_start),
             # output file
             self.tmp_out
-        ],
-            stderr=STDOUT,
-            shell=shell_status
+        ], shell=shell_status
             )
 
 
@@ -1272,9 +1228,7 @@ class CutWithKeyFrames(threading.Thread):
             "-2",
             # output file
             self.tmp_out
-        ],
-            stderr=STDOUT,
-            shell=shell_status)
+        ], shell=shell_status)
 
 
 class EncodeSubtitles(threading.Thread):
@@ -1393,7 +1347,7 @@ class EncodeSubtitles(threading.Thread):
             ],
                 shell=shell_status,
                 universal_newlines=True,
-                stderr=STDOUT,
+                # stderr=STDOUT,
             )
         except CalledProcessError as cpe:
             print("SUB ASS OUT", cpe.output)
@@ -1678,7 +1632,7 @@ class MainWindow(wx.Frame):
                 "-show_format",
                 "-show_streams",
                 video_path
-            ], stderr=STDOUT, shell=shell_status, universal_newlines=True)
+            ], shell=shell_status, universal_newlines=True)
 
             info_json = json.loads(out)
 
@@ -2110,7 +2064,7 @@ class MainWindow(wx.Frame):
         # join_log_file = open(join_log_path, "wb")
 
         try:
-            out = check_call(join_args, stderr=STDOUT, shell=False)
+            out = check_call(join_args, shell=False)
         except CalledProcessError as cpe:
             print("ERROR>>", cpe.output)
         # TODO solve this
