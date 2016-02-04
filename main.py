@@ -675,6 +675,7 @@ class AddMultipleDrawings(threading.Thread):
             f.close()
             pil_png = Image.open(self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) +
                                  "_overlay.png")
+            pil_png_res = pil_png.resize((self.video_info.width, self.video_info.height), Image.ANTIALIAS)
 
             raw_jpeg = base64.b64decode(drawing.screenshot)
             jf = open(self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) +
@@ -684,9 +685,10 @@ class AddMultipleDrawings(threading.Thread):
             pil_jpeg = Image.open(self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) +
                                   "_screenshot.jpg")
             pil_jpeg_converted = pil_jpeg.convert(mode="RGBA")
+            pil_jpeg_converted_res = pil_jpeg_converted.resize((self.video_info.width, self.video_info.height), Image.ANTIALIAS)
 
             # and now join the two?
-            pil_composite = Image.alpha_composite(pil_jpeg_converted, pil_png)
+            pil_composite = Image.alpha_composite(pil_jpeg_converted_res, pil_png_res)
             pil_composite.save(self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) +
                                "_composite.png", "PNG")
 
@@ -1338,9 +1340,9 @@ class EncodeSubtitles(threading.Thread):
                 # print("time:", time_str, " seconds:" + str(seconds))
                 percentage = int((seconds * 100) / int(float(self.duration)))
                 if first_pass_last_perc != percentage:
-                    print("subs first pass %:", percentage)
+                    print("first pass %:", percentage)
                     first_pass_last_perc = percentage
-                if percentage == 100:
+                if percentage >= 100:
                     had_one_hundred = True
                     print(" ")
                  # self.callback(percentage)
@@ -1396,9 +1398,9 @@ class EncodeSubtitles(threading.Thread):
                 # print("time:", time_str, " seconds:" + str(seconds))
                 percentage = int((seconds * 100) / int(float(self.duration)))
                 if first_pass_last_perc != percentage:
-                    print("subs second pass %:", percentage)
+                    print("second pass %:", percentage)
                     first_pass_last_perc = percentage
-                if percentage == 100:
+                if percentage >= 100:
                     had_one_hundred = True
                     print(" ")
                  # self.callback(percentage)
