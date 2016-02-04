@@ -1347,10 +1347,10 @@ class EncodeSubtitles(threading.Thread):
         ]
 
         p = Popen(cmd,
-              stderr=STDOUT,
-              stdout=PIPE,
-              universal_newlines=True
-              )
+                  stderr=STDOUT,
+                  stdout=PIPE,
+                  universal_newlines=True
+                  )
 
         reg = re.compile("time=[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9]")
 
@@ -1372,7 +1372,6 @@ class EncodeSubtitles(threading.Thread):
                     first_pass_last_perc = percentage
                 if percentage >= 100:
                     had_one_hundred = True
-                    print(" ")
                  # self.callback(percentage)
             else:
                 if had_one_hundred:
@@ -1406,40 +1405,44 @@ class EncodeSubtitles(threading.Thread):
             self.tmp_out
         ]
 
-        p = Popen(cmd,
-              stderr=STDOUT,
-              stdout=PIPE,
-              universal_newlines=True
-              )
+        # just copy or whatever
+        shutil.copy(self.temp_dir.name + path_separator + str(self.cut_number) + "_no_water.mp4", self.tmp_out)
 
-        had_one_hundred = False
-
-        first_pass_last_perc = -1
-
-        for line in iter(p.stdout.readline, b''):
-            # print(">>> " + str(line.rstrip()))
-            m = reg.search(str(line.rstrip()))
-            if m is not None:
-                time_str = m.group().replace("time=", "")[:-3]
-                splitted = time_str.split(":")
-                seconds = 60 * 60 * int(splitted[0]) + 60 * int(splitted[1]) + int(splitted[2])
-                # print("time:", time_str, " seconds:" + str(seconds))
-                percentage = int((seconds * 100) / int(float(self.duration)))
-                if first_pass_last_perc != percentage:
-                    print("second pass %:", percentage)
-                    first_pass_last_perc = percentage
-                if percentage >= 100:
-                    had_one_hundred = True
-                    print(" ")
-                 # self.callback(percentage)
-            else:
-                if had_one_hundred:
-                    # the process Popen does not terminate correctly with universal newlines
-                    # so we kill it
-                    # this happens and p.stdout.readling keeps returning empty strings
-                    # so we need to avoid it
-                    p.terminate()
-                    break
+        # second_pass = Popen(cmd,
+        #                     stderr=STDOUT,
+        #                     stdout=PIPE,
+        #                     universal_newlines=True
+        #                     )
+        # print("BEFORE SECOND PASS")
+        #
+        # had_one_hundred = False
+        #
+        # first_pass_last_perc = -1
+        #
+        # for line in iter(second_pass.stdout.readline, b''):
+        #     print("second >>> " + str(line.rstrip()))
+        #     m = reg.search(str(line.rstrip()))
+        #     if m is not None:
+        #         time_str = m.group().replace("time=", "")[:-3]
+        #         splitted = time_str.split(":")
+        #         seconds = 60 * 60 * int(splitted[0]) + 60 * int(splitted[1]) + int(splitted[2])
+        #         # print("time:", time_str, " seconds:" + str(seconds))
+        #         percentage = int((seconds * 100) / int(float(self.duration)))
+        #         if first_pass_last_perc != percentage:
+        #             print("second pass %:", percentage)
+        #             first_pass_last_perc = percentage
+        #         if percentage >= 100:
+        #             had_one_hundred = True
+        #             print(" ")
+        #          # self.callback(percentage)
+        #     else:
+        #         if had_one_hundred:
+        #             # the process Popen does not terminate correctly with universal newlines
+        #             # so we kill it
+        #             # this happens and p.stdout.readling keeps returning empty strings
+        #             # so we need to avoid it
+        #             second_pass.terminate()
+        #             break
 
 
 class MainWindow(wx.Frame):
