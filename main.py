@@ -31,6 +31,11 @@ class VideoInfo:
         self.width = 0
         self.height = 0
         self.has_sound = True
+        self.duration = 0
+        self.bitrate = 0
+        self.framerate = 0
+        self.video_codec = ""
+        self.audio_codec = ""
 
     def set_w_and_h(self, w, h):
         self.width = w
@@ -38,6 +43,29 @@ class VideoInfo:
 
     def set_has_sound(self, has_sound):
         self.has_sound = has_sound
+
+    def set_duration(self, duration):
+        self.duration = duration
+
+    def set_bitrate(self, bitrate):
+        self.bitrate = bitrate
+
+    def set_framerate(self, framerate):
+        self.framerate = framerate
+
+    def set_video_codec(self, codec):
+        self.video_codec = codec
+
+    def set_audio_codec(self, codec):
+        self.audio_codec = codec
+
+    def codecs_match(self, other_info):
+        if self.width != other_info.width or\
+           self.height != other_info.height or\
+           self.video_codec != other_info.video_codec or\
+           self.audio_codec != other_info.audio_codec:
+            return False
+        return True
 
 
 class Drawing:
@@ -1693,7 +1721,7 @@ class MainWindow(wx.Frame):
                 "-show_format",
                 "-show_streams",
                 video_path
-            ], shell=shell_status, universal_newlines=True)
+            ], universal_newlines=True)
 
             info_json = json.loads(out)
 
@@ -1703,10 +1731,20 @@ class MainWindow(wx.Frame):
             for stream in info_json["streams"]:
                 if stream["codec_type"] == "video":
                     video_info.set_w_and_h(stream["width"], stream["height"])
+                    video_info.set_bitrate(stream.get("bit_rate"))
+                    video_info.set_framerate(stream["avg_frame_rate"])
+                    video_info.set_video_codec(stream.get("codec_name"))
                 if stream["codec_type"] == "audio":
+                    video_info.set_audio_codec(stream.get("codec_name"))
                     has_sound = True
 
+            if video_info.bitrate is None:
+                video_info.set_bitrate(info_json.get("format").get("bit_rate"))
+
             video_info.set_has_sound(has_sound)
+
+            video_info.set_duration(info_json["format"]["duration"])
+
             return video_info
 
         except CalledProcessError as cpe:
@@ -1786,6 +1824,43 @@ class MainWindow(wx.Frame):
         print("SLOW AND BETTER>>", self.slow_check_box.GetValue() is True)
 
         print("")
+
+        # SANITY CHECK
+        # start parsing each item
+        max_duration = 0
+        for child in base.findall('.items/item'):
+            real_time_start = 0.0
+            real_time_end = 0.0
+            item_type = child.find("type").text
+            if item_type == "ga":
+                real_time_start = float(child.find("game_action").find("video_time_start").text)
+                real_time_end = float(child.find("game_action").find("video_time_end").text)
+            if item_type == "cue":
+                real_time_start = float(child.find("action_cue").find("starting_time").text)
+                real_time_end = float(child.find("action_cue").find("ending_time").text)
+            if max_duration < real_time_end:
+                max_duration = real_time_end
+
+        print("Play Max Clip, Video Duration", max_duration, self.video_info.duration)
+
+        if float(max_duration) > float(self.video_info.duration):
+            print("VIDEO NOT LONG ENOUGH")
+
+            # create a dialog and bind the correct function
+            # the OK button does not need it since we pass it the wx.ID_OK that does the job for us
+            done_dlg = wx.Dialog(parent=self, id=wx.ID_ANY, title=t("Video is too short"))
+            done_dlg_sizer = wx.BoxSizer(wx.VERTICAL)
+            done_msg = wx.StaticText(parent=done_dlg, id=wx.ID_ANY, label=t("Video is too short in duration for this playlist"))
+            done_ok_btn = wx.Button(parent=done_dlg, id=wx.ID_OK, label=t("Ok"))
+            # sizer stuff
+            done_dlg_sizer.Add(done_msg, 0, wx.ALL, 15)
+            done_dlg_sizer.Add(done_ok_btn, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.ALIGN_CENTER_HORIZONTAL, 15)
+            done_dlg.SetSizer(done_dlg_sizer)
+            done_dlg.SetAutoLayout(1)
+            done_dlg.Fit()
+            # and show
+            done_dlg.Show()
+            return
 
         cut_number = 0
         # start parsing each item
