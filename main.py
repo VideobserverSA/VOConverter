@@ -607,7 +607,7 @@ class AddOverlay(threading.Thread):
 class AddMultipleDrawings(threading.Thread):
 
     def __init__(self, temp_dir, cut_number, input_video, video_info, tmp_out, drawings, pause_time,
-                 duration, watermark):
+                 duration, watermark, callback):
 
         super().__init__()
 
@@ -620,6 +620,7 @@ class AddMultipleDrawings(threading.Thread):
         self.pause_time = pause_time
         self.duration = duration
         self.watermark = watermark
+        self.callback = callback
 
     def run(self):
 
@@ -635,6 +636,8 @@ class AddMultipleDrawings(threading.Thread):
 
         # sort the drawings by time
         self.drawings = sorted(self.drawings, key=lambda drw: drw.drawing_time)
+
+        self.callback(0)
 
         # cut the start of the clip that is until the first drawing time
         try:
@@ -697,6 +700,10 @@ class AddMultipleDrawings(threading.Thread):
         drawing_number = 0
         print_mine("DRAWWWINGS >>>>>>>>>>>>>>>>")
         for drawing in self.drawings:
+
+            percent = int(((drawing_number / len(self.drawings)) * 100) / 2)
+            self.callback(percent)
+
             print_mine(drawing.drawing_time)
 
             raw_png = base64.b64decode(drawing.bitmap)
@@ -862,6 +869,9 @@ class AddMultipleDrawings(threading.Thread):
             # now we must concat the whole thing, since we have a start, end, middle, and thumbs for all drawings
             for x in range(0, len(self.drawings)):
 
+                percent = int((((x / len(self.drawings)) * 100) / 2) + 50)
+                self.callback(percent)
+
                 # first drawing
                 if x == 0:
                     # start by concatenating the start to the first thumb
@@ -1011,6 +1021,9 @@ class AddMultipleDrawings(threading.Thread):
 
             # now we must concat the whole thing, since we have a start, end, middle, and thumbs for all drawings
             for x in range(0, len(self.drawings)):
+
+                percent = int((((x / len(self.drawings)) * 100) / 2) + 50)
+                self.callback(percent)
 
                 # first drawing
                 if x == 0:
@@ -2008,7 +2021,8 @@ class MainWindow(wx.Frame):
                         dummy_event.wait(timeout=0.01)
 
                 else:
-                    self.PushStatusText(t("adding subtitles to item: " + str(cut_number + 1) + " 0%"))
+                    # self.PushStatusText(t("adding subtitles to item: " + str(cut_number + 1) + " 0%"))
+                    self.update_subtitles_progress(0, cut_number)
 
                     has_comments = True
                     sub_thr = EncodeSubtitles(temp_dir=self.temp_dir, cut_number=cut_number, video_path=video_path,
@@ -2102,7 +2116,8 @@ class MainWindow(wx.Frame):
                                                    drawings=multiple_drawings,
                                                    pause_time=self.pause_duration.GetValue(),
                                                    duration=real_duration,
-                                                   watermark=watermark)
+                                                   watermark=watermark,
+                                                   callback=lambda prog: self.update_drawings_progress(prog, cut_number))
                 multiple_thr.start()
                 while multiple_thr.is_alive():
                     wx.Yield()
@@ -2302,7 +2317,10 @@ class MainWindow(wx.Frame):
             os.startfile(self.final_path)
 
     def update_subtitles_progress(self, progress, cut_number):
-        self.SetStatusText(t("adding subtitles to item: ") + str(cut_number + 1) + " " + str(progress) + "%")
+        self.PushStatusText(t("Adding Subtitles to Item:") + " " + str(cut_number + 1) + " " + str(progress) + "%")
+
+    def update_drawings_progress(self, progress, cut_number):
+        self.PushStatusText(t("Adding drawing to Item:") + " " + str(cut_number + 1) + " " + str(progress) + "%")
 
 # init the app amd make it read to read resources
 app = wx.App(False)
