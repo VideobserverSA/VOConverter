@@ -24,6 +24,9 @@ import re
 
 __author__ = 'Rui'
 
+def print_mine(*args):
+    pass
+    # print(args)
 
 class VideoInfo:
 
@@ -85,7 +88,7 @@ class DownloadUpdate(threading.Thread):
         self.temp_dir = temp_dir
 
     def run(self):
-        print("downloading upgrade from: " + self.download_url)
+        print_mine("downloading upgrade from: " + self.download_url)
         voconv_filename = self.temp_dir.name + '\\' + 'vo_converter_install.exe'
         urllib.request.urlretrieve(url=self.download_url, filename=voconv_filename)
         os.startfile(voconv_filename)
@@ -104,9 +107,9 @@ class SendVersion(threading.Thread):
             with urllib.request.urlopen("http://api.videobserver.com/v3/logappversion/logappversionvoconverter.json/" +
                                         self.version + "/" + self.secret + "?email=" +
                                         self.email) as version_request:
-                print(version_request.status)
+                print_mine(version_request.status)
         except urllib.error.URLError as ue:
-            print('Could not reach server to check version... ' + str(ue.reason))
+            print_mine('Could not reach server to check version... ' + str(ue.reason))
 
 
 class SleepThreaded(threading.Thread):
@@ -147,7 +150,7 @@ class GetScreenshot(threading.Thread):
                 self.out_file
             ], shell=shell_status)
         except CalledProcessError as cpe:
-            print("SCREEN OUT", cpe.output)
+            print_mine("SCREEN OUT", cpe.output)
 
 
 class AddSeparator(threading.Thread):
@@ -186,7 +189,7 @@ class AddSeparator(threading.Thread):
                 self.temp_dir.name + path_separator + str(self.cut_number) + "_sep_no_sound.mp4"
             ], shell=shell_status)
         except CalledProcessError as cpe:
-            print("IMAGE OUT", cpe.output)
+            print_mine("IMAGE OUT", cpe.output)
 
         try:
             check_call([
@@ -213,7 +216,7 @@ class AddSeparator(threading.Thread):
                 self.temp_dir.name + path_separator + str(self.cut_number) + "_sep.mp4"
             ], shell=shell_status)
         except CalledProcessError as cpe:
-            print("SOUND OUT", cpe.output)
+            print_mine("SOUND OUT", cpe.output)
 
         try:
             check_call([
@@ -236,7 +239,7 @@ class AddSeparator(threading.Thread):
                 self.tmp_out
             ], shell=shell_status)
         except CalledProcessError as cpe:
-            print("CAT OUT", cpe.output)
+            print_mine("CAT OUT", cpe.output)
 
 
 class BurnLogo(threading.Thread):
@@ -296,7 +299,7 @@ class BurnLogo(threading.Thread):
 
             ], shell=shell_status)
         except CalledProcessError as cpe:
-            print("BURN LOGO", cpe.output)
+            print_mine("BURN LOGO", cpe.output)
 
 
 class AddOverlay(threading.Thread):
@@ -357,7 +360,7 @@ class AddOverlay(threading.Thread):
                 self.temp_dir.name + path_separator + str(self.cut_number) + "_thumb.mp4"
             ], shell=shell_status)
         except CalledProcessError as cpe:
-            print("IMAGE OUT", cpe.output)
+            print_mine("IMAGE OUT", cpe.output)
 
         # add the overlay to the pause image
         try:
@@ -387,7 +390,7 @@ class AddOverlay(threading.Thread):
 
             ], shell=shell_status)
         except CalledProcessError as cpe:
-            print("OVERLAY OUT", cpe.output)
+            print_mine("OVERLAY OUT", cpe.output)
 
         # add sound track to pause overlay
         try:
@@ -415,7 +418,7 @@ class AddOverlay(threading.Thread):
                 self.temp_dir.name + path_separator + str(self.cut_number) + "_thumb_overlay_sound.mp4"
             ], shell=shell_status)
         except CalledProcessError as cpe:
-            print("SOUND OUT", cpe.output)
+            print_mine("SOUND OUT", cpe.output)
 
         # start_file = open(self.temp_dir.name + "\\" + str(self.cut_number) + "_start.log", "wb")
         try:
@@ -446,7 +449,7 @@ class AddOverlay(threading.Thread):
                 self.temp_dir.name + path_separator + str(self.cut_number) + "_start.mp4"
             ], shell=shell_status)
         except CalledProcessError as cpe:
-            print("START OUT", cpe.output)
+            print_mine("START OUT", cpe.output)
 
         # cut from the pause to the end
         check_call([
@@ -475,7 +478,7 @@ class AddOverlay(threading.Thread):
             self.temp_dir.name + path_separator + str(self.cut_number) + "_end.mp4"
         ], shell=shell_status)
 
-        print(" ", " ", " ", " ", " VIDEO TIME: ", self.video_time)
+        print_mine(" ", " ", " ", " ", " VIDEO TIME: ", self.video_time)
 
         if self.video_info.has_sound:
             # and now join the three files
@@ -508,7 +511,7 @@ class AddOverlay(threading.Thread):
                     self.temp_dir.name + path_separator + str(self.cut_number) + "_start_and_over.mp4"
                 ], shell=shell_status)
             except CalledProcessError as cpe:
-                print("CAT OUT", cpe.output)
+                print_mine("CAT OUT", cpe.output)
 
             # and now join the three files
             try:
@@ -539,7 +542,7 @@ class AddOverlay(threading.Thread):
                     self.tmp_out,
                 ], shell=shell_status)
             except CalledProcessError as cpe:
-                print("CAT OUT", cpe.output)
+                print_mine("CAT OUT", cpe.output)
 
         else:
             # NO AUDIO, SO DO NOT CONCAT [a] STREAM
@@ -570,7 +573,7 @@ class AddOverlay(threading.Thread):
                     self.temp_dir.name + path_separator + str(self.cut_number) + "_start_and_over.mp4"
                 ], shell=shell_status)
             except CalledProcessError as cpe:
-                print("CAT OUT", cpe.output)
+                print_mine("CAT OUT", cpe.output)
 
             # and now join the three files
             try:
@@ -598,7 +601,7 @@ class AddOverlay(threading.Thread):
                     self.tmp_out,
                 ], shell=shell_status)
             except CalledProcessError as cpe:
-                print("CAT OUT", cpe.output)
+                print_mine("CAT OUT", cpe.output)
 
 
 class AddMultipleDrawings(threading.Thread):
@@ -662,7 +665,7 @@ class AddMultipleDrawings(threading.Thread):
                 self.temp_dir.name + path_separator + str(self.cut_number) + "_start.mp4"
             ], shell=shell_status)
         except CalledProcessError as cpe:
-            print("START OUT", cpe.output)
+            print_mine("START OUT", cpe.output)
 
         # cut from the last drawing to the end
         check_call([
@@ -692,9 +695,9 @@ class AddMultipleDrawings(threading.Thread):
         ], shell=shell_status)
 
         drawing_number = 0
-        print("DRAWWWINGS >>>>>>>>>>>>>>>>")
+        print_mine("DRAWWWINGS >>>>>>>>>>>>>>>>")
         for drawing in self.drawings:
-            print(drawing.drawing_time)
+            print_mine(drawing.drawing_time)
 
             raw_png = base64.b64decode(drawing.bitmap)
             f = open(self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) +
@@ -751,7 +754,7 @@ class AddMultipleDrawings(threading.Thread):
                     self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) + "_thumb.mp4"
                 ], shell=shell_status)
             except CalledProcessError as cpe:
-                print("IMAGE OUT", cpe.output)
+                print_mine("IMAGE OUT", cpe.output)
 
             # add the overlay to the pause image
             try:
@@ -781,7 +784,7 @@ class AddMultipleDrawings(threading.Thread):
 
                 ], shell=shell_status)
             except CalledProcessError as cpe:
-                print("OVERLAY OUT", cpe.output)
+                print_mine("OVERLAY OUT", cpe.output)
 
             # add sound track to pause overlay
             try:
@@ -810,7 +813,7 @@ class AddMultipleDrawings(threading.Thread):
                     "_thumb_overlay_sound.mp4"
                 ], shell=shell_status)
             except CalledProcessError as cpe:
-                print("SOUND OUT", cpe.output)
+                print_mine("SOUND OUT", cpe.output)
 
             # if we are not at the last drawing?
             if drawing_number < len(self.drawings) - 1:
@@ -891,7 +894,7 @@ class AddMultipleDrawings(threading.Thread):
                             self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_done.mp4"
                         ], shell=shell_status)
                     except CalledProcessError as cpe:
-                        print("DRAWING JOIN START", cpe.output)
+                        print_mine("DRAWING JOIN START", cpe.output)
 
                 # all the others except the last but including the first
                 if x < len(self.drawings) - 1:
@@ -926,7 +929,7 @@ class AddMultipleDrawings(threading.Thread):
                             "_after_middle.mp4"
                         ], shell=shell_status)
                     except CalledProcessError as cpe:
-                        print("DRAWING JOIN MIDDLE " + str(x), cpe.output)
+                        print_mine("DRAWING JOIN MIDDLE " + str(x), cpe.output)
 
                     # add the next drawing
                     try:
@@ -959,7 +962,7 @@ class AddMultipleDrawings(threading.Thread):
                             self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_done.mp4"
                         ], shell=shell_status)
                     except CalledProcessError as cpe:
-                        print("DRAWING JOIN START", cpe.output)
+                        print_mine("DRAWING JOIN START", cpe.output)
 
                 last_drawing = self.drawings[len(self.drawings) - 1]
                 last_drawing_delta = self.duration - last_drawing.drawing_time
@@ -995,7 +998,7 @@ class AddMultipleDrawings(threading.Thread):
                                 self.tmp_out,
                             ], shell=shell_status)
                         except CalledProcessError as cpe:
-                            print("DRAWING JOIN START", cpe.output)
+                            print_mine("DRAWING JOIN START", cpe.output)
                 else:
                     # copy the done to the final video
                     shutil.copy(
@@ -1038,7 +1041,7 @@ class AddMultipleDrawings(threading.Thread):
                             self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_done.mp4"
                         ], shell=shell_status)
                     except CalledProcessError as cpe:
-                        print("DRAWING JOIN START", cpe.output)
+                        print_mine("DRAWING JOIN START", cpe.output)
 
                 # all the others except the last but including the first
                 if x < len(self.drawings) - 1:
@@ -1070,7 +1073,7 @@ class AddMultipleDrawings(threading.Thread):
                             "_after_middle.mp4"
                         ], shell=shell_status)
                     except CalledProcessError as cpe:
-                        print("DRAWING JOIN MIDDLE " + str(x), cpe.output)
+                        print_mine("DRAWING JOIN MIDDLE " + str(x), cpe.output)
 
                     # add the next drawing
                     try:
@@ -1100,7 +1103,7 @@ class AddMultipleDrawings(threading.Thread):
                             self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_done.mp4"
                         ], shell=shell_status)
                     except CalledProcessError as cpe:
-                        print("DRAWING JOIN START", cpe.output)
+                        print_mine("DRAWING JOIN START", cpe.output)
 
                 # last drawing
                 if x == len(self.drawings) - 1:
@@ -1130,7 +1133,7 @@ class AddMultipleDrawings(threading.Thread):
                             self.tmp_out,
                         ], shell=shell_status)
                     except CalledProcessError as cpe:
-                        print("DRAWING JOIN START", cpe.output)
+                        print_mine("DRAWING JOIN START", cpe.output)
 
 
 class ConvertToFastCopy(threading.Thread):
@@ -1359,16 +1362,16 @@ class EncodeSubtitles(threading.Thread):
         first_pass_last_perc = -1
 
         for line in iter(p.stdout.readline, b''):
-            # print(">>> " + str(line.rstrip()))
+            # print_mine(">>> " + line)
             m = reg.search(str(line.rstrip()))
             if m is not None:
                 time_str = m.group().replace("time=", "")[:-3]
                 splitted = time_str.split(":")
                 seconds = 60 * 60 * int(splitted[0]) + 60 * int(splitted[1]) + int(splitted[2])
-                # print("time:", time_str, " seconds:" + str(seconds))
+                # print_mine("time:", time_str, " seconds:" + str(seconds))
                 percentage = int((seconds * 100) / int(float(self.duration)))
                 if first_pass_last_perc != percentage:
-                    print("first pass %:", percentage)
+                    print_mine("first pass %:", percentage)
                     first_pass_last_perc = percentage
                 if percentage >= 100:
                     had_one_hundred = True
@@ -1380,30 +1383,32 @@ class EncodeSubtitles(threading.Thread):
                     # this happens and p.stdout.readling keeps returning empty strings
                     # so we need to avoid it
                     p.terminate()
+                    p.wait()
+                    # print_mine("KILL KILL")
                     break
 
-        cmd = [
-            ffmpeg_path,
-            # overwrite
-            "-y",
-            # start time
-            # input file
-            "-i",
-            self.temp_dir.name + path_separator + str(self.cut_number) + "_no_water.mp4",
-            # watermark
-            "-i",
-            os_prefix + watermark_file,
-            # filter
-            "-filter_complex",
-            "[0:v][1:v] overlay=" + str(left) + ":" + str(bottom),
-            "-pix_fmt",
-            "yuv420p",
-            # pass the audio
-            "-c:a",
-            "copy",
-            # self.tmp_out
-            self.tmp_out
-        ]
+        # cmd = [
+        #     ffmpeg_path,
+        #     # overwrite
+        #     "-y",
+        #     # start time
+        #     # input file
+        #     "-i",
+        #     self.temp_dir.name + path_separator + str(self.cut_number) + "_no_water.mp4",
+        #     # watermark
+        #     "-i",
+        #     os_prefix + watermark_file,
+        #     # filter
+        #     "-filter_complex",
+        #     "[0:v][1:v] overlay=" + str(left) + ":" + str(bottom),
+        #     "-pix_fmt",
+        #     "yuv420p",
+        #     # pass the audio
+        #     "-c:a",
+        #     "copy",
+        #     # self.tmp_out
+        #     self.tmp_out
+        # ]
 
         # just copy or whatever
         shutil.copy(self.temp_dir.name + path_separator + str(self.cut_number) + "_no_water.mp4", self.tmp_out)
@@ -1413,27 +1418,27 @@ class EncodeSubtitles(threading.Thread):
         #                     stdout=PIPE,
         #                     universal_newlines=True
         #                     )
-        # print("BEFORE SECOND PASS")
+        # print_mine("BEFORE SECOND PASS")
         #
         # had_one_hundred = False
         #
         # first_pass_last_perc = -1
         #
         # for line in iter(second_pass.stdout.readline, b''):
-        #     print("second >>> " + str(line.rstrip()))
+        #     print_mine("second >>> " + str(line.rstrip()))
         #     m = reg.search(str(line.rstrip()))
         #     if m is not None:
         #         time_str = m.group().replace("time=", "")[:-3]
         #         splitted = time_str.split(":")
         #         seconds = 60 * 60 * int(splitted[0]) + 60 * int(splitted[1]) + int(splitted[2])
-        #         # print("time:", time_str, " seconds:" + str(seconds))
+        #         # print_mine("time:", time_str, " seconds:" + str(seconds))
         #         percentage = int((seconds * 100) / int(float(self.duration)))
         #         if first_pass_last_perc != percentage:
-        #             print("second pass %:", percentage)
+        #             print_mine("second pass %:", percentage)
         #             first_pass_last_perc = percentage
         #         if percentage >= 100:
         #             had_one_hundred = True
-        #             print(" ")
+        #             print_mine(" ")
         #          # self.callback(percentage)
         #     else:
         #         if had_one_hundred:
@@ -1581,7 +1586,7 @@ class MainWindow(wx.Frame):
         config.read(os_prefix + "version.ini")
         version = config["Vo Converter"]["version"]
         date = config["Vo Converter"]["date"]
-        print("VERSION, DATE>>", version, date)
+        print_mine("VERSION, DATE>>", version, date)
         version_str = t("Version: ") + version + t(" , date: ") + date
         self.PushStatusText(version_str)
 
@@ -1623,7 +1628,7 @@ class MainWindow(wx.Frame):
                     version_json = json.loads(version_file.read().decode('utf-8'))
                     if LooseVersion(version) < LooseVersion(version_json['version']):
                         self.download_url = version_json['url']
-                        print('Upgrade found on server... ' + version_json['version'])
+                        print_mine('Upgrade found on server... ' + version_json['version'])
 
                         # create a dialog and bind the correct function
                         # the OK button does not need it since we pass it the wx.ID_OK that does the job for us
@@ -1656,12 +1661,12 @@ class MainWindow(wx.Frame):
                         done_dlg.Show()
 
                     else:
-                        print('Current version installed')
+                        print_mine('Current version installed')
 
             except urllib.error.URLError as ue:
-                print('Could not reach server to check version... ' + str(ue.reason))
+                print_mine('Could not reach server to check version... ' + str(ue.reason))
             except ValueError as ve:
-                print('Invalid version json')
+                print_mine('Invalid version json')
 
     def open_dialog(self, e):
         path = ""
@@ -1751,7 +1756,7 @@ class MainWindow(wx.Frame):
             return video_info
 
         except CalledProcessError as cpe:
-            print("FFPROBE OUT", cpe.output)
+            print_mine("FFPROBE OUT", cpe.output)
 
     def parse_playlist(self, filename):
 
@@ -1809,7 +1814,7 @@ class MainWindow(wx.Frame):
 
         # get playlist length
         play_len = len(base.findall('.items/item'))
-        print("NItems>> ", play_len)
+        print_mine("NItems>> ", play_len)
         # we say that the join is the last step
         play_len += 1
         self.num_items = play_len
@@ -1820,13 +1825,13 @@ class MainWindow(wx.Frame):
 
         self.video_info = self.get_video_info(video_path)
 
-        print("VPath>> ", video_path)
-        print("Resolution>>>", str(self.video_info.width) + "x" + str(self.video_info.height))
-        print("Has Sound>>>", self.video_info.has_sound)
+        print_mine("VPath>> ", video_path)
+        print_mine("Resolution>>>", str(self.video_info.width) + "x" + str(self.video_info.height))
+        print_mine("Has Sound>>>", self.video_info.has_sound)
 
-        print("SLOW AND BETTER>>", self.slow_check_box.GetValue() is True)
+        print_mine("SLOW AND BETTER>>", self.slow_check_box.GetValue() is True)
 
-        print("")
+        print_mine("")
 
         # SANITY CHECK
         # start parsing each item
@@ -1844,10 +1849,10 @@ class MainWindow(wx.Frame):
             if max_duration < real_time_end:
                 max_duration = real_time_end
 
-        print("Play Max Clip, Video Duration", max_duration, self.video_info.duration)
+        print_mine("Play Max Clip, Video Duration", max_duration, self.video_info.duration)
 
         if float(max_duration) > float(self.video_info.duration):
-            print("VIDEO NOT LONG ENOUGH")
+            print_mine("VIDEO NOT LONG ENOUGH")
 
             # create a dialog and bind the correct function
             # the OK button does not need it since we pass it the wx.ID_OK that does the job for us
@@ -1873,7 +1878,7 @@ class MainWindow(wx.Frame):
             self.PushStatusText(status_text)
 
             item_type = child.find("type").text
-            print("ItemType>> ", item_type)
+            print_mine("ItemType>> ", item_type)
 
             time_start = ""
             time_end = ""
@@ -1967,15 +1972,15 @@ class MainWindow(wx.Frame):
             # time_start += 2
             # time_end += 2
 
-            print("TimeStart>> ", time_start)
-            print("TimeEnd>> ", time_end)
-            print("Comments>> ", comments)
-            print("Enable Comments>> ", enable_comments)
+            print_mine("TimeStart>> ", time_start)
+            print_mine("TimeEnd>> ", time_end)
+            print_mine("Comments>> ", comments)
+            print_mine("Enable Comments>> ", enable_comments)
 
-            print("")
+            print_mine("")
 
             # for drw in multiple_drawings:
-            #    print(drw.drawing_time)
+            #    print_mine(drw.drawing_time)
 
             duration = time_end - time_start
             real_duration = real_time_end - real_time_start
@@ -2167,7 +2172,7 @@ class MainWindow(wx.Frame):
             self.do_final_join(cut_number)
 
     def do_final_join(self, cut_number):
-        print("WE NOW HAVE FINAL PATH", self.final_path)
+        print_mine("WE NOW HAVE FINAL PATH", self.final_path)
 
         self.PushStatusText(t("Joining final video"))
         # JOIN THE THINGS
@@ -2205,7 +2210,7 @@ class MainWindow(wx.Frame):
         try:
             out = check_call(join_args, shell=False)
         except CalledProcessError as cpe:
-            print("ERROR>>", cpe.output)
+            print_mine("ERROR>>", cpe.output)
         # TODO solve this
         # self.meter.set(1, t("Done: ") + self.base_name + " " + "100" + "%")
         self.meter.SetValue(100)
@@ -2220,12 +2225,12 @@ class MainWindow(wx.Frame):
         self.PushStatusText(t("Done in %s:%s:%s ...") % (format(hours, "02d"),
                             format(minutes, "02d"), format(seconds, "02d")))
 
-        print("")
-        print("")
-        print("")
-        print("")
-        print("")
-        print(t("Done in"), format(hours, "02d"), ":", format(minutes, "02d"), ":", format(seconds, "02d"))
+        print_mine("")
+        print_mine("")
+        print_mine("")
+        print_mine("")
+        print_mine("")
+        print_mine(t("Done in"), format(hours, "02d"), ":", format(minutes, "02d"), ":", format(seconds, "02d"))
 
         # create a dialog and bind the correct function
         # the OK button does not need it since we pass it the wx.ID_OK that does the job for us
@@ -2294,7 +2299,7 @@ class MainWindow(wx.Frame):
             os.startfile(self.final_path)
 
 # init the app amd make it read to read resources
-app = wx.App(True)
+app = wx.App(False)
 
 #
 # FUCKING IMPORTANT, we need to do this code here or else the app does not see its resources
@@ -2328,8 +2333,7 @@ if platform.system() == "Darwin":
 
     # set the correct env to make font conifg work
     os.environ["FONTCONFIG_PATH"] = os_prefix + "fonts/"
-    print("setting font config path to", os.environ["FONTCONFIG_PATH"])
-
+    print_mine("setting font config path to", os.environ["FONTCONFIG_PATH"])
 
 lang_conf = configparser.ConfigParser()
 lang_conf.read(os_prefix + "lang.ini")
