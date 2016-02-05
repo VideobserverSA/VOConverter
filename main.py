@@ -1268,7 +1268,7 @@ class CutWithKeyFrames(threading.Thread):
 class EncodeSubtitles(threading.Thread):
 
     def __init__(self, temp_dir, cut_number, video_path, video_info, time_start, duration, comments, tmp_out,
-                 font_size, watermark):
+                 font_size, watermark, callback):
 
         super().__init__()
 
@@ -1282,6 +1282,7 @@ class EncodeSubtitles(threading.Thread):
         self.video_info = video_info
         self.font_size = font_size
         self.watermark = watermark
+        self.callback = callback
 
     def run(self):
 
@@ -1373,6 +1374,7 @@ class EncodeSubtitles(threading.Thread):
                 if first_pass_last_perc != percentage:
                     print_mine("first pass %:", percentage)
                     first_pass_last_perc = percentage
+                    self.callback(percentage)
                 if percentage >= 100:
                     had_one_hundred = True
                  # self.callback(percentage)
@@ -2006,7 +2008,7 @@ class MainWindow(wx.Frame):
                         dummy_event.wait(timeout=0.01)
 
                 else:
-                    self.PushStatusText(t("Adding subtitles to item %i") % (cut_number + 1))
+                    self.PushStatusText(t("adding subtitles to item: " + str(cut_number + 1) + " 0%"))
 
                     has_comments = True
                     sub_thr = EncodeSubtitles(temp_dir=self.temp_dir, cut_number=cut_number, video_path=video_path,
@@ -2014,7 +2016,8 @@ class MainWindow(wx.Frame):
                                               time_start=time_start, duration=duration, comments=comments,
                                               tmp_out=self.temp_dir.name + path_separator + str(cut_number) + "_comments.mp4",
                                               font_size=self.font_size.GetValue(),
-                                              watermark=watermark)
+                                              watermark=watermark,
+                                              callback= lambda prog: self.update_subtitles_progress(prog, cut_number))
                     sub_thr.start()
                     while sub_thr.is_alive():
                         wx.Yield()
@@ -2297,6 +2300,9 @@ class MainWindow(wx.Frame):
             call(["open", self.final_path])
         else:
             os.startfile(self.final_path)
+
+    def update_subtitles_progress(self, progress, cut_number):
+        self.SetStatusText(t("adding subtitles to item: ") + str(cut_number + 1) + " " + str(progress) + "%")
 
 # init the app amd make it read to read resources
 app = wx.App(False)
