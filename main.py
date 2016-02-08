@@ -1233,7 +1233,7 @@ class CutFastCopy(threading.Thread):
 
 class CutWithKeyFrames(threading.Thread):
 
-    def __init__(self, temp_dir, cut_number, video_path, time_start, duration, tmp_out, key_frames):
+    def __init__(self, temp_dir, cut_number, video_path, time_start, duration, tmp_out, key_frames, callback):
 
         super().__init__()
 
@@ -1244,13 +1244,14 @@ class CutWithKeyFrames(threading.Thread):
         self.tmp_out = tmp_out
         self.temp_dir = temp_dir
         self.key_frames = key_frames
+        self.callback = callback
 
     def run(self):
 
         # log_path = self.temp_dir.name + path_separator + str(self.cut_number) + "_cut_key_frames.log"
         # log_file = open(log_path, "wb")
 
-        out = check_call([
+        cmd = [
             # path to ffmpeg
             ffmpeg_path,
             # overwrite
@@ -1275,7 +1276,46 @@ class CutWithKeyFrames(threading.Thread):
             "-2",
             # output file
             self.tmp_out
-        ], shell=shell_status)
+        ]
+
+        p = Popen(cmd,
+                  stderr=STDOUT,
+                  stdout=PIPE,
+                  universal_newlines=True
+                  )
+
+        reg = re.compile("time=[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9]")
+
+        had_one_hundred = False
+
+        first_pass_last_perc = -1
+
+        for line in iter(p.stdout.readline, b''):
+            # print_mine(">>> " + line)
+            m = reg.search(str(line.rstrip()))
+            if m is not None:
+                time_str = m.group().replace("time=", "")[:-3]
+                splitted = time_str.split(":")
+                seconds = 60 * 60 * int(splitted[0]) + 60 * int(splitted[1]) + int(splitted[2])
+                # print_mine("time:", time_str, " seconds:" + str(seconds))
+                percentage = int((seconds * 100) / int(float(self.duration)))
+                if first_pass_last_perc != percentage:
+                    print_mine("first pass %:", percentage)
+                    first_pass_last_perc = percentage
+                    self.callback(percentage)
+                if percentage >= 100:
+                    had_one_hundred = True
+                 # self.callback(percentage)
+            else:
+                if had_one_hundred:
+                    # the process Popen does not terminate correctly with universal newlines
+                    # so we kill it
+                    # this happens and p.stdout.readling keeps returning empty strings
+                    # so we need to avoid it
+                    p.terminate()
+                    p.wait()
+                    # print_mine("KILL KILL")
+                    break
 
 
 class EncodeSubtitles(threading.Thread):
@@ -2044,7 +2084,8 @@ class MainWindow(wx.Frame):
                 key_thr = CutWithKeyFrames(temp_dir=self.temp_dir, cut_number=cut_number, video_path=video_path,
                                            time_start=real_time_start, duration=real_duration,
                                            tmp_out=self.temp_dir.name + path_separator + str(cut_number) + "_comments.mp4",
-                                           key_frames=12)
+                                           key_frames=12,
+                                           callback= lambda prog: self.update_cut_frames_progress(prog, cut_number))
                 key_thr.start()
                 while key_thr.is_alive():
                     wx.Yield()
@@ -2320,9 +2361,12 @@ class MainWindow(wx.Frame):
         self.PushStatusText(t("Adding Subtitles to Item:") + " " + str(cut_number + 1) + " " + str(progress) + "%")
 
     def update_drawings_progress(self, progress, cut_number):
-        self.PushStatusText(t("Adding drawing to Item:") + " " + str(cut_number + 1) + " " + str(progress) + "%")
+        self.PushStatusText(t("Adding drawings to Item:") + " " + str(cut_number + 1) + " " + str(progress) + "%")
 
-# init the app amd make it read to read resources
+    def update_cut_frames_progress(self, progress, cut_number):
+        self.PushStatusText(t("Preparing item:") + " " + str(cut_number + 1) + " " + str(progress) + "%")
+
+# init the app and make it ready to read resources
 app = wx.App(False)
 
 #
