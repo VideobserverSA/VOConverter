@@ -1290,8 +1290,12 @@ class CutWithKeyFrames(threading.Thread):
 
         first_pass_last_perc = -1
 
+        blank_lines = 0
+
         for line in iter(p.stdout.readline, b''):
             # print_mine(">>> " + line)
+            if(len(line) < 1):
+                blank_lines += 1
             m = reg.search(str(line.rstrip()))
             if m is not None:
                 time_str = m.group().replace("time=", "")[:-3]
@@ -1315,6 +1319,11 @@ class CutWithKeyFrames(threading.Thread):
                     p.terminate()
                     p.wait()
                     # print_mine("KILL KILL")
+                    break
+
+                if blank_lines > 3:
+                    p.terminate()
+                    p.wait()
                     break
 
 
@@ -1415,8 +1424,12 @@ class EncodeSubtitles(threading.Thread):
 
         first_pass_last_perc = -1
 
+        blank_lines = 0
+
         for line in iter(p.stdout.readline, b''):
             # print_mine(">>> " + line)
+            if(len(line) < 1):
+                blank_lines += 1
             m = reg.search(str(line.rstrip()))
             if m is not None:
                 time_str = m.group().replace("time=", "")[:-3]
@@ -1440,6 +1453,11 @@ class EncodeSubtitles(threading.Thread):
                     p.terminate()
                     p.wait()
                     # print_mine("KILL KILL")
+                    break
+
+                if blank_lines > 3:
+                    p.terminate()
+                    p.wait()
                     break
 
         # cmd = [
