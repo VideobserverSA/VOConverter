@@ -1190,7 +1190,7 @@ class EncodeSubtitles(threading.Thread):
                 # self.tmp_out
                 self.temp_dir.name + path_separator + str(self.cut_number) + "_no_water.mp4"
             ],
-                shell=True,
+                shell=shell_status,
                 universal_newlines=True,
                 #stderr=STDOUT,
             )

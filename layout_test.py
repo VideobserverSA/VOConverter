@@ -1503,15 +1503,14 @@ class MainWindow(wx.Frame):
 
         # presets
         presets, choices = convert_functions.get_presets()
-        conversion_presets = wx.RadioBox(parent=win, id=wx.ID_ANY, choices=choices,
-                                         style=wx.BORDER_NONE)
+        conversion_presets = wx.RadioBox(parent=win, id=wx.ID_ANY, choices=choices, label=" ")
         sizer.Add(conversion_presets, 0, wx.LEFT, 10)
         conversion_presets.Bind(wx.EVT_RADIOBOX,
                                 lambda x: self.set_current_preset(conversion_presets.GetStringSelection(),
                                                                   estimated_size_indicator))
 
         # drag list and add a file btn
-        list_add = wx.Window(parent=win, id=wx.ID_ANY, size=(600, 170))
+        list_add = wx.Window(parent=win, id=wx.ID_ANY)
         list_add.SetBackgroundColour(color_white)
         list_add_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
         list_add.SetSizer(list_add_sizer)
@@ -1519,9 +1518,9 @@ class MainWindow(wx.Frame):
 
         if platform.system() == "Darwin":
             # convert_list = wx.ListView(parent=list_add, id=wx.ID_ANY, style=wx.LC_REPORT)
-            convert_list = wx.ListView(list_add, -1)
+            convert_list = wx.ListView(list_add, -1, style=wx.LC_REPORT | wx.BORDER_SUNKEN)
         else:
-            convert_list = wx.ListView(parent=list_add, winid=wx.ID_ANY, style=wx.LC_REPORT)
+            convert_list = wx.ListView(list_add, -1, style=wx.LC_REPORT)
         convert_list.AppendColumn("Drag & Drop to Convert or Add a File.", wx.LIST_FORMAT_CENTER, 400)
         list_add_sizer.Add(convert_list, 3, wx.RIGHT | wx.LEFT, 10)
 
@@ -1535,6 +1534,8 @@ class MainWindow(wx.Frame):
                                               click_handler=lambda x: self.convert_browse_for_files(convert_list,
                                                                                                     estimated_size_indicator))
         list_add_sizer.Add(add_a_file, 1, wx.RIGHT | wx.LEFT, 10)
+
+        sizer.AddSpacer(20)
 
         # Estimated size
         estimated_size_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
@@ -1630,8 +1631,8 @@ class MainWindow(wx.Frame):
         sizer.AddSpacer(10)
 
         # convert box
-        convert_box = wx.StaticBox(parent=win, id=wx.ID_ANY, size=(475, 90))
-        convert_box_sizer = wx.StaticBoxSizer(wx.HORIZONTAL, convert_box)
+        convert_box = wx.StaticBox(parent=win, id=wx.ID_ANY, size=(475, 90), label=" ")
+        convert_box_sizer = wx.StaticBoxSizer(wx.HORIZONTAL, convert_box, label=" ")
         convert_box.SetSizer(convert_box_sizer)
         sizer.Add(convert_box, 0, wx.LEFT, 65)
         # convert icon
@@ -1788,7 +1789,7 @@ class MainWindow(wx.Frame):
             # convert_list = wx.ListView(parent=list_add, id=wx.ID_ANY, style=wx.LC_REPORT)
             convert_list = wx.ListView(list_add, -1, style=wx.LC_REPORT | wx.BORDER_SUNKEN)
         else:
-            convert_list = wx.ListView(parent=list_add, winid=wx.ID_ANY, style=wx.LC_REPORT)
+            convert_list = wx.ListView(list_add, -1, style=wx.LC_REPORT)
         convert_list.AppendColumn("Drag & Drop to Join or Add a File.", wx.LIST_FORMAT_CENTER, 400)
         list_add_sizer.Add(convert_list, 3, wx.RIGHT | wx.LEFT, 10)
 
@@ -2266,9 +2267,9 @@ class MainWindow(wx.Frame):
 
         if platform.system() == "Darwin":
             # convert_list = wx.ListView(parent=list_add, id=wx.ID_ANY, style=wx.LC_REPORT)
-            convert_list = wx.ListView(list_add, -1)
+            convert_list = wx.ListView(list_add, -1, style=wx.LC_REPORT | wx.BORDER_SUNKEN)
         else:
-            convert_list = wx.ListView(parent=list_add, winid=wx.ID_ANY, style=wx.LC_REPORT, size=(400, 230))
+            convert_list = wx.ListView(list_add, -1, style=wx.LC_REPORT)
         convert_list.AppendColumn("Drag & Drop to Create a Playlist or Add a File.", wx.LIST_FORMAT_CENTER, 400)
         list_add_sizer.Add(convert_list, 3, wx.RIGHT | wx.LEFT, 10)
 
@@ -2399,8 +2400,8 @@ class MainWindow(wx.Frame):
         sizer.AddSpacer(10)
 
         # convert box
-        convert_box = wx.StaticBox(parent=win, id=wx.ID_ANY, size=(475, 90))
-        convert_box_sizer = wx.StaticBoxSizer(wx.HORIZONTAL, convert_box)
+        convert_box = wx.StaticBox(parent=win, id=wx.ID_ANY, size=(475, 90), label=" ")
+        convert_box_sizer = wx.StaticBoxSizer(wx.HORIZONTAL, convert_box, label=" ")
         convert_box.SetSizer(convert_box_sizer)
         sizer.Add(convert_box, 0, wx.LEFT, 65)
         # convert icon
