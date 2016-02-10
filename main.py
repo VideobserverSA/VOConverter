@@ -1908,21 +1908,50 @@ class MainWindow(wx.Frame):
 
         # SANITY CHECK
         # start parsing each item
+        # if we have a mixed playlist we need to enforce the slow and better mode
+        mixed_playlist = False
+        # but to know if it is a mixed playlist we need to count the items
+        fast_items = 0
+        slow_items = 0
+        # so that we can ensure the video is long enough to generate the playlist
         max_duration = 0
+
         for child in base.findall('.items/item'):
-            real_time_start = 0.0
             real_time_end = 0.0
             item_type = child.find("type").text
             if item_type == "ga":
-                real_time_start = float(child.find("game_action").find("video_time_start").text)
                 real_time_end = float(child.find("game_action").find("video_time_end").text)
+                single_draw = child.find("game_action").find("drawing")
+                multiple_draw = child.find("game_action").find("drawings")
+                comments = child.find("game_action").find("comments").text
+                enable_comments = child.find("game_action").find("comments_enabled")
+                # is it a fast or slow item?
+                if single_draw is None and multiple_draw is None and (comments is None or enable_comments is False):
+                    fast_items += 1
+                else:
+                    slow_items += 1
+
             if item_type == "cue":
-                real_time_start = float(child.find("action_cue").find("starting_time").text)
                 real_time_end = float(child.find("action_cue").find("ending_time").text)
+                single_draw = child.find("action_cue").find("drawing")
+                multiple_draw = child.find("action_cue").find("drawings")
+                comments = child.find("action_cue").find("comments").text
+                enable_comments = child.find("action_cue").find("comments_enabled")
+                # is it a fast or slow item?
+                if single_draw is None and multiple_draw is None and (comments is None or enable_comments is False):
+                    fast_items += 1
+                else:
+                    slow_items += 1
+
             if max_duration < real_time_end:
                 max_duration = real_time_end
 
         print_mine("Play Max Clip, Video Duration", max_duration, self.video_info.duration)
+
+        print_mine("fast, slow", fast_items, slow_items)
+
+        if fast_items > 0 and slow_items > 0:
+            mixed_playlist = True
 
         if float(max_duration) > float(self.video_info.duration):
             print_mine("VIDEO NOT LONG ENOUGH")
@@ -2063,8 +2092,9 @@ class MainWindow(wx.Frame):
             watermark = self.water_check_box.GetValue()
 
             #  first check for comments
-            if (comments is not None and enable_comments == "true") or self.slow_check_box.GetValue() is True:
-                if self.slow_check_box.GetValue() is True and comments is None:
+            if (comments is not None and enable_comments == "true") or self.slow_check_box.GetValue() is True\
+                    or mixed_playlist is True:
+                if (self.slow_check_box.GetValue() is True or mixed_playlist is True) and comments is None:
                     self.PushStatusText(t("Better converting %i") % (cut_number + 1))
 
                     burn_thr = BurnLogo(temp_dir=self.temp_dir, cut_number=cut_number, input_video=video_path,
