@@ -24,9 +24,11 @@ import re
 
 __author__ = 'Rui'
 
+
 def print_mine(*args):
     pass
     # print(args)
+
 
 class VideoInfo:
 
@@ -1294,7 +1296,7 @@ class CutWithKeyFrames(threading.Thread):
 
         for line in iter(p.stdout.readline, b''):
             # print_mine(">>> " + line)
-            if(len(line) < 1):
+            if len(line) < 1:
                 blank_lines += 1
             m = reg.search(str(line.rstrip()))
             if m is not None:
@@ -1309,7 +1311,6 @@ class CutWithKeyFrames(threading.Thread):
                     self.callback(percentage)
                 if percentage >= 100:
                     had_one_hundred = True
-                 # self.callback(percentage)
             else:
                 if had_one_hundred:
                     # the process Popen does not terminate correctly with universal newlines
@@ -1428,8 +1429,8 @@ class EncodeSubtitles(threading.Thread):
 
         for line in iter(p.stdout.readline, b''):
             # print_mine(">>> " + line)
-            if(len(line) < 1):
-                blank_lines += 1
+            if len(line) < 1:
+               blank_lines += 1
             m = reg.search(str(line.rstrip()))
             if m is not None:
                 time_str = m.group().replace("time=", "")[:-3]
@@ -1443,7 +1444,6 @@ class EncodeSubtitles(threading.Thread):
                     self.callback(percentage)
                 if percentage >= 100:
                     had_one_hundred = True
-                 # self.callback(percentage)
             else:
                 if had_one_hundred:
                     # the process Popen does not terminate correctly with universal newlines
@@ -1688,6 +1688,8 @@ class MainWindow(wx.Frame):
         self.file_crl = wx.FileCtrl()
 
         self.overwrite_cut_number = 0
+
+        self.temp_status_text = ""
 
         # version_thr = CheckForUpdate(version, self.temp_dir)
         # version_thr.start()
@@ -2119,9 +2121,11 @@ class MainWindow(wx.Frame):
                                               tmp_out=self.temp_dir.name + path_separator + str(cut_number) + "_comments.mp4",
                                               font_size=self.font_size.GetValue(),
                                               watermark=watermark,
-                                              callback= lambda prog: self.update_subtitles_progress(prog, cut_number))
+                                              callback=lambda prog: self.update_subtitles_progress(prog, cut_number))
                     sub_thr.start()
                     while sub_thr.is_alive():
+                        if self.temp_status_text is not "":
+                            self.SetStatusText(self.temp_status_text)
                         wx.Yield()
                         self.Update()
                         dummy_event = threading.Event()
@@ -2133,9 +2137,11 @@ class MainWindow(wx.Frame):
                                            time_start=real_time_start, duration=real_duration,
                                            tmp_out=self.temp_dir.name + path_separator + str(cut_number) + "_comments.mp4",
                                            key_frames=12,
-                                           callback= lambda prog: self.update_cut_frames_progress(prog, cut_number))
+                                           callback=lambda prog: self.update_cut_frames_progress(prog, cut_number))
                 key_thr.start()
                 while key_thr.is_alive():
+                    if self.temp_status_text is not "":
+                            self.SetStatusText(self.temp_status_text)
                     wx.Yield()
                     self.Update()
                     dummy_event = threading.Event()
@@ -2209,6 +2215,8 @@ class MainWindow(wx.Frame):
                                                    callback=lambda prog: self.update_drawings_progress(prog, cut_number))
                 multiple_thr.start()
                 while multiple_thr.is_alive():
+                    if self.temp_status_text is not "":
+                            self.SetStatusText(self.temp_status_text)
                     wx.Yield()
                     self.Update()
                     dummy_event = threading.Event()
@@ -2406,13 +2414,13 @@ class MainWindow(wx.Frame):
             os.startfile(self.final_path)
 
     def update_subtitles_progress(self, progress, cut_number):
-        self.PushStatusText(t("Adding Subtitles to Item:") + " " + str(cut_number + 1) + " " + str(progress) + "%")
+        self.temp_status_text = t("Adding Subtitles to Item:") + " " + str(cut_number + 1) + " " + str(progress) + "%"
 
     def update_drawings_progress(self, progress, cut_number):
-        self.PushStatusText(t("Adding drawings to Item:") + " " + str(cut_number + 1) + " " + str(progress) + "%")
+        self.temp_status_text = t("Adding drawings to Item:") + " " + str(cut_number + 1) + " " + str(progress) + "%"
 
     def update_cut_frames_progress(self, progress, cut_number):
-        self.PushStatusText(t("Preparing item:") + " " + str(cut_number + 1) + " " + str(progress) + "%")
+        self.temp_status_text = t("Preparing item:") + " " + str(cut_number + 1) + " " + str(progress) + "%"
 
 # init the app and make it ready to read resources
 app = wx.App(False)
