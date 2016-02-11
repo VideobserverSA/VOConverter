@@ -1292,10 +1292,14 @@ class CutWithKeyFrames(threading.Thread):
 
         first_pass_last_perc = -1
 
+        log_file_path = self.temp_dir.name + path_separator + "cut_" + str(self.cut_number) + "_keyframes.log"
+        log_file = open(log_file_path, "w")
+
         blank_lines = 0
 
         for line in iter(p.stdout.readline, b''):
             # print_mine(">>> " + line)
+            log_file.write(line)
             if len(line) < 1:
                 blank_lines += 1
             m = reg.search(str(line.rstrip()))
@@ -1326,6 +1330,8 @@ class CutWithKeyFrames(threading.Thread):
                     p.terminate()
                     p.wait()
                     break
+
+        log_file.close()
 
 
 class EncodeSubtitles(threading.Thread):
@@ -1431,8 +1437,12 @@ class EncodeSubtitles(threading.Thread):
 
         blank_lines = 0
 
+        log_file_path = self.temp_dir.name + path_separator + "cut_" + str(self.cut_number) + "_subtiles_ass.log"
+        log_file = open(log_file_path, "w")
+
         for line in iter(p.stdout.readline, b''):
             # print_mine(">>> " + line)
+            log_file.write(line)
             if len(line) < 1:
                 blank_lines += 1
             m = reg.search(str(line.rstrip()))
@@ -1463,6 +1473,8 @@ class EncodeSubtitles(threading.Thread):
                     p.terminate()
                     p.wait()
                     break
+
+        log_file.close()
 
         # cmd = [
         #     ffmpeg_path,
