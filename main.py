@@ -1926,9 +1926,9 @@ class MainWindow(wx.Frame):
                 single_draw = child.find("game_action").find("drawing")
                 multiple_draw = child.find("game_action").find("drawings")
                 comments = child.find("game_action").find("comments").text
-                enable_comments = child.find("game_action").find("comments_enabled")
+                enable_comments = child.find("game_action").find("comments_enabled").text
                 # is it a fast or slow item?
-                if single_draw is None and multiple_draw is None and (comments is None or enable_comments is False):
+                if single_draw is None and multiple_draw is None and (comments is None or enable_comments == 'false'):
                     fast_items += 1
                 else:
                     slow_items += 1
@@ -1938,9 +1938,9 @@ class MainWindow(wx.Frame):
                 single_draw = child.find("action_cue").find("drawing")
                 multiple_draw = child.find("action_cue").find("drawings")
                 comments = child.find("action_cue").find("comments").text
-                enable_comments = child.find("action_cue").find("comments_enabled")
+                enable_comments = child.find("action_cue").find("comments_enabled").text
                 # is it a fast or slow item?
-                if single_draw is None and multiple_draw is None and (comments is None or enable_comments is False):
+                if single_draw is None and multiple_draw is None and (comments is None or enable_comments == 'false'):
                     fast_items += 1
                 else:
                     slow_items += 1
@@ -2096,7 +2096,8 @@ class MainWindow(wx.Frame):
             #  first check for comments
             if (comments is not None and enable_comments == "true") or self.slow_check_box.GetValue() is True\
                     or mixed_playlist is True:
-                if (self.slow_check_box.GetValue() is True or mixed_playlist is True) and comments is None:
+                if (self.slow_check_box.GetValue() is True or mixed_playlist is True) and\
+                        (comments is None or enable_comments == 'false'):
                     self.PushStatusText(t("Better converting %i") % (cut_number + 1))
 
                     burn_thr = BurnLogo(temp_dir=self.temp_dir, cut_number=cut_number, input_video=video_path,
