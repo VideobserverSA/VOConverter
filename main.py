@@ -1331,7 +1331,7 @@ class CutWithKeyFrames(threading.Thread):
 class EncodeSubtitles(threading.Thread):
 
     def __init__(self, temp_dir, cut_number, video_path, video_info, time_start, duration, comments, tmp_out,
-                 font_size, watermark, callback):
+                 font_size, watermark, callback, keyframes):
 
         super().__init__()
 
@@ -1346,6 +1346,7 @@ class EncodeSubtitles(threading.Thread):
         self.font_size = font_size
         self.watermark = watermark
         self.callback = callback
+        self.key_frames = keyframes
 
     def run(self):
 
@@ -1401,6 +1402,9 @@ class EncodeSubtitles(threading.Thread):
             "-t",
             str(self.duration),
             # codec
+            # codec
+            "-x264opts",
+            "keyint=" + str(self.key_frames) + ":min-keyint=" + str(self.key_frames),
             "-codec:v",
             "libx264",
             "-crf",
@@ -1430,7 +1434,7 @@ class EncodeSubtitles(threading.Thread):
         for line in iter(p.stdout.readline, b''):
             # print_mine(">>> " + line)
             if len(line) < 1:
-               blank_lines += 1
+                blank_lines += 1
             m = reg.search(str(line.rstrip()))
             if m is not None:
                 time_str = m.group().replace("time=", "")[:-3]
@@ -2122,7 +2126,8 @@ class MainWindow(wx.Frame):
                                               tmp_out=self.temp_dir.name + path_separator + str(cut_number) + "_comments.mp4",
                                               font_size=self.font_size.GetValue(),
                                               watermark=watermark,
-                                              callback=lambda prog: self.update_subtitles_progress(prog, cut_number))
+                                              callback=lambda prog: self.update_subtitles_progress(prog, cut_number),
+                                              keyframes=12)
                     sub_thr.start()
                     while sub_thr.is_alive():
                         if self.temp_status_text is not "":
