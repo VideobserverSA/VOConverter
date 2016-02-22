@@ -632,6 +632,10 @@ class AddMultipleDrawings(threading.Thread):
         bottom = self.video_info.height - 22 - 20
         left = 20
 
+        if self.fast_drawings:
+            # we seem to be doubling the pause times on the fast drawing mode
+            self.pause_time = max(int(self.pause_time / 2), 1)
+
         if self.watermark:
             watermark_file = "watermark.png"
         else:
@@ -778,6 +782,9 @@ class AddMultipleDrawings(threading.Thread):
                     # image input
                     "-i",
                     self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) + "_overlay_res.png",
+                    # duration
+                    "-t",
+                    str(self.pause_time),
                     # logo
                     "-i",
                     os_prefix + watermark_file,
@@ -808,6 +815,9 @@ class AddMultipleDrawings(threading.Thread):
                     "2",
                     "-f",
                     "s16le",
+                    # duration
+                    "-t",
+                    str(self.pause_time),
                     "-i",
                     os_prefix + "silence.wav",
                     "-i",
@@ -877,7 +887,14 @@ class AddMultipleDrawings(threading.Thread):
 
                 # first drawing
                 if x == 0:
-                    files_to_concat.append(self.temp_dir.name + path_separator + str(self.cut_number) + "_start.mp4")
+
+                    first_drawing = self.drawings[0]
+                    first_drawing_delta = first_drawing.drawing_time
+                    if first_drawing_delta > 1:
+                        files_to_concat.append(self.temp_dir.name + path_separator + str(self.cut_number) + "_start.mp4")
+                    else:
+                        # do not append the start, since it is too close to the start
+                        pass
                     files_to_concat.append(self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_" +
                                            "thumb_overlay_sound.mp4")
                 # all the others except the last but including the first
@@ -887,7 +904,7 @@ class AddMultipleDrawings(threading.Thread):
                     files_to_concat.append(self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_" +
                                            "thumb_overlay_sound.mp4")
                 last_drawing = self.drawings[len(self.drawings) - 1]
-                last_drawing_delta = self.duration - last_drawing.drawing_time
+                last_drawing_delta = abs(self.duration - last_drawing.drawing_time)
                 if last_drawing_delta > 1:
                     # last drawing
                     if x == len(self.drawings) - 1:
@@ -914,7 +931,7 @@ class AddMultipleDrawings(threading.Thread):
                     "-f",
                     "mpegts",
                     # output file
-                    self.temp_dir.name + path_separator + "ts_" + str(order) + ".ts"
+                    self.temp_dir.name + path_separator + "ts_" + str(self.cut_number) + "_" + str(order) + ".ts"
                 ], shell=shell_status)
                 order += 1
 
@@ -929,7 +946,7 @@ class AddMultipleDrawings(threading.Thread):
             # the concat files
             concat = "concat:"
             for cat in range(0, order):
-                concat += self.temp_dir.name + path_separator + "ts_" + str(cat) + ".ts" + "|"
+                concat += self.temp_dir.name + path_separator + "ts_" + str(self.cut_number) + "_" + str(cat) + ".ts" + "|"
             concat = concat[:-1]
             concat += ""
             drawing_concat.append(concat)
