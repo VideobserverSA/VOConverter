@@ -890,7 +890,8 @@ class AddMultipleDrawings(threading.Thread):
 
                     first_drawing = self.drawings[0]
                     first_drawing_delta = first_drawing.drawing_time
-                    if first_drawing_delta > 1:
+                    # lets allways put the start for now
+                    if first_drawing_delta > 1 or True:
                         files_to_concat.append(self.temp_dir.name + path_separator + str(self.cut_number) + "_start.mp4")
                     else:
                         # do not append the start, since it is too close to the start
@@ -1733,7 +1734,7 @@ class MainWindow(wx.Frame):
 
         # sizer for debug
         self.debug_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.debug_check_box = wx.CheckBox(parent=self.panel, id=wx.ID_ANY, label="FAST DRAWINGS!")
+        self.debug_check_box = wx.CheckBox(parent=self.panel, id=wx.ID_ANY, label="Faster drawings")
         self.debug_sizer.Add(self.debug_check_box, 1, wx.ALL, 10)
         self.main_sizer.Add(self.debug_sizer)
         self.debug_check_box.SetValue(True)
