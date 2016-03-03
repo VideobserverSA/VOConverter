@@ -108,7 +108,6 @@ class MainWindow(wx.Frame):
 
         # playlist cruft
         self.watermark = False
-        self.slow_and_better = False
         self.pause_duration = 4
         self.font_size = 30
 
@@ -368,9 +367,6 @@ class MainWindow(wx.Frame):
 
     def set_watermark_enabled(self, enabled):
         self.watermark = (enabled == 1)
-
-    def set_slow_but_better_enabled(self, enabled):
-        self.slow_and_better = (enabled == 1)
 
     def show_join_progress(self, e):
         # sanity check
@@ -720,8 +716,8 @@ class MainWindow(wx.Frame):
                 tmp_out = self.temp_dir.name + path_separator + str(cut_number) + ".mp4"
 
                 #  first check for comments
-                if (comments is not None and enable_comments == "true") or self.slow_and_better:
-                    if self.slow_and_better is True and comments is None:
+                if comments is not None and enable_comments == "true":
+                    if comments is None:
                         # self.PushStatusText(t("Better converting %i") % (cut_number + 1))
 
                         burn_thr = convert_functions.BurnLogo(temp_dir=self.temp_dir, cut_number=cut_number, input_video=video_path,
@@ -2302,10 +2298,6 @@ class MainWindow(wx.Frame):
         watermark_cb = wx.CheckBox(parent=list_add, id=wx.ID_ANY, label="Watermark")
         half_part.Add(watermark_cb, 1)
         watermark_cb.Bind(event=wx.EVT_CHECKBOX, handler=lambda evt: self.set_watermark_enabled(evt.GetInt()))
-
-        slow_but_better_cb = wx.CheckBox(parent=list_add, id=wx.ID_ANY, label="Slow but better")
-        half_part.Add(slow_but_better_cb, 1, wx.TOP, 10)
-        slow_but_better_cb.Bind(event=wx.EVT_CHECKBOX, handler=lambda evt: self.set_watermark_enabled(evt.GetInt()))
 
         # Estimated size
         estimated_size_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
