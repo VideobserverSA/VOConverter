@@ -61,7 +61,7 @@ var
   IniFile:String;
 begin
    CurrentLang := ActiveLanguage();
-   {have a sensible default}
+   //have a sensible default
    Locale := 'en_US';
    if CurrentLang = 'english' then
    begin
@@ -71,10 +71,10 @@ begin
    begin
       Locale := 'pt_PT';
    end;
-   {write the INI directive}
+   //write the INI directive
    IniFile := ExpandConstant('{app}') + '\' + 'lang.ini';
    SetIniString('Language', 'Default Locale', Locale, IniFile);
-   {MsgBox('fdx ' + IniFile, mbInformation, MB_OK)}
+   //MsgBox('fdx ' + IniFile, mbInformation, MB_OK)
    Log('Set locale to: ' + Locale)
 end;
 

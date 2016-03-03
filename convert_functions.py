@@ -12,6 +12,11 @@ import base64
 import shutil
 
 
+def print_mine(*args):
+    # pass
+    print(args)
+
+
 def subprocess_args(include_stdout=True):
     # The following is true only on Windows.
     if hasattr(subprocess, 'STARTUPINFO'):
@@ -221,7 +226,7 @@ def get_video_info(video_path):
 # the convert functions
 class EncodeWithKeyFrames(threading.Thread):
 
-    def __init__(self, in_video, in_video_info, out_video, callback, preset):
+    def __init__(self, in_video, in_video_info, out_video, temp_dir, callback, preset, scale):
 
         super().__init__()
 
@@ -230,6 +235,8 @@ class EncodeWithKeyFrames(threading.Thread):
         self.out_video = out_video
         self.callback = callback
         self.preset = preset
+        self.temp_dir = temp_dir
+        self.scale = scale
 
     def run(self):
 
@@ -243,10 +250,18 @@ class EncodeWithKeyFrames(threading.Thread):
         w = str(self.preset.width)
         h = str(self.preset.height)
 
+        if not self.scale:
+            # we use the aspect ratio and calc a new size based on the preset and the width?
+            temp_h = int((self.in_video_info.width / self.in_video_info.height) * self.preset.height)
+            # but x264 needs even values on both sides
+            if temp_h % 2 != 0:
+                temp_h += 1
+            h = str(temp_h)
+
         # shamelessly stolen from
         # http://superuser.com/questions/547296/resizing-videos-with-ffmpeg-avconv-to-fit-into-static-sized-player
-        scale = "iw*min(" + w + "/iw\," + h + "/ih):ih*min(" + w + "/iw\," + h + "/ih), pad=" + w + ":" + h +\
-                ":(" + w + " -iw*min(" + w + "/iw\," + h + "/ih))/2:(" + h + "-ih*min(" + w + "/iw\," + h + "/ih))/2"
+        scale_settings = "iw*min(" + w + "/iw\," + h + "/ih):ih*min(" + w + "/iw\," + h + "/ih), pad=" + w + ":" + h +\
+                         ":(" + w + " -iw*min(" + w + "/iw\," + h + "/ih))/2:(" + h + "-ih*min(" + w + "/iw\," + h + "/ih))/2"
         cmd = [
                 # path to ffmpeg
                 ffmpeg_path,
@@ -267,16 +282,28 @@ class EncodeWithKeyFrames(threading.Thread):
                 "-b:a",
                 "128k",
                 "-strict",
-                "-2",
-                # pass scaling
+                "-2"]
+        if self.scale:
+            # pass scaling
+            cmd.extend([
                 "-vf",
-                "scale=" + scale,
+                "scale=" + scale_settings
+                ]
+            )
+        else:
+            cmd.extend([
+                "-vf",
+                "scale=" + w + "x" + h
+            ])
+        cmd.extend([
                 # frames
                 "-framerate",
                 str(self.preset.framerate),
                 # output file
                 self.out_video + "_temp.mp4"
-                ]
+                ])
+
+        print(cmd)
 
         p = Popen(cmd,
                   stderr=STDOUT,
@@ -286,22 +313,34 @@ class EncodeWithKeyFrames(threading.Thread):
 
         reg = re.compile("time=[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9]")
 
+        log_file_path = self.temp_dir.name + path_separator + "encode_" + "wtf" + "_keyframes.log"
+        log_file = open(log_file_path, "w")
+
+        first_pass_last_perc = -1
+
         had_one_hundred = False
 
+        blank_lines = 0
+
         for line in iter(p.stdout.readline, b''):
-            print(">>> " + str(line.rstrip()))
+            # print_mine(">>> " + line)
+            # log_file.write(line)
+            if len(line) < 1:
+                blank_lines += 1
             m = reg.search(str(line.rstrip()))
             if m is not None:
                 time_str = m.group().replace("time=", "")[:-3]
                 splitted = time_str.split(":")
                 seconds = 60 * 60 * int(splitted[0]) + 60 * int(splitted[1]) + int(splitted[2])
-                # print("time:", time_str, " seconds:" + str(seconds))
+                # print_mine("time:", time_str, " seconds:" + str(seconds))
                 percentage = int((seconds * 100) / int(float(self.in_video_info.duration)))
-
-                if percentage == 100:
+                print_mine(percentage)
+                if first_pass_last_perc != percentage:
+                    # print_mine("first pass %:", percentage)
+                    first_pass_last_perc = percentage
+                    self.callback(percentage)
+                if percentage >= 100:
                     had_one_hundred = True
-                # print(str(percentage))
-                self.callback(percentage)
             else:
                 if had_one_hundred:
                     # the process Popen does not terminate correctly with universal newlines
@@ -309,7 +348,16 @@ class EncodeWithKeyFrames(threading.Thread):
                     # this happens and p.stdout.readling keeps returning empty strings
                     # so we need to avoid it
                     p.terminate()
+                    p.wait()
+                    # print_mine("KILL KILL")
                     break
+
+                if blank_lines > 3:
+                    p.terminate()
+                    p.wait()
+                    break
+
+        log_file.close()
 
         processor.process(self.out_video + "_temp.mp4", self.out_video)
 
@@ -367,6 +415,17 @@ class JoinFiles(threading.Thread):
         self.cut_number = 0
 
     def run(self):
+
+        # before we go wild on doing the preset, lets check if all the videos have a matching resolution
+        mixed = False
+        test_w = self.in_videos[0].video_info.width
+        test_h = self.in_videos[0].video_info.height
+        for test_video in self.in_videos:
+            if test_video.video_info.width != test_w or test_video.video_info.height != test_h:
+                mixed = True
+
+        print("MIXED MIXED", mixed)
+
         # loop the in videos and convert according to the preset
         for video in self.in_videos:
             # use the damn preset
@@ -375,7 +434,9 @@ class JoinFiles(threading.Thread):
             convert_thr = EncodeWithKeyFrames(in_video=video.file,
                                               out_video=self.tmp_dir.name + path_separator + str(self.cut_number) + "_to_join.mp4",
                                               callback=self.update_progress, preset=self.preset,
-                                              in_video_info=video_info)
+                                              in_video_info=video_info,
+                                              temp_dir=self.tmp_dir,
+                                              scale=mixed)
 
             convert_thr.start()
 
@@ -446,7 +507,7 @@ class JoinFiles(threading.Thread):
 
 class CutWithKeyFrames(threading.Thread):
 
-    def __init__(self, temp_dir, cut_number, video_path, time_start, duration, tmp_out, key_frames):
+    def __init__(self, temp_dir, cut_number, video_path, time_start, duration, tmp_out, key_frames, callback):
 
         super().__init__()
 
@@ -457,13 +518,14 @@ class CutWithKeyFrames(threading.Thread):
         self.tmp_out = tmp_out
         self.temp_dir = temp_dir
         self.key_frames = key_frames
+        self.callback = callback
 
     def run(self):
 
         # log_path = self.temp_dir.name + path_separator + str(self.cut_number) + "_cut_key_frames.log"
         # log_file = open(log_path, "wb")
 
-        out = check_call([
+        cmd = [
             # path to ffmpeg
             ffmpeg_path,
             # overwrite
@@ -488,14 +550,66 @@ class CutWithKeyFrames(threading.Thread):
             "-2",
             # output file
             self.tmp_out
-        ],
-            stderr=STDOUT,
-            shell=shell_status)
+        ]
+
+        p = Popen(cmd,
+                  stderr=STDOUT,
+                  stdout=PIPE,
+                  universal_newlines=True
+                  )
+
+        reg = re.compile("time=[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9]")
+
+        had_one_hundred = False
+
+        first_pass_last_perc = -1
+
+        log_file_path = self.temp_dir.name + path_separator + "cut_" + str(self.cut_number) + "_keyframes.log"
+        log_file = open(log_file_path, "w")
+
+        blank_lines = 0
+
+        for line in iter(p.stdout.readline, b''):
+            # print_mine(">>> " + line)
+            log_file.write(line)
+            if len(line) < 1:
+                blank_lines += 1
+            m = reg.search(str(line.rstrip()))
+            if m is not None:
+                time_str = m.group().replace("time=", "")[:-3]
+                splitted = time_str.split(":")
+                seconds = 60 * 60 * int(splitted[0]) + 60 * int(splitted[1]) + int(splitted[2])
+                # print_mine("time:", time_str, " seconds:" + str(seconds))
+                percentage = int((seconds * 100) / int(float(self.duration)))
+                if first_pass_last_perc != percentage:
+                    # print_mine("first pass %:", percentage)
+                    first_pass_last_perc = percentage
+                    self.callback(percentage)
+                if percentage >= 100:
+                    had_one_hundred = True
+            else:
+                if had_one_hundred:
+                    # the process Popen does not terminate correctly with universal newlines
+                    # so we kill it
+                    # this happens and p.stdout.readling keeps returning empty strings
+                    # so we need to avoid it
+                    p.terminate()
+                    p.wait()
+                    # print_mine("KILL KILL")
+                    break
+
+                if blank_lines > 3:
+                    p.terminate()
+                    p.wait()
+                    break
+
+        log_file.close()
+
 
 class AddMultipleDrawings(threading.Thread):
 
     def __init__(self, temp_dir, cut_number, input_video, video_info, tmp_out, drawings, pause_time,
-                 duration, watermark, callback):
+                 duration, watermark, callback, fast_drawings=True):
 
         super().__init__()
 
@@ -509,6 +623,7 @@ class AddMultipleDrawings(threading.Thread):
         self.duration = duration
         self.watermark = watermark
         self.callback = callback
+        self.fast_drawings = fast_drawings
 
     def run(self):
 
@@ -517,6 +632,10 @@ class AddMultipleDrawings(threading.Thread):
         bottom = self.video_info.height - 22 - 20
         left = 20
 
+        if self.fast_drawings:
+            # we seem to be doubling the pause times on the fast drawing mode
+            self.pause_time = max(int(self.pause_time / 2), 1)
+
         if self.watermark:
             watermark_file = "watermark.png"
         else:
@@ -524,6 +643,8 @@ class AddMultipleDrawings(threading.Thread):
 
         # sort the drawings by time
         self.drawings = sorted(self.drawings, key=lambda drw: drw.drawing_time)
+
+        self.callback(0)
 
         # cut the start of the clip that is until the first drawing time
         try:
@@ -552,11 +673,9 @@ class AddMultipleDrawings(threading.Thread):
                 "copy",
                 # output file
                 self.temp_dir.name + path_separator + str(self.cut_number) + "_start.mp4"
-            ],
-                stderr=STDOUT,
-                shell=shell_status)
+            ], shell=shell_status)
         except CalledProcessError as cpe:
-            print("START OUT", cpe.output)
+            print_mine("START OUT", cpe.output)
 
         # cut from the last drawing to the end
         check_call([
@@ -583,15 +702,16 @@ class AddMultipleDrawings(threading.Thread):
             "copy",
             # output file
             self.temp_dir.name + path_separator + str(self.cut_number) + "_end.mp4"
-        ],
-            stderr=STDOUT,
-            shell=shell_status)
+        ], shell=shell_status)
 
         drawing_number = 0
-        self.callback(0)
-        print("DRAWWWINGS >>>>>>>>>>>>>>>>")
+        print_mine("DRAWWWINGS >>>>>>>>>>>>>>>>")
         for drawing in self.drawings:
-            print(drawing.drawing_time)
+
+            percent = int(((drawing_number / len(self.drawings)) * 100) / 2)
+            self.callback(percent)
+
+            print_mine(drawing.drawing_time)
 
             raw_png = base64.b64decode(drawing.bitmap)
             f = open(self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) +
@@ -600,6 +720,7 @@ class AddMultipleDrawings(threading.Thread):
             f.close()
             pil_png = Image.open(self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) +
                                  "_overlay.png")
+            pil_png_res = pil_png.resize((self.video_info.width, self.video_info.height), Image.ANTIALIAS)
 
             raw_jpeg = base64.b64decode(drawing.screenshot)
             jf = open(self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) +
@@ -609,9 +730,10 @@ class AddMultipleDrawings(threading.Thread):
             pil_jpeg = Image.open(self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) +
                                   "_screenshot.jpg")
             pil_jpeg_converted = pil_jpeg.convert(mode="RGBA")
+            pil_jpeg_converted_res = pil_jpeg_converted.resize((self.video_info.width, self.video_info.height), Image.ANTIALIAS)
 
             # and now join the two?
-            pil_composite = Image.alpha_composite(pil_jpeg_converted, pil_png)
+            pil_composite = Image.alpha_composite(pil_jpeg_converted_res, pil_png_res)
             pil_composite.save(self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) +
                                "_composite.png", "PNG")
 
@@ -644,10 +766,9 @@ class AddMultipleDrawings(threading.Thread):
                     "-vf",
                     "scale=" + str(self.video_info.width) + "x" + str(self.video_info.height) + ",setsar=1:1",
                     self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) + "_thumb.mp4"
-                ], stderr=STDOUT,
-                    shell=shell_status)
+                ], shell=shell_status)
             except CalledProcessError as cpe:
-                print("IMAGE OUT", cpe.output)
+                print_mine("IMAGE OUT", cpe.output)
 
             # add the overlay to the pause image
             try:
@@ -661,6 +782,9 @@ class AddMultipleDrawings(threading.Thread):
                     # image input
                     "-i",
                     self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) + "_overlay_res.png",
+                    # duration
+                    "-t",
+                    str(self.pause_time),
                     # logo
                     "-i",
                     os_prefix + watermark_file,
@@ -675,10 +799,9 @@ class AddMultipleDrawings(threading.Thread):
                     # output
                     self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) + "_thumb_overlay.mp4",
 
-                ], stderr=STDOUT,
-                    shell=shell_status)
+                ], shell=shell_status)
             except CalledProcessError as cpe:
-                print("OVERLAY OUT", cpe.output)
+                print_mine("OVERLAY OUT", cpe.output)
 
             # add sound track to pause overlay
             try:
@@ -692,6 +815,9 @@ class AddMultipleDrawings(threading.Thread):
                     "2",
                     "-f",
                     "s16le",
+                    # duration
+                    "-t",
+                    str(self.pause_time),
                     "-i",
                     os_prefix + "silence.wav",
                     "-i",
@@ -705,10 +831,9 @@ class AddMultipleDrawings(threading.Thread):
                     "-2",
                     self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) +
                     "_thumb_overlay_sound.mp4"
-                ], stderr=STDOUT,
-                    shell=shell_status)
+                ], shell=shell_status)
             except CalledProcessError as cpe:
-                print("SOUND OUT", cpe.output)
+                print_mine("SOUND OUT", cpe.output)
 
             # if we are not at the last drawing?
             if drawing_number < len(self.drawings) - 1:
@@ -746,138 +871,361 @@ class AddMultipleDrawings(threading.Thread):
                     "copy",
                     # output file
                     self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(drawing_number) + "_middle.mp4"
-                ],
-                    stderr=STDOUT,
-                    shell=shell_status)
+                ], shell=shell_status)
 
-            progress = int(((drawing_number / len(self.drawings)) * 100) / 2)
-            self.callback(progress)
             # do the next drawing
             drawing_number += 1
 
-        if self.video_info.has_sound:
-            # and join all the bits and pieces
+        if self.fast_drawings:
 
+            files_to_concat = []
             # now we must concat the whole thing, since we have a start, end, middle, and thumbs for all drawings
             for x in range(0, len(self.drawings)):
 
+                percent = int((((x / len(self.drawings)) * 100) / 2) + 50)
+                self.callback(percent)
+
                 # first drawing
                 if x == 0:
-                    self.callback(50)
-                    # start by concatenating the start to the first thumb
-                    try:
-                        check_call([
-                            ffmpeg_path,
-                            # overwrite
-                            "-y",
-                            # start
-                            "-i",
-                            self.temp_dir.name + path_separator + str(self.cut_number) + "_start.mp4",
-                            # the overlay
-                            "-i",
-                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_" +
-                            "thumb_overlay_sound.mp4",
-                            # audio codec
-                            "-c:a",
-                            "aac",
-                            "-strict",
-                            "-2",
-                            # the concat filter
-                            "-map",
-                            "[v]",
-                            "-map",
-                            "[a]",
-                            "-filter_complex",
-                            # "[0:0] setsar=1:1 [in1]; [0:1] [1:0] setsar=1:1 [in2]; [1:1] concat=n=2:v=1:a=1 [v] [a]",
-                            "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
-                            "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
-                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_done.mp4"
-                        ],
-                            stderr=STDOUT,
-                            shell=shell_status)
-                    except CalledProcessError as cpe:
-                        print("DRAWING JOIN START", cpe.output)
 
+                    first_drawing = self.drawings[0]
+                    first_drawing_delta = first_drawing.drawing_time
+                    # lets allways put the start for now
+                    if first_drawing_delta > 1 or True:
+                        files_to_concat.append(self.temp_dir.name + path_separator + str(self.cut_number) + "_start.mp4")
+                    else:
+                        # do not append the start, since it is too close to the start
+                        pass
+                    files_to_concat.append(self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_" +
+                                           "thumb_overlay_sound.mp4")
                 # all the others except the last but including the first
                 if x < len(self.drawings) - 1:
-                    self.callback(((x / len(self.drawings) * 100) / 2) + 50)
-                    print("cenas", ((x / len(self.drawings) * 100) / 2) + 50)
-                    # add the middle between this drawing and the next
-                    try:
-                        check_call([
-                            ffmpeg_path,
-                            # overwrite
-                            "-y",
-                            # start
-                            "-i",
-                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_done.mp4",
-                            # the overlay
-                            "-i",
-                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_" +
-                            "middle.mp4",
-                            # audio codec
-                            "-c:a",
-                            "aac",
-                            "-strict",
-                            "-2",
-                            # the concat filter
-                            "-map",
-                            "[v]",
-                            "-map",
-                            "[a]",
-                            "-filter_complex",
-                            # "[0:0] setsar=1:1 [in1]; [0:1] [1:0] setsar=1:1 [in2]; [1:1] concat=n=2:v=1:a=1 [v] [a]",
-                            "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
-                            "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
-                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_" +
-                            "_after_middle.mp4"
-                        ],
-                            stderr=STDOUT,
-                            shell=shell_status)
-                    except CalledProcessError as cpe:
-                        print("DRAWING JOIN MIDDLE " + str(x), cpe.output)
-
-                    # add the next drawing
-                    try:
-                        check_call([
-                            ffmpeg_path,
-                            # overwrite
-                            "-y",
-                            # start
-                            "-i",
-                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_" +
-                            "_after_middle.mp4",
-                            # the overlay
-                            "-i",
-                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_" +
-                            "thumb_overlay_sound.mp4",
-                            # audio codec
-                            "-c:a",
-                            "aac",
-                            "-strict",
-                            "-2",
-                            # the concat filter
-                            "-map",
-                            "[v]",
-                            "-map",
-                            "[a]",
-                            "-filter_complex",
-                            # "[0:0] setsar=1:1 [in1]; [0:1] [1:0] setsar=1:1 [in2]; [1:1] concat=n=2:v=1:a=1 [v] [a]",
-                            "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
-                            "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
-                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_done.mp4"
-                        ],
-                            stderr=STDOUT,
-                            shell=shell_status)
-                    except CalledProcessError as cpe:
-                        print("DRAWING JOIN START", cpe.output)
-
+                    files_to_concat.append(self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_" +
+                                           "middle.mp4")
+                    files_to_concat.append(self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_" +
+                                           "thumb_overlay_sound.mp4")
                 last_drawing = self.drawings[len(self.drawings) - 1]
-                last_drawing_delta = self.duration - last_drawing.drawing_time
+                last_drawing_delta = abs(self.duration - last_drawing.drawing_time)
                 if last_drawing_delta > 1:
                     # last drawing
                     if x == len(self.drawings) - 1:
-                        self.callback(100)
+                        files_to_concat.append(self.temp_dir.name + path_separator + str(self.cut_number) + "_" + "end.mp4")
+                else:
+                    # do not append the end in this case
+                    pass
+
+            order = 0
+            # now we loop and fast copy all the files
+            for file in files_to_concat:
+                out = check_call([
+                    # path to ffmpeg
+                    ffmpeg_path,
+                    # overwrite
+                    "-y",
+                    # input file
+                    "-i",
+                    file,
+                    "-c",
+                    "copy",
+                    "-bsf:v",
+                    "h264_mp4toannexb",
+                    "-f",
+                    "mpegts",
+                    # output file
+                    self.temp_dir.name + path_separator + "ts_" + str(self.cut_number) + "_" + str(order) + ".ts"
+                ], shell=shell_status)
+                order += 1
+
+            # JOIN THE THINGS
+            drawing_concat = []
+            # path to ffmpeg
+            drawing_concat.append(ffmpeg_path)
+            # overwrite
+            drawing_concat.append("-y")
+            # input
+            drawing_concat.append("-i")
+            # the concat files
+            concat = "concat:"
+            for cat in range(0, order):
+                concat += self.temp_dir.name + path_separator + "ts_" + str(self.cut_number) + "_" + str(cat) + ".ts" + "|"
+            concat = concat[:-1]
+            concat += ""
+            drawing_concat.append(concat)
+
+            # fast copy concatenation
+            drawing_concat.append("-c")
+            drawing_concat.append("copy")
+            drawing_concat.append("-bsf:a")
+            drawing_concat.append("aac_adtstoasc")
+            drawing_concat.append("-movflags")
+            drawing_concat.append("faststart")
+
+            # put it on desktop for now
+            drawing_concat.append("" + self.tmp_out + "")
+
+            try:
+                out = check_call(drawing_concat, shell=False)
+            except CalledProcessError as cpe:
+                print_mine("ERROR>>", cpe.output)
+
+        else:
+            if self.video_info.has_sound:
+                # and join all the bits and pieces
+
+                # now we must concat the whole thing, since we have a start, end, middle, and thumbs for all drawings
+                for x in range(0, len(self.drawings)):
+
+                    percent = int((((x / len(self.drawings)) * 100) / 2) + 50)
+                    self.callback(percent)
+
+                    # first drawing
+                    if x == 0:
+                        # start by concatenating the start to the first thumb
+                        try:
+                            check_call([
+                                ffmpeg_path,
+                                # overwrite
+                                "-y",
+                                # start
+                                "-i",
+                                self.temp_dir.name + path_separator + str(self.cut_number) + "_start.mp4",
+                                # the overlay
+                                "-i",
+                                self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_" +
+                                "thumb_overlay_sound.mp4",
+                                # audio codec
+                                "-c:a",
+                                "aac",
+                                "-strict",
+                                "-2",
+                                # the concat filter
+                                "-map",
+                                "[v]",
+                                "-map",
+                                "[a]",
+                                "-filter_complex",
+                                # "[0:0] setsar=1:1 [in1]; [0:1] [1:0] setsar=1:1 [in2]; [1:1] concat=n=2:v=1:a=1 [v] [a]",
+                                "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
+                                "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
+                                self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_done.mp4"
+                            ], shell=shell_status)
+                        except CalledProcessError as cpe:
+                            print_mine("DRAWING JOIN START", cpe.output)
+
+                    # all the others except the last but including the first
+                    if x < len(self.drawings) - 1:
+                        # add the middle between this drawing and the next
+                        try:
+                            check_call([
+                                ffmpeg_path,
+                                # overwrite
+                                "-y",
+                                # start
+                                "-i",
+                                self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_done.mp4",
+                                # the overlay
+                                "-i",
+                                self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_" +
+                                "middle.mp4",
+                                # audio codec
+                                "-c:a",
+                                "aac",
+                                "-strict",
+                                "-2",
+                                # the concat filter
+                                "-map",
+                                "[v]",
+                                "-map",
+                                "[a]",
+                                "-filter_complex",
+                                # "[0:0] setsar=1:1 [in1]; [0:1] [1:0] setsar=1:1 [in2]; [1:1] concat=n=2:v=1:a=1 [v] [a]",
+                                "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
+                                "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
+                                self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_" +
+                                "_after_middle.mp4"
+                            ], shell=shell_status)
+                        except CalledProcessError as cpe:
+                            print_mine("DRAWING JOIN MIDDLE " + str(x), cpe.output)
+
+                        # add the next drawing
+                        try:
+                            check_call([
+                                ffmpeg_path,
+                                # overwrite
+                                "-y",
+                                # start
+                                "-i",
+                                self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_" +
+                                "_after_middle.mp4",
+                                # the overlay
+                                "-i",
+                                self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_" +
+                                "thumb_overlay_sound.mp4",
+                                # audio codec
+                                "-c:a",
+                                "aac",
+                                "-strict",
+                                "-2",
+                                # the concat filter
+                                "-map",
+                                "[v]",
+                                "-map",
+                                "[a]",
+                                "-filter_complex",
+                                # "[0:0] setsar=1:1 [in1]; [0:1] [1:0] setsar=1:1 [in2]; [1:1] concat=n=2:v=1:a=1 [v] [a]",
+                                "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
+                                "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
+                                self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_done.mp4"
+                            ], shell=shell_status)
+                        except CalledProcessError as cpe:
+                            print_mine("DRAWING JOIN START", cpe.output)
+
+                    last_drawing = self.drawings[len(self.drawings) - 1]
+                    last_drawing_delta = self.duration - last_drawing.drawing_time
+                    if last_drawing_delta > 1:
+                        # last drawing
+                        if x == len(self.drawings) - 1:
+                            # just add the end, since this drawing was joined in the last step
+                            try:
+                                check_call([
+                                    ffmpeg_path,
+                                    # overwrite
+                                    "-y",
+                                    # start
+                                    "-i",
+                                    self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_done.mp4",
+                                    # the overlay
+                                    "-i",
+                                    self.temp_dir.name + path_separator + str(self.cut_number) + "_" + "end.mp4",
+                                    # audio codec
+                                    "-c:a",
+                                    "aac",
+                                    "-strict",
+                                    "-2",
+                                    # the concat filter
+                                    "-map",
+                                    "[v]",
+                                    "-map",
+                                    "[a]",
+                                    "-filter_complex",
+                                    # "[0:0] setsar=1:1 [in1]; [0:1] [1:0] setsar=1:1 [in2]; [1:1] concat=n=2:v=1:a=1 [v] [a]",
+                                    "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
+                                    "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
+                                    self.tmp_out,
+                                ], shell=shell_status)
+                            except CalledProcessError as cpe:
+                                print_mine("DRAWING JOIN START", cpe.output)
+                    else:
+                        # copy the done to the final video
+                        shutil.copy(
+                                    self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_done.mp4",
+                                    self.tmp_out
+                                    )
+
+            else:
+                # and join all the bits and pieces
+
+                # now we must concat the whole thing, since we have a start, end, middle, and thumbs for all drawings
+                for x in range(0, len(self.drawings)):
+
+                    percent = int((((x / len(self.drawings)) * 100) / 2) + 50)
+                    self.callback(percent)
+
+                    # first drawing
+                    if x == 0:
+                        # start by concatenating the start to the first thumb
+                        try:
+                            check_call([
+                                ffmpeg_path,
+                                # overwrite
+                                "-y",
+                                # start
+                                "-i",
+                                self.temp_dir.name + path_separator + str(self.cut_number) + "_start.mp4",
+                                # the overlay
+                                "-i",
+                                self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_" +
+                                "thumb_overlay_sound.mp4",
+                                # audio codec
+                                "-c:a",
+                                "aac",
+                                "-strict",
+                                "-2",
+                                # the concat filter
+                                "-map",
+                                "[v]",
+                                "-filter_complex",
+                                "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
+                                "[in1][in2] concat [v]",
+                                self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_done.mp4"
+                            ], shell=shell_status)
+                        except CalledProcessError as cpe:
+                            print_mine("DRAWING JOIN START", cpe.output)
+
+                    # all the others except the last but including the first
+                    if x < len(self.drawings) - 1:
+                        # add the middle between this drawing and the next
+                        try:
+                            check_call([
+                                ffmpeg_path,
+                                # overwrite
+                                "-y",
+                                # start
+                                "-i",
+                                self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_done.mp4",
+                                # the overlay
+                                "-i",
+                                self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_" +
+                                "middle.mp4",
+                                # audio codec
+                                "-c:a",
+                                "aac",
+                                "-strict",
+                                "-2",
+                                # the concat filter
+                                "-map",
+                                "[v]",
+                                "-filter_complex",
+                                "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
+                                "[in1][in2] concat [v]",
+                                self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_" +
+                                "_after_middle.mp4"
+                            ], shell=shell_status)
+                        except CalledProcessError as cpe:
+                            print_mine("DRAWING JOIN MIDDLE " + str(x), cpe.output)
+
+                        # add the next drawing
+                        try:
+                            check_call([
+                                ffmpeg_path,
+                                # overwrite
+                                "-y",
+                                # start
+                                "-i",
+                                self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_" +
+                                "_after_middle.mp4",
+                                # the overlay
+                                "-i",
+                                self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_" +
+                                "thumb_overlay_sound.mp4",
+                                # audio codec
+                                "-c:a",
+                                "aac",
+                                "-strict",
+                                "-2",
+                                # the concat filter
+                                "-map",
+                                "[v]",
+                                "-filter_complex",
+                                "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
+                                "[in1][in2] concat [v]",
+                                self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_done.mp4"
+                            ], shell=shell_status)
+                        except CalledProcessError as cpe:
+                            print_mine("DRAWING JOIN START", cpe.output)
+
+                    # last drawing
+                    if x == len(self.drawings) - 1:
                         # just add the end, since this drawing was joined in the last step
                         try:
                             check_call([
@@ -898,165 +1246,13 @@ class AddMultipleDrawings(threading.Thread):
                                 # the concat filter
                                 "-map",
                                 "[v]",
-                                "-map",
-                                "[a]",
                                 "-filter_complex",
-                                # "[0:0] setsar=1:1 [in1]; [0:1] [1:0] setsar=1:1 [in2]; [1:1] concat=n=2:v=1:a=1 [v] [a]",
                                 "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
-                                "[in1][in2] concat [v]; [0:1][1:1] concat=v=0:a=1 [a]",
+                                "[in1][in2] concat [v]",
                                 self.tmp_out,
-                            ],
-                                stderr=STDOUT,
-                                shell=shell_status)
+                            ], shell=shell_status)
                         except CalledProcessError as cpe:
-                            print("DRAWING JOIN START", cpe.output)
-                else:
-                    # copy the done to the final video
-                    shutil.copy(
-                                self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_done.mp4",
-                                self.tmp_out
-                                )
-
-        else:
-            # and join all the bits and pieces
-
-            # now we must concat the whole thing, since we have a start, end, middle, and thumbs for all drawings
-            for x in range(0, len(self.drawings)):
-
-                # first drawing
-                if x == 0:
-                    self.callback(50)
-                    # start by concatenating the start to the first thumb
-                    try:
-                        check_call([
-                            ffmpeg_path,
-                            # overwrite
-                            "-y",
-                            # start
-                            "-i",
-                            self.temp_dir.name + path_separator + str(self.cut_number) + "_start.mp4",
-                            # the overlay
-                            "-i",
-                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_" +
-                            "thumb_overlay_sound.mp4",
-                            # audio codec
-                            "-c:a",
-                            "aac",
-                            "-strict",
-                            "-2",
-                            # the concat filter
-                            "-map",
-                            "[v]",
-                            "-filter_complex",
-                            "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
-                            "[in1][in2] concat [v]",
-                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_done.mp4"
-                        ],
-                            stderr=STDOUT,
-                            shell=shell_status)
-                    except CalledProcessError as cpe:
-                        print("DRAWING JOIN START", cpe.output)
-
-                # all the others except the last but including the first
-                if x < len(self.drawings) - 1:
-                    self.callback(((x / len(self.drawings) * 100) / 2) + 50)
-                    print("cenas", ((x / len(self.drawings) * 100) / 2) + 50)
-                    # add the middle between this drawing and the next
-                    try:
-                        check_call([
-                            ffmpeg_path,
-                            # overwrite
-                            "-y",
-                            # start
-                            "-i",
-                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_done.mp4",
-                            # the overlay
-                            "-i",
-                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_" +
-                            "middle.mp4",
-                            # audio codec
-                            "-c:a",
-                            "aac",
-                            "-strict",
-                            "-2",
-                            # the concat filter
-                            "-map",
-                            "[v]",
-                            "-filter_complex",
-                            "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
-                            "[in1][in2] concat [v]",
-                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_" +
-                            "_after_middle.mp4"
-                        ],
-                            stderr=STDOUT,
-                            shell=shell_status)
-                    except CalledProcessError as cpe:
-                        print("DRAWING JOIN MIDDLE " + str(x), cpe.output)
-
-                    # add the next drawing
-                    try:
-                        check_call([
-                            ffmpeg_path,
-                            # overwrite
-                            "-y",
-                            # start
-                            "-i",
-                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_" +
-                            "_after_middle.mp4",
-                            # the overlay
-                            "-i",
-                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_" +
-                            "thumb_overlay_sound.mp4",
-                            # audio codec
-                            "-c:a",
-                            "aac",
-                            "-strict",
-                            "-2",
-                            # the concat filter
-                            "-map",
-                            "[v]",
-                            "-filter_complex",
-                            "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
-                            "[in1][in2] concat [v]",
-                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x + 1) + "_done.mp4"
-                        ],
-                            stderr=STDOUT,
-                            shell=shell_status)
-                    except CalledProcessError as cpe:
-                        print("DRAWING JOIN START", cpe.output)
-
-                # last drawing
-                if x == len(self.drawings) - 1:
-                    self.callback(100)
-                    # just add the end, since this drawing was joined in the last step
-                    try:
-                        check_call([
-                            ffmpeg_path,
-                            # overwrite
-                            "-y",
-                            # start
-                            "-i",
-                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + str(x) + "_done.mp4",
-                            # the overlay
-                            "-i",
-                            self.temp_dir.name + path_separator + str(self.cut_number) + "_" + "end.mp4",
-                            # audio codec
-                            "-c:a",
-                            "aac",
-                            "-strict",
-                            "-2",
-                            # the concat filter
-                            "-map",
-                            "[v]",
-                            "-filter_complex",
-                            "[0:0] setsar=sar=1/1 [in1]; [1:0] setsar=sar=1/1 [in2];"
-                            "[in1][in2] concat [v]",
-                            self.tmp_out,
-                        ],
-                            stderr=STDOUT,
-                            shell=shell_status)
-                    except CalledProcessError as cpe:
-                        print("DRAWING JOIN START", cpe.output)
+                            print_mine("DRAWING JOIN START", cpe.output)
 
 
 class CutFastCopy(threading.Thread):

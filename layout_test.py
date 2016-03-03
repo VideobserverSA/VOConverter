@@ -757,7 +757,8 @@ class MainWindow(wx.Frame):
                     key_thr = convert_functions.CutWithKeyFrames(temp_dir=self.temp_dir, cut_number=cut_number, video_path=video_path,
                                                                  time_start=real_time_start, duration=real_duration,
                                                                  tmp_out=self.temp_dir.name + path_separator + str(cut_number) + "_comments.mp4",
-                                                                 key_frames=12)
+                                                                 key_frames=12,
+                                                                 callback=lambda p: self.update_drawing_progress(p, cut_number + 1, num_items))
                     key_thr.start()
                     while key_thr.is_alive():
                         wx.Yield()
@@ -830,7 +831,8 @@ class MainWindow(wx.Frame):
                                                                          pause_time=self.pause_duration,
                                                                          duration=real_duration,
                                                                          watermark=self.watermark,
-                                                                         callback=lambda p: self.update_drawing_progress(p, cut_number + 1, num_items))
+                                                                         callback=lambda p: self.update_drawing_progress(p, cut_number + 1, num_items),
+                                                                         fast_drawings=True)
                     multiple_thr.start()
                     while multiple_thr.is_alive():
                         self.update_progress(gauge, estimate_text)
@@ -929,7 +931,6 @@ class MainWindow(wx.Frame):
         self.replace_view(self.create_playlist_complete())
 
     def update_drawing_progress(self, progress, cut_number, total_items):
-
         # print("prog, cut, num", progress, cut_number, total_items)
         # get the lower and upper bound
         interval = 100 / total_items
