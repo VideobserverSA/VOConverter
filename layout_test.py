@@ -414,7 +414,7 @@ class MainWindow(wx.Frame):
             dummy_event = threading.Event()
             dummy_event.wait(timeout=0.01)
 
-            # wx.Yield()
+            wx.Yield()
             self.Update()
 
             self.update_progress(gauge, estimate_text)
