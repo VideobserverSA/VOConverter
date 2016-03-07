@@ -1,10 +1,14 @@
 import urllib.request
+from datetime import time
 from urllib.request import Request
 import urllib.parse
 import urllib.error
 import json
 import threading
 from easysettings import EasySettings
+import jsonpickle
+import zlib
+import os
 
 api_url = "http://api.staging.videobserver.com/"
 
@@ -12,7 +16,24 @@ api_url = "http://api.staging.videobserver.com/"
 part_size = 5 * 1024 * 1024
 
 # just some global settings
-settings = EasySettings("test.conf")
+settings = EasySettings("uploads.conf")
+
+
+class SavedUpload:
+
+    def __init__(self):
+        # info about file on disk
+        self.file = ""
+        self.size = ""
+        self.checksum = ""
+        # info about aws multipart upload
+        self.upload_id = ""
+        self.current_part = ""
+        self.part_etag_list = []
+        # upload status
+        self.complete = False
+        self.canceled = False
+        self.date = time()
 
 
 # get the token
@@ -108,6 +129,11 @@ class UploadFile(threading.Thread):
         self.canceled = False
         self.part_etag_list = []
 
+        if settings.has_option("uploads"):
+            self.current_uploads = jsonpickle.decode(settings.get("uploads"))
+        else:
+            self.current_uploads = {}
+
     def run(self):
 
         # now we loop for all the parts? one meg at the time?
@@ -115,19 +141,47 @@ class UploadFile(threading.Thread):
         total = 0
         done = False
 
-        if settings.get("complete", True) or settings.get("canceled", True):
+        do_resume = False
+
+        # grab the size and first bytes of the file
+        test_fd = open(self.file, "rb")
+        tes_buffer = test_fd.read(1024 * 10)
+        test_fd.close()
+
+        checksum = zlib.adler32(tes_buffer)
+        size = os.stat(self.file).st_size
+
+        # do we have an upload of this kind?
+        if self.file in self.current_uploads:
+            upload = self.current_uploads[self.file]
+            if upload.checksum == checksum and upload.size == size\
+               and not upload.complete and not upload.canceled:
+                do_resume = True
+
+        if not do_resume:
+            # create an upload
+            upload = SavedUpload()
+            upload.file = self.file
+            upload.checksum = checksum
+            upload.size = size
+
             # lets do this with a multi part upload so we can cancel it?
             ret = self.s3client.create_multipart_upload(Bucket=self.bucket,
                                                         Key=self.key
                                                         )
 
             # grab the upload id to use in the following methods
-            self.upload_id = ret["UploadId"]
+            upload.upload_id = ret["UploadId"]
+            self.upload_id = upload.upload_id
+            self.current_uploads[self.file] = upload
+            settings.set("uploads", jsonpickle.encode(self.current_uploads))
+            settings.save()
+
         else:
             # read settings
-            self.upload_id = settings.get("upload_id")
-            self.current_part = settings.get("current_part")
-            self.part_etag_list = settings.get("part_etag_list")
+            self.upload_id = upload.upload_id
+            self.current_part = upload.current_part
+            self.part_etag_list = upload.part_etag_list
 
             # calc sent size
             sent_size = part_size * self.current_part
@@ -157,10 +211,12 @@ class UploadFile(threading.Thread):
             self.part_etag_list.append({'ETag': part_upload_ret["ETag"], 'PartNumber': self.current_part})
             self.progress_callback(len(buffer))
 
-            settings.set("part_etag_list", self.part_etag_list)
-            settings.set("current_part", self.current_part)
-            settings.set("upload_id", self.upload_id)
-            settings.set("complete", False)
+            upload.part_etag_list = self.part_etag_list
+            upload.current_part = self.current_part
+            upload.upload_id = self.upload_id
+            upload.complete = False
+
+            settings.set("uploads", jsonpickle.encode(self.current_uploads))
             settings.save()
 
             self.current_part += 1
@@ -173,19 +229,20 @@ class UploadFile(threading.Thread):
                                                                    MultipartUpload=parts_dict,
                                                                    UploadId=self.upload_id
                                                                    )
-            settings.setsave("complete", True)
+            upload.complete = True
+            settings.set("uploads", jsonpickle.encode(self.current_uploads))
+            settings.save()
         f.close()
 
     def send_callback(self, bytes_loaded):
         self.progress_callback(self, bytes_loaded)
 
     def cancel_upload(self):
-        self.canceled = True
-        settings.setsave("canceled", True)
+        self.current_uploads[self.file].canceld = True
+        settings.set("uploads", jsonpickle.encode(self.current_uploads))
+        settings.save()
         abort_ret = self.s3client.abort_multipart_upload(Bucket=self.bucket,
                                                          Key=self.key,
                                                          UploadId=self.upload_id
                                                          )
         # print(abort_ret)
-
-

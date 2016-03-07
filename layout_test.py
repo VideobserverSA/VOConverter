@@ -483,7 +483,7 @@ class MainWindow(wx.Frame):
                                         key=upload_key,
                                         file=file,
                                         progress_callback=lambda progress: self.mark_upload_progress(progress, total_size),
-                                        resume_callback=lambda progress: self.mark_progress(progress),
+                                        resume_callback=lambda progress: self.mark_upload_progress(progress, total_size),
                                         name="upload-thr")
             upload_thr.start()
 

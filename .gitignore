@@ -68,3 +68,7 @@ pack_out/
 
 # inno setip
 inno setup/
+
+# conf files
+test.conf
+uploads.conf
