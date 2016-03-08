@@ -262,6 +262,7 @@ class EncodeWithKeyFrames(threading.Thread):
         # http://superuser.com/questions/547296/resizing-videos-with-ffmpeg-avconv-to-fit-into-static-sized-player
         scale_settings = "iw*min(" + w + "/iw\," + h + "/ih):ih*min(" + w + "/iw\," + h + "/ih), pad=" + w + ":" + h +\
                          ":(" + w + " -iw*min(" + w + "/iw\," + h + "/ih))/2:(" + h + "-ih*min(" + w + "/iw\," + h + "/ih))/2"
+
         cmd = [
                 # path to ffmpeg
                 ffmpeg_path,
@@ -293,7 +294,8 @@ class EncodeWithKeyFrames(threading.Thread):
         else:
             cmd.extend([
                 "-vf",
-                "scale=" + w + "x" + h
+                # see http://pixels-per-inch.tumblr.com/post/128732895838/height-not-divisible-by-2
+                "scale=" + w + ":" + "trunc(ow/a/2)*2"
             ])
         cmd.extend([
                 # frames
