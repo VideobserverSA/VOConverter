@@ -1053,7 +1053,7 @@ class MainWindow(wx.Frame):
         return anchor_window
 
     def create_alert_dialog(self, parent, title, message, is_ok_type=False,
-                            no_click_handler = None, yes_click_handler = None ):
+                            no_click_handler=None, yes_click_handler=None):
 
         dialog = wx.Dialog(parent=parent, id=wx.ID_ANY, title="", size=(395, 210))
         dialog_sizer = wx.BoxSizer(orient=wx.VERTICAL)
@@ -1113,6 +1113,7 @@ class MainWindow(wx.Frame):
         back_window_sizer.Add(button_sizer, 1, wx.CENTER | wx.TOP, 10)
 
         dialog.Show()
+        dialog.SendSizeEvent()
         return dialog
 
     # include the header always
@@ -1303,6 +1304,7 @@ class MainWindow(wx.Frame):
         button_sizer.Add(login_btn, 1)
 
         dialog.Show()
+        dialog.SendSizeEvent()
 
     def go_to_help(self, e):
         webbrowser.open("http://faqs.videobserver.com/", new=0, autoraise=True)
