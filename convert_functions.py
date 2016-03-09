@@ -244,6 +244,8 @@ class EncodeWithKeyFrames(threading.Thread):
         self.preset = preset
         self.temp_dir = temp_dir
         self.scale = scale
+        self.p = None
+        self.canceled = False
 
     def run(self):
 
@@ -324,11 +326,11 @@ class EncodeWithKeyFrames(threading.Thread):
 
         print(cmd)
 
-        p = Popen(cmd,
-                  stderr=STDOUT,
-                  stdout=PIPE,
-                  universal_newlines=True
-                  )
+        self.p = Popen(cmd,
+                       stderr=STDOUT,
+                       stdout=PIPE,
+                       universal_newlines=True
+                       )
 
         reg = re.compile("time=[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9]")
 
@@ -341,7 +343,7 @@ class EncodeWithKeyFrames(threading.Thread):
 
         blank_lines = 0
 
-        for line in iter(p.stdout.readline, b''):
+        for line in iter(self.p.stdout.readline, b''):
             # print_mine(">>> " + line)
             # log_file.write(line)
             if len(line) < 1:
@@ -353,7 +355,7 @@ class EncodeWithKeyFrames(threading.Thread):
                 seconds = 60 * 60 * int(splitted[0]) + 60 * int(splitted[1]) + int(splitted[2])
                 # print_mine("time:", time_str, " seconds:" + str(seconds))
                 percentage = int((seconds * 100) / int(float(self.in_video_info.duration)))
-                print_mine(percentage)
+                print_mine("ENC KEY FRM", percentage)
                 if first_pass_last_perc != percentage:
                     # print_mine("first pass %:", percentage)
                     first_pass_last_perc = percentage
@@ -366,19 +368,27 @@ class EncodeWithKeyFrames(threading.Thread):
                     # so we kill it
                     # this happens and p.stdout.readling keeps returning empty strings
                     # so we need to avoid it
-                    p.terminate()
-                    p.wait()
+                    self.p.terminate()
+                    self.p.wait()
                     # print_mine("KILL KILL")
                     break
 
                 if blank_lines > 3:
-                    p.terminate()
-                    p.wait()
+                    self.p.terminate()
+                    self.p.wait()
                     break
 
         log_file.close()
 
-        processor.process(self.out_video + "_temp.mp4", self.out_video)
+        if not self.canceled:
+            processor.process(self.out_video + "_temp.mp4", self.out_video)
+
+    def abort(self):
+        print("ABORT WITH KEY FRAMES")
+        self.canceled = True
+        self.p.terminate()
+        self.p.wait()
+        self._stop()
 
 
 class ConvertToFastCopy(threading.Thread):
@@ -433,6 +443,9 @@ class JoinFiles(threading.Thread):
         self.progress = 0
         self.cut_number = 0
 
+        self.current_thr = None
+        self.canceled = False
+
     def run(self):
 
         # before we go wild on doing the preset, lets check if all the videos have a matching resolution
@@ -447,28 +460,36 @@ class JoinFiles(threading.Thread):
 
         # loop the in videos and convert according to the preset
         for video in self.in_videos:
+
+            if self.canceled:
+                return
+
             # use the damn preset
             video_info = video.video_info
 
-            convert_thr = EncodeWithKeyFrames(in_video=video.file,
-                                              out_video=self.tmp_dir.name + path_separator + str(self.cut_number) + "_to_join.mp4",
-                                              callback=self.update_progress, preset=self.preset,
-                                              in_video_info=video_info,
-                                              temp_dir=self.tmp_dir,
-                                              scale=mixed)
+            self.current_thr = convert_thr = EncodeWithKeyFrames(in_video=video.file,
+                                                                 out_video=self.tmp_dir.name + path_separator + str(self.cut_number) + "_to_join.mp4",
+                                                                 callback=self.update_progress, preset=self.preset,
+                                                                 in_video_info=video_info,
+                                                                 temp_dir=self.tmp_dir,
+                                                                 scale=mixed)
 
             convert_thr.start()
 
             while convert_thr.is_alive():
+                if self.canceled:
+                    return
                 dummy_event = threading.Event()
                 dummy_event.wait(timeout=0.01)
 
             # fast copy??
-            fast_copy_thr = ConvertToFastCopy(self.tmp_dir, cut_number=self.cut_number,
-                                              input_video=self.tmp_dir.name + path_separator + str(self.cut_number) + "_to_join.mp4",
-                                              tmp_out=self.tmp_dir.name + path_separator + str(self.cut_number) + "_fast.mp4")
+            self.current_thr = fast_copy_thr = ConvertToFastCopy(self.tmp_dir, cut_number=self.cut_number,
+                                                                 input_video=self.tmp_dir.name + path_separator + str(self.cut_number) + "_to_join.mp4",
+                                                                 tmp_out=self.tmp_dir.name + path_separator + str(self.cut_number) + "_fast.mp4")
             fast_copy_thr.start()
             while fast_copy_thr.is_alive():
+                if self.canceled:
+                    return
                 dummy_event = threading.Event()
                 dummy_event.wait(timeout=0.01)
 
@@ -502,13 +523,14 @@ class JoinFiles(threading.Thread):
         # put it on desktop for now
         join_args.append("" + self.out_video + "")
 
-        try:
-            out = check_call(join_args, stderr=STDOUT, shell=False)
-        except CalledProcessError as cpe:
-            print("ERROR>>", cpe.output)
+        if not self.canceled:
+            try:
+                out = check_call(join_args, stderr=STDOUT, shell=False)
+            except CalledProcessError as cpe:
+                print("ERROR>>", cpe.output)
 
-        # we are DONE!
-        self.callback(100)
+            # we are DONE!
+            self.callback(100)
 
     def update_progress(self, progress):
         # which part of the percentage each item takes?
@@ -522,6 +544,8 @@ class JoinFiles(threading.Thread):
 
     def abort(self):
         print("ABORT THE THREAD")
+        self.canceled = True
+        self.current_thr.abort()
 
 
 class CutWithKeyFrames(threading.Thread):

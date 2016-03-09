@@ -16,6 +16,7 @@ import xml.etree.ElementTree as xmlParser
 import urllib
 import base64
 from PIL import Image
+import hashlib
 
 # we need this because: https://github.com/pyinstaller/pyinstaller/wiki/Recipe-subprocess
 if getattr(sys, 'frozen', False):
@@ -111,6 +112,8 @@ class MainWindow(wx.Frame):
         self.pause_duration = 4
         self.font_size = 30
 
+        self.canceled = False
+
         # init the main screen
         # next calls will be via the replace view method
         self.main_sizer = wx.BoxSizer(orient=wx.VERTICAL)
@@ -175,6 +178,7 @@ class MainWindow(wx.Frame):
                                  yes_click_handler=self.real_cancel_current_thread)
 
     def real_cancel_current_thread(self, e):
+        self.canceled = True
         self.current_thread.abort()
         self.show_main(e)
 
@@ -231,6 +235,8 @@ class MainWindow(wx.Frame):
 
         presets, choices = convert_functions.get_presets()
         the_preset = convert_functions.get_preset(self.preset)
+
+        self.canceled = False
 
         current_number = 1
         for one_file in self.filenames:
@@ -393,6 +399,8 @@ class MainWindow(wx.Frame):
         presets, choices = convert_functions.get_presets()
         the_preset = convert_functions.get_preset(self.preset)
 
+        self.canceled = False
+
         files_to_join_label = ""
         for file in self.filenames:
             files_to_join_label += os.path.basename(file.file) + " , "
@@ -428,8 +436,9 @@ class MainWindow(wx.Frame):
         self.show_join_complete(None)
 
     def show_join_complete(self, e):
-        print("JOIN COMPLETE")
-        self.replace_view(self.create_join_complete())
+        if not self.canceled:
+            print("JOIN COMPLETE")
+            self.replace_view(self.create_join_complete())
 
     # utility function
     def join_add_files(self, filenames, the_list, estimate, final_name):
@@ -459,6 +468,8 @@ class MainWindow(wx.Frame):
         win, gauge, text, label = self.create_upload_progress()
         self.replace_view(win)
 
+        self.canceled = False
+
         # init s3 session
         aws_session = Session(aws_access_key_id=self.aws_data["AccessKeyId"],
                               aws_secret_access_key=self.aws_data["SecretAccessKey"],
@@ -474,7 +485,11 @@ class MainWindow(wx.Frame):
 
             label.SetLabel(str(current_number) + "/" + str(len(self.filenames)) + " " + file)
 
-            upload_key = os.path.basename(file)
+            # upload_key = os.path.basename(file)
+            # lets create a damn ugly upload key fuck this!
+            md5time = hashlib.md5(str(time.time()).encode("UTF-8")).hexdigest()
+            upload_key = time.strftime("%Y%m%d%H%M%S", time.gmtime()) + "_" + md5time + "_" + str(self.token["user_id"]) + ".mp4"
+
             print("Upload key", upload_key)
 
             self.reset_progress()
@@ -486,12 +501,12 @@ class MainWindow(wx.Frame):
             self.current_upload_size = 0
 
             self.current_thread = upload_thr = aws.UploadFile(s3client=client,
-                                        bucket=self.aws_data["Bucket"],
-                                        key=upload_key,
-                                        file=file,
-                                        progress_callback=lambda progress: self.mark_upload_progress(progress, total_size),
-                                        resume_callback=lambda progress: self.mark_upload_progress(progress, total_size),
-                                        name="upload-thr")
+                                                              bucket=self.aws_data["Bucket"],
+                                                              key=upload_key,
+                                                              file=file,
+                                                              progress_callback=lambda progress: self.mark_upload_progress(progress, total_size),
+                                                              resume_callback=lambda progress: self.mark_upload_progress(progress, total_size),
+                                                              name="upload-thr")
             upload_thr.start()
 
             while upload_thr.is_alive():
@@ -513,7 +528,7 @@ class MainWindow(wx.Frame):
                                bucket=self.aws_data["Bucket"],
                                key=upload_key,
                                duration=int(float(final_video_info.duration)),
-                               size=100)
+                               size=total_size)
             current_number += 1
 
         self.final_path = self.filenames[0]
