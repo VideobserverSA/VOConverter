@@ -107,6 +107,8 @@ class VideoInfo:
         self.framerate = 0
         self.video_codec = ""
         self.audio_codec = ""
+        self.sar = ""
+        self.dar = ""
 
     def set_w_and_h(self, w, h):
         self.width = w
@@ -129,6 +131,10 @@ class VideoInfo:
 
     def set_audio_codec(self, codec):
         self.audio_codec = codec
+
+    def set_sar_and_dar(self, sar, dar):
+        self.sar = sar
+        self.dar = dar
 
     def codecs_match(self, other_info):
         if self.width != other_info.width or\
@@ -206,6 +212,7 @@ def get_video_info(video_path):
                     video_info.set_bitrate(stream.get("bit_rate"))
                     video_info.set_framerate(stream["avg_frame_rate"])
                     video_info.set_video_codec(stream.get("codec_name"))
+                    video_info.set_sar_and_dar(stream.get("sample_aspect_ratio"), stream.get("display_aspect_ratio"))
                 if stream["codec_type"] == "audio":
                     video_info.set_audio_codec(stream.get("codec_name"))
                     has_sound = True
@@ -292,11 +299,21 @@ class EncodeWithKeyFrames(threading.Thread):
                 ]
             )
         else:
-            cmd.extend([
-                "-vf",
-                # see http://pixels-per-inch.tumblr.com/post/128732895838/height-not-divisible-by-2
-                "scale=" + w + ":" + "trunc(ow/a/2)*2"
-            ])
+            # fuck all about non square pixels
+            if self.in_video_info.dar == "1:1":
+                cmd.extend([
+                    "-vf",
+                    # see http://pixels-per-inch.tumblr.com/post/128732895838/height-not-divisible-by-2
+                    "scale=" + w + ":" + "trunc(ow/a/2)*2"
+                ])
+            else:
+                # so if the pixels are not square we force the 16:9 aspect ratio
+                # since flex VideoDisplay does not respect the sar and the dar
+                cmd.extend([
+                    "-vf",
+                    "scale=" + str(self.preset.width) + "x" + str(self.preset.height)
+                ])
+
         cmd.extend([
                 # frames
                 "-framerate",

@@ -169,7 +169,14 @@ class MainWindow(wx.Frame):
 
     # abandon thread
     def cancel_current_thread(self, e):
+        # ask the user if he wants to abort
+        self.create_alert_dialog(parent=self, title="Cancel?", message="Cancel current operation?",
+                                 # no_click_handler=,
+                                 yes_click_handler=self.real_cancel_current_thread)
+
+    def real_cancel_current_thread(self, e):
         self.current_thread.abort()
+        self.show_main(e)
 
     # navigation
     def show_main(self, e):
@@ -478,7 +485,7 @@ class MainWindow(wx.Frame):
             total_size = os.stat(file).st_size
             self.current_upload_size = 0
 
-            upload_thr = aws.UploadFile(s3client=client,
+            self.current_thread = upload_thr = aws.UploadFile(s3client=client,
                                         bucket=self.aws_data["Bucket"],
                                         key=upload_key,
                                         file=file,
@@ -1097,17 +1104,25 @@ class MainWindow(wx.Frame):
             button_sizer.Add(ok_btn, 1, wx.CENTER)
         else:
 
+            def no_handler(e):
+                if no_click_handler is not None:
+                    no_click_handler(e)
+                dialog.Destroy()
             no_btn = self.create_small_button(parent=back_window, length=100, text="NO",
                                               back_color=color_white, text_color=color_dark_grey,
                                               border_color=color_dark_grey,
-                                              click_handler=no_click_handler)
+                                              click_handler=no_handler)
             button_sizer.Add(no_btn, 1)
 
             button_sizer.AddSpacer(10)
 
+            def yes_handler(e):
+                if yes_click_handler is not None:
+                    yes_click_handler(e)
+                dialog.Destroy()
             yes_btn = self.create_small_button(parent=back_window, length=100, text="YES",
                                                back_color=color_orange, text_color=color_white,
-                                               click_handler=yes_click_handler)
+                                               click_handler=yes_handler)
             button_sizer.Add(yes_btn, 1)
 
         back_window_sizer.Add(button_sizer, 1, wx.CENTER | wx.TOP, 10)

@@ -232,6 +232,12 @@ class UploadFile(threading.Thread):
             upload.complete = True
             settings.set("uploads", jsonpickle.encode(self.current_uploads))
             settings.save()
+        else:
+            # we have canceled
+            self.cancel_upload()
+            settings.set("uploads", jsonpickle.encode(self.current_uploads))
+            settings.save()
+            self._stop()
         f.close()
 
     def send_callback(self, bytes_loaded):
@@ -245,4 +251,9 @@ class UploadFile(threading.Thread):
                                                          Key=self.key,
                                                          UploadId=self.upload_id
                                                          )
-        # print(abort_ret)
+        print(abort_ret)
+
+    def abort(self):
+        self.canceled = True
+        # self.cancel_upload()
+        # self._stop()

@@ -16,19 +16,11 @@
     "keyframes" : 25
   },
   {
-    "name" : "DVD",
+    "name" : "Mobile",
     "width" : 720,
-    "height" : 480,
+    "height" : 432,
     "bitrate": 1750,
     "framerate" : 25,
     "keyframes" : 25
-  },
-    {
-    "name" : "Fast",
-    "width" : 1280,
-    "height" : 720,
-    "bitrate": 1000,
-    "framerate" : 25,
-    "keyframes" : 750
   }
 ]
