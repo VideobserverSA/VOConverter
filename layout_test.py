@@ -272,8 +272,9 @@ class MainWindow(wx.Frame):
         self.show_convert_complete(None)
 
     def show_convert_complete(self, e):
-        print("CONVERT COMPLETE")
-        self.replace_view(self.create_convert_complete())
+        if not self.canceled:
+            print("CONVERT COMPLETE")
+            self.replace_view(self.create_convert_complete())
 
     # utility function
     def convert_add_files(self, filenames, the_list, estimate):

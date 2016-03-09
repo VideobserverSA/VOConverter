@@ -109,6 +109,7 @@ class VideoInfo:
         self.audio_codec = ""
         self.sar = ""
         self.dar = ""
+        self.has_vo_tag = False
 
     def set_w_and_h(self, w, h):
         self.width = w
@@ -135,6 +136,9 @@ class VideoInfo:
     def set_sar_and_dar(self, sar, dar):
         self.sar = sar
         self.dar = dar
+
+    def set_vo_tag(self, tag):
+        self.has_vo_tag = tag
 
     def codecs_match(self, other_info):
         if self.width != other_info.width or\
@@ -223,6 +227,11 @@ def get_video_info(video_path):
             video_info.set_has_sound(has_sound)
 
             video_info.set_duration(info_json["format"]["duration"])
+
+            tags = info_json["format"]["tags"]
+            if "comment" in tags:
+                if tags["comment"] == "VOCONVERTER":
+                    video_info.set_vo_tag(True)
 
             return video_info
 
@@ -467,24 +476,30 @@ class JoinFiles(threading.Thread):
             # use the damn preset
             video_info = video.video_info
 
-            self.current_thr = convert_thr = EncodeWithKeyFrames(in_video=video.file,
-                                                                 out_video=self.tmp_dir.name + path_separator + str(self.cut_number) + "_to_join.mp4",
-                                                                 callback=self.update_progress, preset=self.preset,
-                                                                 in_video_info=video_info,
-                                                                 temp_dir=self.tmp_dir,
-                                                                 scale=mixed)
+            if not video_info.has_vo_tag:
+                self.current_thr = convert_thr = EncodeWithKeyFrames(in_video=video.file,
+                                                                     out_video=self.tmp_dir.name + path_separator + str(self.cut_number) + "_to_join.mp4",
+                                                                     callback=self.update_progress, preset=self.preset,
+                                                                     in_video_info=video_info,
+                                                                     temp_dir=self.tmp_dir,
+                                                                     scale=mixed)
 
-            convert_thr.start()
+                convert_thr.start()
 
-            while convert_thr.is_alive():
-                if self.canceled:
-                    return
-                dummy_event = threading.Event()
-                dummy_event.wait(timeout=0.01)
+                while convert_thr.is_alive():
+                    if self.canceled:
+                        return
+                    dummy_event = threading.Event()
+                    dummy_event.wait(timeout=0.01)
+
+            if not video_info.has_vo_tag:
+                fast_in_video = self.tmp_dir.name + path_separator + str(self.cut_number) + "_to_join.mp4"
+            else:
+                fast_in_video = video.file
 
             # fast copy??
             self.current_thr = fast_copy_thr = ConvertToFastCopy(self.tmp_dir, cut_number=self.cut_number,
-                                                                 input_video=self.tmp_dir.name + path_separator + str(self.cut_number) + "_to_join.mp4",
+                                                                 input_video=fast_in_video,
                                                                  tmp_out=self.tmp_dir.name + path_separator + str(self.cut_number) + "_fast.mp4")
             fast_copy_thr.start()
             while fast_copy_thr.is_alive():
@@ -518,6 +533,8 @@ class JoinFiles(threading.Thread):
         join_args.append("aac_adtstoasc")
         join_args.append("-movflags")
         join_args.append("faststart")
+        join_args.append("-metadata")
+        join_args.append("comment=VOCONVERTER")
 
         # outfile
         # put it on desktop for now
@@ -1002,6 +1019,8 @@ class AddMultipleDrawings(threading.Thread):
             drawing_concat.append("aac_adtstoasc")
             drawing_concat.append("-movflags")
             drawing_concat.append("faststart")
+            drawing_concat.append("-metadata")
+            drawing_concat.append("comment=VOCONVERTER")
 
             # put it on desktop for now
             drawing_concat.append("" + self.tmp_out + "")
