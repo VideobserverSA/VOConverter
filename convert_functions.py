@@ -228,10 +228,11 @@ def get_video_info(video_path):
 
             video_info.set_duration(info_json["format"]["duration"])
 
-            tags = info_json["format"]["tags"]
-            if "comment" in tags:
-                if tags["comment"] == "VOCONVERTER":
-                    video_info.set_vo_tag(True)
+            if "tags" in info_json["format"]:
+                tags = info_json["format"]["tags"]
+                if "comment" in tags:
+                    if tags["comment"] == "VOCONVERTER":
+                        video_info.set_vo_tag(True)
 
             return video_info
 

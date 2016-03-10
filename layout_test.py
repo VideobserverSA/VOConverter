@@ -200,6 +200,7 @@ class MainWindow(wx.Frame):
             return
         self.filenames = []
         self.replace_view(self.create_upload_screen())
+        self.canceled = False
 
     def show_playlist(self, e):
         print("PLAYLIST")

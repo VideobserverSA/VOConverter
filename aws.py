@@ -244,7 +244,7 @@ class UploadFile(threading.Thread):
         self.progress_callback(self, bytes_loaded)
 
     def cancel_upload(self):
-        self.current_uploads[self.file].canceld = True
+        del self.current_uploads[self.file]
         settings.set("uploads", jsonpickle.encode(self.current_uploads))
         settings.save()
         abort_ret = self.s3client.abort_multipart_upload(Bucket=self.bucket,
