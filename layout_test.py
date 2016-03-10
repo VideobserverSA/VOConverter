@@ -551,8 +551,9 @@ class MainWindow(wx.Frame):
         self.mark_progress(percentage)
 
     def show_upload_complete(self, e):
-        print("UPLOAD COMPLETE")
-        self.replace_view(self.create_upload_complete())
+        if not self.canceled:
+            print("UPLOAD COMPLETE")
+            self.replace_view(self.create_upload_complete())
 
     def show_playlist_progress(self, e):
         # sanity check
