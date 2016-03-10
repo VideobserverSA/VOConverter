@@ -1554,18 +1554,56 @@ class MainWindow(wx.Frame):
         else:
             convert_list = wx.ListView(list_add, -1, style=wx.LC_REPORT)
         convert_list.AppendColumn("Drag & Drop to Convert or Add a File.", wx.LIST_FORMAT_CENTER, 400)
-        list_add_sizer.Add(convert_list, 3, wx.RIGHT | wx.LEFT, 10)
+        list_add_sizer.Add(convert_list, 3, wx.LEFT, 10)
 
         # and the real label, so we can refer to it later
         estimated_size_indicator = wx.StaticText(parent=win, id=wx.ID_ANY, label="0 Mb")
         estimated_size_indicator.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
         estimated_size_indicator.SetForegroundColour(color_dark_green)
 
+
+        # begin the buttons
+
+        up_down_buttons_sizer = wx.BoxSizer(orient=wx.VERTICAL)
+        list_add_sizer.Add(up_down_buttons_sizer, 0, wx.RIGHT | wx.LEFT, 10)
+
+        up_raw_bitmap = wx.Bitmap(name="assets/up_arrow.png", type=wx.BITMAP_TYPE_PNG)
+        # to hold the raw bitmap
+        up_bitmap = wx.StaticBitmap(parent=list_add, id=wx.ID_ANY)
+        up_bitmap.SetBitmap(up_raw_bitmap)
+        up_bitmap.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+        # center in the middle, and give so
+        up_down_buttons_sizer.Add(up_bitmap, 0, wx.TOP, 10)
+
+        up_bitmap.Bind(event=wx.EVT_LEFT_DOWN, handler=lambda evt: self.move_up_list(convert_list))
+
+        down_raw_bitmap = wx.Bitmap(name="assets/down_arrow.png", type=wx.BITMAP_TYPE_PNG)
+        # to hold the raw bitmap
+        down_bitmap = wx.StaticBitmap(parent=list_add, id=wx.ID_ANY)
+        down_bitmap.SetBitmap(down_raw_bitmap)
+        down_bitmap.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+        # center in the middle, and give so
+        up_down_buttons_sizer.Add(down_bitmap, 0, wx.TOP | wx.BOTTOM, 30)
+
+        down_bitmap.Bind(event=wx.EVT_LEFT_DOWN, handler=lambda evt: self.move_down_list(convert_list))
+
+        delete_raw_bitmap = wx.Bitmap(name="assets/delete.png", type=wx.BITMAP_TYPE_PNG)
+        # to hold the raw bitmap
+        delete_bitmap = wx.StaticBitmap(parent=list_add, id=wx.ID_ANY)
+        delete_bitmap.SetBitmap(delete_raw_bitmap)
+        delete_bitmap.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+        # center in the middle, and give so
+        up_down_buttons_sizer.Add(delete_bitmap, 0, wx.TOP, 30)
+
+        delete_bitmap.Bind(event=wx.EVT_LEFT_DOWN, handler=lambda evt: self.delete_list(convert_list))
+
+        # end the buttons
+
         add_a_file = self.create_small_button(parent=list_add, length=150, text="ADD A FILE",
                                               text_color=color_white, back_color=color_dark_grey,
                                               click_handler=lambda x: self.convert_browse_for_files(convert_list,
                                                                                                     estimated_size_indicator))
-        list_add_sizer.Add(add_a_file, 1, wx.RIGHT | wx.LEFT, 10)
+        list_add_sizer.Add(add_a_file, 1, wx.RIGHT, 10)
 
         sizer.AddSpacer(20)
 
@@ -1785,6 +1823,49 @@ class MainWindow(wx.Frame):
 
         return win
 
+    def move_up_list(self, the_list):
+        index = the_list.GetFirstSelected()
+        if index == -1:
+            return
+        self.filenames[index - 1], self.filenames[index] = self.filenames[index], self.filenames[index - 1]
+        # update the list
+        the_list.DeleteAllItems()
+        for file in self.filenames:
+            if type(file) is str:
+                the_list.Append([file])
+            else:
+                the_list.Append([file.file])
+
+        the_list.Select(index - 1)
+
+    def move_down_list(self, the_list):
+        index = the_list.GetFirstSelected()
+        if index == -1:
+            return
+        self.filenames[index + 1], self.filenames[index] = self.filenames[index], self.filenames[index + 1]
+        # update the list
+        the_list.DeleteAllItems()
+        for file in self.filenames:
+            if type(file) is str:
+                the_list.Append([file])
+            else:
+                the_list.Append([file.file])
+        the_list.Select(index + 1)
+
+    def delete_list(self, the_list):
+        index = the_list.GetFirstSelected()
+        if index == -1:
+            return
+        del self.filenames[index]
+        # update the list
+        the_list.DeleteAllItems()
+        for file in self.filenames:
+            if type(file) is str:
+                the_list.Append([file])
+            else:
+                the_list.Append([file.file])
+        the_list.Select(index + 1)
+
         # join several files
     def create_join_screen(self):
 
@@ -1823,7 +1904,7 @@ class MainWindow(wx.Frame):
         else:
             convert_list = wx.ListView(list_add, -1, style=wx.LC_REPORT)
         convert_list.AppendColumn("Drag & Drop to Join or Add a File.", wx.LIST_FORMAT_CENTER, 400)
-        list_add_sizer.Add(convert_list, 3, wx.RIGHT | wx.LEFT, 10)
+        list_add_sizer.Add(convert_list, 3, wx.LEFT, 10)
 
         sizer.AddSpacer(20)
 
@@ -1832,11 +1913,48 @@ class MainWindow(wx.Frame):
         estimated_size_indicator.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
         estimated_size_indicator.SetForegroundColour(color_dark_green)
 
+        # begin the buttons
+
+        up_down_buttons_sizer = wx.BoxSizer(orient=wx.VERTICAL)
+        list_add_sizer.Add(up_down_buttons_sizer, 0, wx.RIGHT | wx.LEFT, 10)
+
+        up_raw_bitmap = wx.Bitmap(name="assets/up_arrow.png", type=wx.BITMAP_TYPE_PNG)
+        # to hold the raw bitmap
+        up_bitmap = wx.StaticBitmap(parent=list_add, id=wx.ID_ANY)
+        up_bitmap.SetBitmap(up_raw_bitmap)
+        up_bitmap.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+        # center in the middle, and give so
+        up_down_buttons_sizer.Add(up_bitmap, 0, wx.TOP, 10)
+
+        up_bitmap.Bind(event=wx.EVT_LEFT_DOWN, handler=lambda evt: self.move_up_list(convert_list))
+
+        down_raw_bitmap = wx.Bitmap(name="assets/down_arrow.png", type=wx.BITMAP_TYPE_PNG)
+        # to hold the raw bitmap
+        down_bitmap = wx.StaticBitmap(parent=list_add, id=wx.ID_ANY)
+        down_bitmap.SetBitmap(down_raw_bitmap)
+        down_bitmap.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+        # center in the middle, and give so
+        up_down_buttons_sizer.Add(down_bitmap, 0, wx.TOP | wx.BOTTOM, 30)
+
+        down_bitmap.Bind(event=wx.EVT_LEFT_DOWN, handler=lambda evt: self.move_down_list(convert_list))
+
+        delete_raw_bitmap = wx.Bitmap(name="assets/delete.png", type=wx.BITMAP_TYPE_PNG)
+        # to hold the raw bitmap
+        delete_bitmap = wx.StaticBitmap(parent=list_add, id=wx.ID_ANY)
+        delete_bitmap.SetBitmap(delete_raw_bitmap)
+        delete_bitmap.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+        # center in the middle, and give so
+        up_down_buttons_sizer.Add(delete_bitmap, 0, wx.TOP, 30)
+
+        delete_bitmap.Bind(event=wx.EVT_LEFT_DOWN, handler=lambda evt: self.delete_list(convert_list))
+
+        # end the buttons
+
         add_a_file = self.create_small_button(parent=list_add, length=150, text="ADD A FILE",
                                               text_color=color_white, back_color=color_dark_grey,
                                               click_handler=lambda x: self.convert_browse_for_files(convert_list,
                                                                                                     estimated_size_indicator))
-        list_add_sizer.Add(add_a_file, 1, wx.RIGHT | wx.LEFT, 10)
+        list_add_sizer.Add(add_a_file, 1, wx.RIGHT, 10)
 
         # Estimated size
         estimated_size_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
@@ -2087,7 +2205,45 @@ class MainWindow(wx.Frame):
         else:
             convert_list = wx.ListView(parent=list_add, winid=wx.ID_ANY, style=wx.LC_REPORT)
         convert_list.AppendColumn("Drag & Drop to Upload or Add a File.", wx.LIST_FORMAT_CENTER, 400)
-        list_add_sizer.Add(convert_list, 3, wx.RIGHT | wx.LEFT, 10)
+        list_add_sizer.Add(convert_list, 3, wx.LEFT, 10)
+
+
+        # begin the buttons
+
+        up_down_buttons_sizer = wx.BoxSizer(orient=wx.VERTICAL)
+        list_add_sizer.Add(up_down_buttons_sizer, 0, wx.RIGHT | wx.LEFT, 10)
+
+        up_raw_bitmap = wx.Bitmap(name="assets/up_arrow.png", type=wx.BITMAP_TYPE_PNG)
+        # to hold the raw bitmap
+        up_bitmap = wx.StaticBitmap(parent=list_add, id=wx.ID_ANY)
+        up_bitmap.SetBitmap(up_raw_bitmap)
+        up_bitmap.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+        # center in the middle, and give so
+        up_down_buttons_sizer.Add(up_bitmap, 0, wx.TOP, 10)
+
+        up_bitmap.Bind(event=wx.EVT_LEFT_DOWN, handler=lambda evt: self.move_up_list(convert_list))
+
+        down_raw_bitmap = wx.Bitmap(name="assets/down_arrow.png", type=wx.BITMAP_TYPE_PNG)
+        # to hold the raw bitmap
+        down_bitmap = wx.StaticBitmap(parent=list_add, id=wx.ID_ANY)
+        down_bitmap.SetBitmap(down_raw_bitmap)
+        down_bitmap.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+        # center in the middle, and give so
+        up_down_buttons_sizer.Add(down_bitmap, 0, wx.TOP | wx.BOTTOM, 30)
+
+        down_bitmap.Bind(event=wx.EVT_LEFT_DOWN, handler=lambda evt: self.move_down_list(convert_list))
+
+        delete_raw_bitmap = wx.Bitmap(name="assets/delete.png", type=wx.BITMAP_TYPE_PNG)
+        # to hold the raw bitmap
+        delete_bitmap = wx.StaticBitmap(parent=list_add, id=wx.ID_ANY)
+        delete_bitmap.SetBitmap(delete_raw_bitmap)
+        delete_bitmap.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+        # center in the middle, and give so
+        up_down_buttons_sizer.Add(delete_bitmap, 0, wx.TOP, 30)
+
+        delete_bitmap.Bind(event=wx.EVT_LEFT_DOWN, handler=lambda evt: self.delete_list(convert_list))
+
+        # end the buttons
 
         # test the drop target stuff?
         list_add.SetDropTarget(UploadFileDrop(callback=lambda filenames: self.upload_add_files(filenames, convert_list)))
@@ -2095,7 +2251,7 @@ class MainWindow(wx.Frame):
         add_a_file = self.create_small_button(parent=list_add, length=150, text="ADD A FILE",
                                               text_color=color_white, back_color=color_dark_grey,
                                               click_handler=lambda x: self.upload_browse_for_files(convert_list))
-        list_add_sizer.Add(add_a_file, 1, wx.RIGHT | wx.LEFT, 10)
+        list_add_sizer.Add(add_a_file, 1, wx.RIGHT, 10)
 
         sizer.AddSpacer(180)
 
