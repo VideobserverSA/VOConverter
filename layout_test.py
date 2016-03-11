@@ -1464,6 +1464,8 @@ class MainWindow(wx.Frame):
         select_window_sizer.Add(select_text, 0, wx.CENTER | wx.TOP, 40)
         sizer.Add(select_window)
 
+        sizer.AddSpacer(10)
+
         footer_window = self.create_footer(parent=win)
         sizer.Add(footer_window)
 
@@ -1531,6 +1533,8 @@ class MainWindow(wx.Frame):
         select_text.SetForegroundColour(color_home_headers)
         select_window_sizer.Add(select_text, 0, wx.CENTER | wx.TOP, 40)
         sizer.Add(select_window)
+
+        sizer.AddSpacer(10)
 
         footer_window = self.create_footer(parent=win)
         sizer.Add(footer_window)
@@ -1683,7 +1687,7 @@ class MainWindow(wx.Frame):
                                                click_handler=self.show_convert_progress)
         destination_sizer.Add(convert_btn, 2, wx.RIGHT | wx.LEFT, 5)
 
-        sizer.AddSpacer(20)
+        sizer.AddSpacer(17)
 
         # place footer
         footer_window = self.create_footer(parent=win)
@@ -1752,7 +1756,7 @@ class MainWindow(wx.Frame):
                                               border_color=color_dark_grey)
         sizer.Add(cancel_btn, 0, wx.ALIGN_CENTER)
 
-        sizer.AddSpacer(40)
+        sizer.AddSpacer(50)
 
         # place footer
         footer_window = self.create_footer(parent=win)
@@ -1810,7 +1814,7 @@ class MainWindow(wx.Frame):
         converting_file_label.SetForegroundColour(color_dark_grey)
         converting_header_sizer.Add(converting_file_label, 0, wx.LEFT, 10)
 
-        sizer.AddSpacer(55)
+        sizer.AddSpacer(65)
 
         button_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
         sizer.Add(button_sizer, 1, wx.CENTER)
@@ -2040,7 +2044,7 @@ class MainWindow(wx.Frame):
                                                click_handler=self.show_join_progress)
         destination_sizer.Add(convert_btn, 2, wx.RIGHT | wx.LEFT, 5)
 
-        sizer.AddSpacer(20)
+        sizer.AddSpacer(13)
 
         # place footer
         footer_window = self.create_footer(parent=win)
@@ -2109,7 +2113,7 @@ class MainWindow(wx.Frame):
                                               border_color=color_dark_grey)
         sizer.Add(cancel_btn, 0, wx.ALIGN_CENTER)
 
-        sizer.AddSpacer(40)
+        sizer.AddSpacer(50)
 
         # place footer
         footer_window = self.create_footer(parent=win)
@@ -2566,7 +2570,7 @@ class MainWindow(wx.Frame):
                                                click_handler=self.show_playlist_progress)
         destination_sizer.Add(convert_btn, 2, wx.RIGHT | wx.LEFT, 5)
 
-        sizer.AddSpacer(20)
+        sizer.AddSpacer(23)
 
         # place footer
         footer_window = self.create_footer(parent=win)
