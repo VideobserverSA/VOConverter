@@ -334,34 +334,28 @@ class MainWindow(wx.Frame):
         #     self.size_preview.SetForegroundColour(wx.GREEN)
 
     def convert_browse_for_files(self, the_list, estimate):
-        path = ""
-        dlg = wx.FileDialog(self, "Video file", "", "", "*.*", wx.FD_OPEN)
+        dlg = wx.FileDialog(self, "Video file", "", "", "*.*", wx.FD_OPEN | wx.FD_MULTIPLE)
         if dlg.ShowModal() == wx.ID_OK:
-            path = dlg.GetPath()
-
+            paths = dlg.GetPaths()
         dlg.Destroy()
-        if path != "":
-            self.convert_add_files([path], the_list, estimate=estimate)
+        if len(paths) > 0:
+            self.convert_add_files(paths, the_list, estimate=estimate)
 
     def upload_browse_for_files(self, the_list):
-        path = ""
-        dlg = wx.FileDialog(self, "Video file", "", "", "*.mp4", wx.FD_OPEN)
+        dlg = wx.FileDialog(self, "Video file", "", "", "*.mp4", wx.FD_OPEN | wx.FD_MULTIPLE)
         if dlg.ShowModal() == wx.ID_OK:
-            path = dlg.GetPath()
-
+            paths = dlg.GetPaths()
         dlg.Destroy()
-        if path != "":
-            self.upload_add_files([path], the_list)
+        if len(paths) > 0:
+            self.upload_add_files(paths, the_list)
 
     def playlist_browse_for_files(self, the_list):
-        path = ""
-        dlg = wx.FileDialog(self, "Playlist FIle", "", "", "*.vopl", wx.FD_OPEN)
+        dlg = wx.FileDialog(self, "Playlist FIle", "", "", "*.vopl", wx.FD_OPEN | wx.FD_MULTIPLE)
         if dlg.ShowModal() == wx.ID_OK:
-            path = dlg.GetPath()
-
+            paths = dlg.GetPaths()
         dlg.Destroy()
-        if path != "":
-            self.playlist_add_files([path], the_list, None)
+        if len(paths) > 0:
+            self.playlist_add_files(paths, the_list, None)
 
     def set_destination_dir(self, text_ctrl):
         path = ""
@@ -2724,8 +2718,11 @@ class MainWindow(wx.Frame):
 
         return win
 
-# trunc vo converter.log?
 os.makedirs(os.path.expanduser("~/VoConverter/"), exist_ok=True)
+# trunc vo converter.log?
+log_file = open(os.path.expanduser("~/VoConverter/voconverter.log"), "w")
+log_file.truncate()
+log_file.close()
 
 settings_path = os.path.expanduser("~/VoConverter/voconverter.conf")
 settings = EasySettings(settings_path)
