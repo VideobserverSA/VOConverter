@@ -485,6 +485,14 @@ class MainWindow(wx.Frame):
         current_number = 1
         for file in self.filenames:
 
+            # check for file existance
+            if not os.path.exists(file):
+                dialog = self.create_alert_dialog(parent=self,
+                                                  title="File missing",
+                                                  message="The file is missing. Skipping.",
+                                                  is_ok_type=True)
+                continue
+
             label.SetLabel(str(current_number) + "/" + str(len(self.filenames)) + " " + file)
 
             # upload_key = os.path.basename(file)
