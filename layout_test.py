@@ -1618,7 +1618,7 @@ class MainWindow(wx.Frame):
 
         # end the buttons
 
-        add_a_file = self.create_small_button(parent=list_add, length=150, text="ADD A FILE",
+        add_a_file = self.create_small_button(parent=list_add, length=150, text="ADD FILES",
                                               text_color=color_white, back_color=color_dark_grey,
                                               click_handler=lambda x: self.convert_browse_for_files(convert_list,
                                                                                                     estimated_size_indicator))
@@ -1969,7 +1969,7 @@ class MainWindow(wx.Frame):
 
         # end the buttons
 
-        add_a_file = self.create_small_button(parent=list_add, length=150, text="ADD A FILE",
+        add_a_file = self.create_small_button(parent=list_add, length=150, text="ADD FILES",
                                               text_color=color_white, back_color=color_dark_grey,
                                               click_handler=lambda x: self.convert_browse_for_files(convert_list,
                                                                                                     estimated_size_indicator))
@@ -2267,7 +2267,7 @@ class MainWindow(wx.Frame):
         # test the drop target stuff?
         list_add.SetDropTarget(UploadFileDrop(callback=lambda filenames: self.upload_add_files(filenames, convert_list)))
 
-        add_a_file = self.create_small_button(parent=list_add, length=150, text="ADD A FILE",
+        add_a_file = self.create_small_button(parent=list_add, length=150, text="ADD FILES",
                                               text_color=color_white, back_color=color_dark_grey,
                                               click_handler=lambda x: self.upload_browse_for_files(convert_list))
         list_add_sizer.Add(add_a_file, 1, wx.RIGHT, 10)
@@ -2488,7 +2488,7 @@ class MainWindow(wx.Frame):
         half_part = wx.BoxSizer(orient=wx.VERTICAL)
         list_add_sizer.Add(half_part, 1, wx.RIGHT | wx.LEFT, 10)
 
-        add_a_file = self.create_small_button(parent=list_add, length=150, text="ADD A FILE",
+        add_a_file = self.create_small_button(parent=list_add, length=150, text="ADD FILES",
                                               text_color=color_white, back_color=color_dark_grey,
                                               click_handler=lambda x: self.playlist_browse_for_files(convert_list))
         half_part.Add(add_a_file, 1)
