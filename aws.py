@@ -9,14 +9,21 @@ from easysettings import EasySettings
 import jsonpickle
 import zlib
 import os
+import errno
 
 api_url = "http://api.staging.videobserver.com/"
 
 # lets us try to send the minimum 5 megabytes at a time
 part_size = 5 * 1024 * 1024
 
+os.makedirs(os.path.expanduser("~/VoConverter/"), exist_ok=True)
 # just some global settings
-settings = EasySettings("uploads.conf")
+settings = EasySettings(os.path.expanduser("~/VoConverter/uploads.conf"))
+
+
+def print_mine(*args):
+    pass
+    # print(args)
 
 
 class SavedUpload:
@@ -49,7 +56,7 @@ def get_token(username, password):
         binary_data = post_data.encode()
 
         with urllib.request.urlopen(url=api_url + "v3/auth/get_token.json", data=binary_data) as auth_request:
-            # print(auth_request.status)
+            # print_mine(auth_request.status)
             response_json = json.loads(auth_request.read().decode('utf-8'))
             if response_json["code"] == 200:
                 return response_json["code"], {"token": response_json["data"]["token"], "user_id": response_json["data"]["user_id"]}
@@ -57,7 +64,7 @@ def get_token(username, password):
                 return response_json["code"], None
 
     except urllib.error.URLError as ue:
-        print("ERROR AUTH", ue.reason)
+        print_mine("ERROR AUTH", ue.reason)
         return None
 
 
@@ -78,7 +85,7 @@ def get_aws_data(token):
             return response_json["data"]
 
     except urllib.error.URLError as ue:
-        print("ERROR AWS", ue.reason)
+        print_mine("ERROR AWS", ue.reason)
         return None
 
 
@@ -102,7 +109,7 @@ def confirm_upload(token, bucket, key, duration, size):
             return response_json["data"]
 
     except urllib.error.URLError as ue:
-        print("ERROR AWS", ue.reason)
+        print_mine("ERROR AWS", ue.reason)
         return None
 
 
@@ -117,7 +124,7 @@ class UploadFile(threading.Thread):
         self.file = file
         self.key = key
 
-        # print(self.total_size)
+        # print_mine(self.total_size)
 
         self.progress_callback = progress_callback
         self.resume_callback = resume_callback
@@ -251,7 +258,7 @@ class UploadFile(threading.Thread):
                                                          Key=self.key,
                                                          UploadId=self.upload_id
                                                          )
-        print(abort_ret)
+        print_mine(abort_ret)
 
     def abort(self):
         self.canceled = True

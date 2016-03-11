@@ -13,8 +13,8 @@ import shutil
 
 
 def print_mine(*args):
-    # pass
-    print(args)
+    pass
+    # print(args)
 
 
 def subprocess_args(include_stdout=True):
@@ -189,9 +189,9 @@ def get_preset(preset):
 
 def get_video_info(video_path):
 
-        print("VIDEO_PATH", video_path)
+        print_mine("VIDEO_PATH", video_path)
 
-        print("EXITS", os.path.exists(ffprobe_path), os.path.exists(video_path))
+        print_mine("EXITS", os.path.exists(ffprobe_path), os.path.exists(video_path))
 
         try:
             out = check_output([
@@ -237,7 +237,7 @@ def get_video_info(video_path):
             return video_info
 
         except CalledProcessError as cpe:
-            print("FFPROBE OUT", cpe.output)
+            print_mine("FFPROBE OUT", cpe.output)
 
 
 # the convert functions
@@ -334,12 +334,13 @@ class EncodeWithKeyFrames(threading.Thread):
                 self.out_video + "_temp.mp4"
                 ])
 
-        print(cmd)
+        print_mine(cmd)
 
         self.p = Popen(cmd,
                        stderr=STDOUT,
                        stdout=PIPE,
-                       universal_newlines=True
+                       universal_newlines=True,
+                       shell=shell_status
                        )
 
         reg = re.compile("time=[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9]")
@@ -394,7 +395,7 @@ class EncodeWithKeyFrames(threading.Thread):
             processor.process(self.out_video + "_temp.mp4", self.out_video)
 
     def abort(self):
-        print("ABORT WITH KEY FRAMES")
+        print_mine("ABORT WITH KEY FRAMES")
         self.canceled = True
         self.p.terminate()
         self.p.wait()
@@ -436,7 +437,7 @@ class ConvertToFastCopy(threading.Thread):
             # output file
             self.tmp_out
         ],  stderr=STDOUT,
-            shell=False)
+            shell=shell_status)
 
 
 class JoinFiles(threading.Thread):
@@ -466,7 +467,7 @@ class JoinFiles(threading.Thread):
             if test_video.video_info.width != test_w or test_video.video_info.height != test_h:
                 mixed = True
 
-        print("MIXED MIXED", mixed)
+        print_mine("MIXED MIXED", mixed)
 
         # loop the in videos and convert according to the preset
         for video in self.in_videos:
@@ -545,7 +546,7 @@ class JoinFiles(threading.Thread):
             try:
                 out = check_call(join_args, stderr=STDOUT, shell=False)
             except CalledProcessError as cpe:
-                print("ERROR>>", cpe.output)
+                print_mine("ERROR>>", cpe.output)
 
             # we are DONE!
             self.callback(100)
@@ -561,7 +562,7 @@ class JoinFiles(threading.Thread):
         self.callback(int(baseline + to_add))
 
     def abort(self):
-        print("ABORT THE THREAD")
+        print_mine("ABORT THE THREAD")
         self.canceled = True
         self.current_thr.abort()
 
@@ -616,7 +617,8 @@ class CutWithKeyFrames(threading.Thread):
         p = Popen(cmd,
                   stderr=STDOUT,
                   stdout=PIPE,
-                  universal_newlines=True
+                  universal_newlines=True,
+                  shell=shell_status
                   )
 
         reg = re.compile("time=[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9]")
@@ -1454,7 +1456,7 @@ class EncodeSubtitles(threading.Thread):
                 #stderr=STDOUT,
             )
         except CalledProcessError as cpe:
-            print("SUB ASS OUT", cpe.output)
+            print_mine("SUB ASS OUT", cpe.output)
 
         try:
             check_call([
@@ -1484,5 +1486,5 @@ class EncodeSubtitles(threading.Thread):
                 stderr=STDOUT,
             )
         except CalledProcessError as cpe:
-            print("SUB ASS OUT", cpe.output)
+            print_mine("SUB ASS OUT", cpe.output)
 

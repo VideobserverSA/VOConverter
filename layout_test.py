@@ -17,12 +17,18 @@ import urllib
 import base64
 from PIL import Image
 import hashlib
+import errno
 
 # we need this because: https://github.com/pyinstaller/pyinstaller/wiki/Recipe-subprocess
 if getattr(sys, 'frozen', False):
     isFrozen = True
 else:
     isFrozen = False
+
+
+def print_mine(*args):
+    pass
+    # print(args)
 
 # some initalization
 ffmpeg_path = "ffmpeg.exe"
@@ -108,9 +114,9 @@ class MainWindow(wx.Frame):
         self.current_upload_size = 0
 
         # playlist cruft
-        self.watermark = False
-        self.pause_duration = 4
-        self.font_size = 30
+        self.watermark = settings.get("watermark", 0)
+        self.pause_duration = settings.get("pause_duration", 4)
+        self.font_size = settings.get("font_size", 30)
 
         self.canceled = False
 
@@ -150,7 +156,7 @@ class MainWindow(wx.Frame):
         gauge.SetValue(self.current_progress)
         if len(self.data_points) > 0:
             remain = (sum(self.data_points) / len(self.data_points))
-            # print(remain)
+            # print_mine(remain)
             s = int(remain % 60)
             m = int((remain / 60) % 60)
             h = int((remain / (60 * 60)) % 60)
@@ -184,18 +190,18 @@ class MainWindow(wx.Frame):
 
     # navigation
     def show_main(self, e):
-        print("MAIN!")
+        print_mine("MAIN!")
         self.replace_view(self.create_main_screen())
 
     def show_convert_join(self, e):
-        print("CONVERT / JOIN!")
+        print_mine("CONVERT / JOIN!")
         self.replace_view(self.create_convert_join_screen())
 
     def show_upload(self, e):
-        print("UPLOAD")
+        print_mine("UPLOAD")
         if not self.logged_in:
-            self.create_alert_dialog(parent=self, title="Not logged in",
-                                     message="You must be logged in to upload files",
+            self.create_alert_dialog(parent=self, title="Coming soon.",
+                                     message="Soon you will be able to upload files directly.",
                                      is_ok_type=True)
             return
         self.filenames = []
@@ -203,18 +209,18 @@ class MainWindow(wx.Frame):
         self.canceled = False
 
     def show_playlist(self, e):
-        print("PLAYLIST")
+        print_mine("PLAYLIST")
         self.filenames = []
         self.replace_view(self.create_playlist_screen())
 
     def show_convert(self, e):
-        print("CONVERT")
+        print_mine("CONVERT")
         self.filenames = []
         win, estimate = self.create_convert_screen()
         self.replace_view(win)
 
     def show_join(self, e):
-        print("JOIN!")
+        print_mine("JOIN!")
         self.filenames = []
         win, estimate, final_file_name = self.create_join_screen()
         self.replace_view(win)
@@ -222,15 +228,15 @@ class MainWindow(wx.Frame):
     def show_convert_progress(self, e):
         # sanity check
         if self.destination_dir == "":
-            print("NO DESTINATION DIR")
+            print_mine("NO DESTINATION DIR")
             return
         if len(self.filenames) < 1:
-            print("NO FILES TO CONVERT")
+            print_mine("NO FILES TO CONVERT")
             return
         if self.preset == "":
-            print("NO PRESET")
+            print_mine("NO PRESET")
             return
-        print("CONVERT PROGRESS")
+        print_mine("CONVERT PROGRESS")
         win, gauge, estimate_text, current_file = self.create_convert_progress()
         self.replace_view(win)
 
@@ -274,7 +280,7 @@ class MainWindow(wx.Frame):
 
     def show_convert_complete(self, e):
         if not self.canceled:
-            print("CONVERT COMPLETE")
+            print_mine("CONVERT COMPLETE")
             self.replace_view(self.create_convert_complete())
 
     # utility function
@@ -296,15 +302,15 @@ class MainWindow(wx.Frame):
             else:
                 local_size = float(video.video_info.duration) * float(preset.bitrate) * 1024
 
-            print("local_size", local_size)
+            print_mine("local_size", local_size)
             total_size += local_size
 
-        print("total_size", total_size)
+        print_mine("total_size", total_size)
 
         size_in_megas = total_size / 1024 / 1024 / 10
         size_in_gigas = size_in_megas / 1024
-        print("in_megas", size_in_megas)
-        print("in_gigas", size_in_gigas)
+        print_mine("in_megas", size_in_megas)
+        print_mine("in_gigas", size_in_gigas)
 
         if size_in_megas > 1000:
             estimate.SetLabel(str(round(size_in_gigas, 1)) + " Gb")
@@ -376,25 +382,31 @@ class MainWindow(wx.Frame):
 
     def set_font_size(self, size):
         self.font_size = size
+        # update settings
+        settings.setsave("font_size", size)
 
     def set_pause_time(self, duration):
         self.pause_duration = duration
+        # update settings
+        settings.setsave("pause_duration", duration)
 
     def set_watermark_enabled(self, enabled):
         self.watermark = (enabled == 1)
+        # update settings
+        settings.setsave("watermark", enabled)
 
     def show_join_progress(self, e):
         # sanity check
         if self.destination_dir == "":
-            print("NO DESTINATION DIR")
+            print_mine("NO DESTINATION DIR")
             return
         if len(self.filenames) < 1:
-            print("NO FILES TO CONVERT")
+            print_mine("NO FILES TO CONVERT")
             return
         if self.preset == "":
-            print("NO PRESET")
+            print_mine("NO PRESET")
             return
-        print("CONVERT PROGRESS")
+        print_mine("CONVERT PROGRESS")
         win, gauge, estimate_text, current_file = self.create_join_progress()
         self.replace_view(win)
 
@@ -434,12 +446,12 @@ class MainWindow(wx.Frame):
 
         self.final_path = out_video
         self.filenames = [out_video]
-        print("SHOW JOIN COMPLETE WTF MAN WHY CRASH?")
+        print_mine("SHOW JOIN COMPLETE WTF MAN WHY CRASH?")
         self.show_join_complete(None)
 
     def show_join_complete(self, e):
         if not self.canceled:
-            print("JOIN COMPLETE")
+            print_mine("JOIN COMPLETE")
             self.replace_view(self.create_join_complete())
 
     # utility function
@@ -459,11 +471,11 @@ class MainWindow(wx.Frame):
         self.final_filename = event.String
 
     def show_upload_progress(self, e):
-        print("DO THE UPLOAD")
+        print_mine("DO THE UPLOAD")
 
         if not self.logged_in:
-            self.create_alert_dialog(parent=self, title="Not logged in",
-                                     message="You must be logged in to upload files",
+            self.create_alert_dialog(parent=self, title="Coming soon.",
+                                     message="Soon you will be able to upload files directly.",
                                      is_ok_type=True)
             return
 
@@ -500,7 +512,7 @@ class MainWindow(wx.Frame):
             md5time = hashlib.md5(str(time.time()).encode("UTF-8")).hexdigest()
             upload_key = time.strftime("%Y%m%d%H%M%S", time.gmtime()) + "_" + md5time + "_" + str(self.token["user_id"]) + ".mp4"
 
-            print("Upload key", upload_key)
+            print_mine("Upload key", upload_key)
 
             self.reset_progress()
 
@@ -532,7 +544,7 @@ class MainWindow(wx.Frame):
             # get the real duration
             final_video_info = convert_functions.get_video_info(file)
 
-            print("file duration", final_video_info.duration)
+            print_mine("file duration", final_video_info.duration)
 
             aws.confirm_upload(self.token["token"],
                                bucket=self.aws_data["Bucket"],
@@ -553,25 +565,25 @@ class MainWindow(wx.Frame):
             self.filenames.append(file)
 
     def mark_upload_progress(self, progress, total):
-        print("UP:", progress, total)
+        print_mine("UP:", progress, total)
         self.current_upload_size += progress
         percentage = math.ceil((self.current_upload_size / total) * 100)
         self.mark_progress(percentage)
 
     def show_upload_complete(self, e):
         if not self.canceled:
-            print("UPLOAD COMPLETE")
+            print_mine("UPLOAD COMPLETE")
             self.replace_view(self.create_upload_complete())
 
     def show_playlist_progress(self, e):
         # sanity check
         if self.destination_dir == "":
-            print("NO DESTINATION DIR")
+            print_mine("NO DESTINATION DIR")
             return
         if len(self.filenames) < 1:
-            print("NO FILES TO CONVERT")
+            print_mine("NO FILES TO CONVERT")
             return
-        print("PLAYLIST PROGRESS")
+        print_mine("PLAYLIST PROGRESS")
         win, gauge, estimate_text, current_file = self.create_playlist_progress()
         self.replace_view(win)
 
@@ -640,7 +652,7 @@ class MainWindow(wx.Frame):
                 # self.PushStatusText(status_text)
 
                 item_type = child.find("type").text
-                # print("ItemType>> ", item_type)
+                # print_mine("ItemType>> ", item_type)
 
                 time_start = ""
                 time_end = ""
@@ -734,15 +746,15 @@ class MainWindow(wx.Frame):
                 # time_start += 2
                 # time_end += 2
 
-                # print("TimeStart>> ", time_start)
-                # print("TimeEnd>> ", time_end)
-                # print("Comments>> ", comments)
-                # print("Enable Comments>> ", enable_comments)
+                # print_mine("TimeStart>> ", time_start)
+                # print_mine("TimeEnd>> ", time_end)
+                # print_mine("Comments>> ", comments)
+                # print_mine("Enable Comments>> ", enable_comments)
                 #
-                # print("")
+                # print_mine("")
 
                 # for drw in multiple_drawings:
-                #    print(drw.drawing_time)
+                #    print_mine(drw.drawing_time)
 
                 duration = time_end - time_start
                 real_duration = real_time_end - real_time_start
@@ -940,7 +952,7 @@ class MainWindow(wx.Frame):
             try:
                 out = subprocess.check_call(join_args, stderr=subprocess.STDOUT, shell=False)
             except subprocess.CalledProcessError as cpe:
-                print("ERROR>>", cpe.output)
+                print_mine("ERROR>>", cpe.output)
             # TODO solve this
 
             current_number += 1
@@ -956,19 +968,19 @@ class MainWindow(wx.Frame):
             self.filenames.append(file)
 
     def show_playlist_complete(self, e):
-        print("CONVERT COMPLETE")
+        print_mine("CONVERT COMPLETE")
         self.replace_view(self.create_playlist_complete())
 
     def update_drawing_progress(self, progress, cut_number, total_items):
-        # print("prog, cut, num", progress, cut_number, total_items)
+        # print_mine("prog, cut, num", progress, cut_number, total_items)
         # get the lower and upper bound
         interval = 100 / total_items
         upper = (cut_number / total_items) * 100
         lower = upper - interval
-        # print("int, low, up", interval, upper, lower)
+        # print_mine("int, low, up", interval, upper, lower)
         relative_progress = (progress * interval) / 100
         actual_progress = lower + relative_progress
-        # print("rel, act", relative_progress, actual_progress)
+        # print_mine("rel, act", relative_progress, actual_progress)
         self.mark_progress(int(actual_progress))
 
     # show the next screen
@@ -1214,11 +1226,12 @@ class MainWindow(wx.Frame):
             logout_bitmap.Bind(wx.EVT_LEFT_DOWN, self.do_logout)
 
         else:
-            login_btn = self.create_small_button(parent=anchor_window, length=150, text="LOGIN",
-                                                 text_color=color_orange, back_color=color_dark_grey,
-                                                 border_color=color_orange,
-                                                 click_handler=self.show_login_form)
-            anchor_window_sizer.Add(login_btn, 0, wx.CENTER | wx.RIGHT, 10)
+            pass
+            # login_btn = self.create_small_button(parent=anchor_window, length=150, text="LOGIN",
+            #                                      text_color=color_orange, back_color=color_dark_grey,
+            #                                      border_color=color_orange,
+            #                                      click_handler=self.show_login_form)
+            # anchor_window_sizer.Add(login_btn, 0, wx.CENTER | wx.RIGHT, 10)
 
         anchor_window.SetSizer(anchor_window_sizer)
 
@@ -1372,10 +1385,10 @@ class MainWindow(wx.Frame):
                                               title="Login Failed",
                                               message="Wrong user name or password",
                                               is_ok_type=True)
-            print("wrong user and pass")
+            print_mine("wrong user and pass")
 
     def do_logout(self, e):
-        print("Do LOGOUT")
+        print_mine("Do LOGOUT")
         self.logged_in = False
 
     # create the home screen
@@ -2484,18 +2497,18 @@ class MainWindow(wx.Frame):
 
         font_size_label = wx.StaticText(parent=list_add, id=wx.ID_ANY, label="Font Size:")
         half_part.Add(font_size_label, 1, wx.TOP, 5)
-        font_size_slider = wx.Slider(parent=list_add, id=wx.ID_ANY, value=25, minValue=10, maxValue=50)
+        font_size_slider = wx.Slider(parent=list_add, id=wx.ID_ANY, value=self.font_size, minValue=10, maxValue=50)
         half_part.Add(font_size_slider, 1, wx.EXPAND)
         font_size_slider.Bind(event=wx.EVT_SLIDER, handler=lambda evt: self.set_font_size(evt.GetInt()))
 
         pause_size_label = wx.StaticText(parent=list_add, id=wx.ID_ANY, label="Pause Time:")
         half_part.Add(pause_size_label, 1)
-        pause_time_slider = wx.Slider(parent=list_add, id=wx.ID_ANY, value=4, minValue=1, maxValue=10)
+        pause_time_slider = wx.Slider(parent=list_add, id=wx.ID_ANY, value=self.pause_duration, minValue=1, maxValue=10)
         half_part.Add(pause_time_slider, 1, wx.EXPAND)
-        pause_time_slider.Bind(event=wx.EVT_SLIDER, handler=lambda evt: self.set_slow_but_better_enabled(evt.GetInt()))
+        pause_time_slider.Bind(event=wx.EVT_SLIDER, handler=lambda evt: self.set_pause_time(evt.GetInt()))
 
         watermark_cb = wx.CheckBox(parent=list_add, id=wx.ID_ANY, label="Watermark")
-        half_part.Add(watermark_cb, 1)
+        half_part.Add(watermark_cb, self.watermark)
         watermark_cb.Bind(event=wx.EVT_CHECKBOX, handler=lambda evt: self.set_watermark_enabled(evt.GetInt()))
 
         # Estimated size
@@ -2707,10 +2720,12 @@ class MainWindow(wx.Frame):
 
         return win
 
-app = wx.App(False)
+# trunc vo converter.log?
+os.makedirs(os.path.expanduser("~/VoConverter/"), exist_ok=True)
 
-settings_path = os.path.expanduser("~/voconverter.conf")
+settings_path = os.path.expanduser("~/VoConverter/voconverter.conf")
 settings = EasySettings(settings_path)
 
-frame = MainWindow(None, "Layout Test")
+app = wx.App(redirect=True, filename=os.path.expanduser("~/VoConverter/voconverter.log"))
+frame = MainWindow(None, "Videobserver Converter")
 app.MainLoop()
