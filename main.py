@@ -1718,26 +1718,11 @@ class MainWindow(wx.Frame):
             font_val = 30
         self.font_size.SetValue(font_val)
 
-        # slow but better stuff
-
-        # sizer for slow but better
-        self.slow_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.slow_check_box = wx.CheckBox(parent=self.panel, id=wx.ID_ANY, label=t("Slow but better"))
-        self.slow_sizer.Add(self.slow_check_box, 1, wx.ALL, 10)
-        self.main_sizer.Add(self.slow_sizer)
-
         # sizer for watermark
         self.water_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.water_check_box = wx.CheckBox(parent=self.panel, id=wx.ID_ANY, label=t("Watermark"))
         self.water_sizer.Add(self.water_check_box, 1, wx.ALL, 10)
         self.main_sizer.Add(self.water_sizer)
-
-        # sizer for debug
-        self.debug_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.debug_check_box = wx.CheckBox(parent=self.panel, id=wx.ID_ANY, label="Faster drawings")
-        self.debug_sizer.Add(self.debug_check_box, 1, wx.ALL, 10)
-        self.main_sizer.Add(self.debug_sizer)
-        self.debug_check_box.SetValue(True)
 
         # progress bar
         self.meter_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -2031,8 +2016,6 @@ class MainWindow(wx.Frame):
         print_mine("Resolution>>>", str(self.video_info.width) + "x" + str(self.video_info.height))
         print_mine("Has Sound>>>", self.video_info.has_sound)
 
-        print_mine("SLOW AND BETTER>>", self.slow_check_box.GetValue() is True)
-
         print_mine("")
 
         # SANITY CHECK
@@ -2221,10 +2204,8 @@ class MainWindow(wx.Frame):
             watermark = self.water_check_box.GetValue()
 
             #  first check for comments
-            if (comments is not None and enable_comments == "true") or self.slow_check_box.GetValue() is True\
-                    or mixed_playlist is True:
-                if (self.slow_check_box.GetValue() is True or mixed_playlist is True) and\
-                        (comments is None or enable_comments == 'false'):
+            if (comments is not None and enable_comments == "true") or mixed_playlist is True:
+                if mixed_playlist is True and (comments is None or enable_comments == 'false'):
                     self.PushStatusText(t("Better converting %i") % (cut_number + 1))
 
                     burn_thr = BurnLogo(temp_dir=self.temp_dir, cut_number=cut_number, input_video=video_path,
@@ -2342,7 +2323,7 @@ class MainWindow(wx.Frame):
                                                    duration=real_duration,
                                                    watermark=watermark,
                                                    callback=lambda prog: self.update_drawings_progress(prog, cut_number),
-                                                   fast_drawings=self.debug_check_box.GetValue())
+                                                   fast_drawings=True)
                 multiple_thr.start()
                 while multiple_thr.is_alive():
                     if self.temp_status_text is not "":
