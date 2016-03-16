@@ -1399,6 +1399,8 @@ class CutWithKeyFrames(threading.Thread):
         log_file_path = self.temp_dir.name + path_separator + "cut_" + str(self.cut_number) + "_keyframes.log"
         log_file = open(log_file_path, "w")
 
+        log_file.write("keyframes log\n")
+
         blank_lines = 0
 
         for line in iter(p.stdout.readline, b''):
@@ -1543,6 +1545,8 @@ class EncodeSubtitles(threading.Thread):
 
         log_file_path = self.temp_dir.name + path_separator + "cut_" + str(self.cut_number) + "_subtiles_ass.log"
         log_file = open(log_file_path, "w")
+
+        log_file.write("subtitles log\n")
 
         for line in iter(p.stdout.readline, b''):
             # print_mine(">>> " + line)
