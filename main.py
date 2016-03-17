@@ -1397,7 +1397,7 @@ class CutWithKeyFrames(threading.Thread):
         first_pass_last_perc = -1
 
         log_file_path = self.temp_dir.name + path_separator + "cut_" + str(self.cut_number) + "_keyframes.log"
-        log_file = open(log_file_path, "w")
+        log_file = open(log_file_path, "w", 1)
 
         log_file.write("keyframes log\n")
 
@@ -1544,7 +1544,7 @@ class EncodeSubtitles(threading.Thread):
         blank_lines = 0
 
         log_file_path = self.temp_dir.name + path_separator + "cut_" + str(self.cut_number) + "_subtiles_ass.log"
-        log_file = open(log_file_path, "w")
+        log_file = open(log_file_path, "w", 1)
 
         log_file.write("subtitles log\n")
 
