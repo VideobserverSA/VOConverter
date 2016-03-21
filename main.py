@@ -1380,6 +1380,8 @@ class CutWithKeyFrames(threading.Thread):
             "aac",
             "-strict",
             "-2",
+            "-loglevel",
+            "debug",
             # output file
             self.tmp_out
         ]
@@ -1399,13 +1401,17 @@ class CutWithKeyFrames(threading.Thread):
         log_file_path = self.temp_dir.name + path_separator + "cut_" + str(self.cut_number) + "_keyframes.log"
         log_file = open(log_file_path, "w", 1)
 
-        log_file.write("keyframes log\n")
+        log_file.write(time.strftime("%H:%M:%S") + ": " + "keyframes log\n")
+        log_file.flush()
+        os.fsync(log_file.fileno())
 
         blank_lines = 0
 
         for line in iter(p.stdout.readline, b''):
             # print_mine(">>> " + line)
-            log_file.write(line)
+            log_file.write(time.strftime("%H:%M:%S") + ": " + line)
+            log_file.flush()
+            os.fsync(log_file.fileno())
             if len(line) < 1:
                 blank_lines += 1
             m = reg.search(str(line.rstrip()))
@@ -1443,7 +1449,7 @@ class CutWithKeyFrames(threading.Thread):
 class EncodeSubtitles(threading.Thread):
 
     def __init__(self, temp_dir, cut_number, video_path, video_info, time_start, duration, comments, tmp_out,
-                 font_size, watermark, callback, keyframes):
+                 font_size, watermark, callback, keyframes, ass=True):
 
         super().__init__()
 
@@ -1459,6 +1465,7 @@ class EncodeSubtitles(threading.Thread):
         self.watermark = watermark
         self.callback = callback
         self.key_frames = keyframes
+        self.ass = ass
 
     def run(self):
 
@@ -1495,6 +1502,15 @@ class EncodeSubtitles(threading.Thread):
         ass_file.write(ass_contents.encode("utf8"))
         ass_file.close()
 
+        srt_contents = "1\n"
+        srt_contents += "00:00:00,000 --> 05:00:00,000\n"
+        srt_contents += self.comments + "\n"
+
+        srt_path = self.temp_dir.name + path_separator + str(self.cut_number) + ".srt"
+        srt_file = open(srt_path, "wb")
+        srt_file.write(srt_contents.encode("utf8"))
+        srt_file.close()
+
         escaped_ass_path = ""
         if platform.system() == "Darwin":
             escaped_ass_path = ass_path
@@ -1502,7 +1518,10 @@ class EncodeSubtitles(threading.Thread):
             escaped_ass_path = ass_path.replace("\\", "\\\\").replace(":", "\:").replace(" ", "\ ")
 
         cmd = [
-            ffmpeg_path,
+            # "/bin/bash",
+            # "-i",
+            # "-c",
+            ffmpeg_path.replace(" ", "\ "),
             # overwrite
             "-y",
             # start time
@@ -1510,7 +1529,7 @@ class EncodeSubtitles(threading.Thread):
             str(self.time_start),
             # input file
             "-i",
-            self.video_path,
+            self.video_path.replace(" ", "\ "),
             "-t",
             str(self.duration),
             # codec
@@ -1522,17 +1541,44 @@ class EncodeSubtitles(threading.Thread):
             "-crf",
             "23",
             "-codec:a",
-            "copy",
-            "-vf",
-            "ass=" + "'" + escaped_ass_path + "'",
-            # self.tmp_out
-            self.temp_dir.name + path_separator + str(self.cut_number) + "_no_water.mp4"
-        ]
+            "copy"]
+        if self.ass:
+            cmd.extend(
+                [
+                    "-vf",
+                    "ass=" + "'" + escaped_ass_path + "'"
+                ]
+            )
+        else:
+            cmd.extend(
+                [
+                    "-vf",
+                    "subtitles=" + srt_path
+                ]
+            )
 
-        p = Popen(cmd,
+        cmd.extend(
+            [
+                "-loglevel",
+                "debug",
+                # self.tmp_out
+                self.temp_dir.name + path_separator + str(self.cut_number) + "_no_water.mp4"
+            ]
+
+        )
+
+        ffmpeg_cmd =   ' '.join(cmd)
+        # ffmpeg_cmd.replace(" ", "\ ")
+        print(ffmpeg_cmd)
+        # bash_cmd = ["/bin/bash", "-i", "-c", ffmpeg_cmd]
+        bash_cmd = ["/bin/bash", "-i", "-c", ffmpeg_cmd]
+
+        p = Popen(bash_cmd,
                   stderr=STDOUT,
                   stdout=PIPE,
-                  universal_newlines=True
+                  universal_newlines=True,
+                  shell=False,
+                  executable="/bin/bash"
                   )
 
         reg = re.compile("time=[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9]")
@@ -1546,11 +1592,16 @@ class EncodeSubtitles(threading.Thread):
         log_file_path = self.temp_dir.name + path_separator + "cut_" + str(self.cut_number) + "_subtiles_ass.log"
         log_file = open(log_file_path, "w", 1)
 
-        log_file.write("subtitles log\n")
+        log_file.write(time.strftime("%H:%M:%S") + ": " + "subtitles log\n")
+        log_file.write("setting font config path to: " + os.environ["FONTCONFIG_PATH"] + "\n")
+        log_file.flush()
+        os.fsync(log_file.fileno())
 
         for line in iter(p.stdout.readline, b''):
             # print_mine(">>> " + line)
-            log_file.write(line)
+            log_file.write(time.strftime("%H:%M:%S") + ": " + line)
+            log_file.flush()
+            os.fsync(log_file.fileno())
             if len(line) < 1:
                 blank_lines += 1
             m = reg.search(str(line.rstrip()))
@@ -2235,7 +2286,8 @@ class MainWindow(wx.Frame):
                                               font_size=self.font_size.GetValue(),
                                               watermark=watermark,
                                               callback=lambda prog: self.update_subtitles_progress(prog, cut_number),
-                                              keyframes=12)
+                                              keyframes=12,
+                                              )
                     sub_thr.start()
                     while sub_thr.is_alive():
                         if self.temp_status_text is not "":
