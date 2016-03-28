@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Vo Converter Layout"
-#define MyAppVersion "1.1.11"
+#define MyAppVersion "1.1.12"
 #define MyAppPublisher "Videobserver SA"
 #define MyAppURL "http://www.videobserver.com"
 #define MyAppExeName "vo_converter.exe"
@@ -22,10 +22,10 @@ AppUpdatesURL={#MyAppURL}
 AppCopyright=Copyright (C) 2016 Videobserver SA
 DefaultDirName={pf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
-LicenseFile=C:\Users\Rui\PycharmProjects\VOConverter\dist\gpl.txt
+LicenseFile=C:\Users\Rui\PycharmProjects\VOConverter\gpl.txt
 OutputDir=C:\Users\Rui\PycharmProjects\VOConverter\pack_out
 OutputBaseFilename=vo_converter_setup_layout_{#MyAppVersion}
-SetupIconFile=C:\Users\Rui\PycharmProjects\VOConverter\dist\new_logo.ico
+SetupIconFile=C:\Users\Rui\PycharmProjects\VOConverter\new_logo.ico
 Compression=lzma
 SolidCompression=yes
 WizardImageFile=wizard.bmp
