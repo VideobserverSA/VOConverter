@@ -18,6 +18,7 @@ import base64
 from PIL import Image
 import hashlib
 import errno
+import shutil
 
 # we need this because: https://github.com/pyinstaller/pyinstaller/wiki/Recipe-subprocess
 if getattr(sys, 'frozen', False):
@@ -298,16 +299,16 @@ class MainWindow(wx.Frame):
         preset = convert_functions.get_preset(preset=self.preset)
         for video in self.filenames:
             if preset.name == "Original":
-                local_size = float(video.video_info.duration) * float(video.video_info.bitrate)
+                local_size = (float(video.video_info.duration) * float(video.video_info.bitrate)) / 10
             else:
-                local_size = float(video.video_info.duration) * float(preset.bitrate) * 1024
+                local_size = (float(video.video_info.duration) * float(preset.bitrate) * 1024) / 10
 
             print_mine("local_size", local_size)
             total_size += local_size
 
         print_mine("total_size", total_size)
 
-        size_in_megas = total_size / 1024 / 1024 / 10
+        size_in_megas = total_size / 1024 / 1024
         size_in_gigas = size_in_megas / 1024
         print_mine("in_megas", size_in_megas)
         print_mine("in_gigas", size_in_gigas)
@@ -317,21 +318,15 @@ class MainWindow(wx.Frame):
         else:
             estimate.SetLabel(str(int(size_in_megas)) + " Mb")
 
-        # # do we have enough space
-        # if not self.has_enough_disk_space(total_size / 10):
-        #     self.size_preview.SetForegroundColour(wx.RED)
-        #     # show dialog to user
-        #     dialog = wx.Dialog(parent=self, id=wx.ID_ANY, title="Not Enough space")
-        #     sizer = wx.BoxSizer(wx.VERTICAL)
-        #     msg = wx.StaticText(parent=dialog, id=wx.ID_ANY, label="You do not have enough disk space for the conversion\nif you try to continue with these files and presets\nthe conversion will probably fail.")
-        #     sizer.Add(msg)
-        #     ok_btn = wx.Button(parent=dialog, id=wx.ID_OK, label="Ok")
-        #     sizer.Add(ok_btn)
-        #     dialog.SetSizer(sizer)
-        #     sizer.SetSizeHints(dialog)
-        #     dialog.ShowModal()
-        # else:
-        #     self.size_preview.SetForegroundColour(wx.GREEN)
+        temp_total, temp_used, temp_free = shutil.disk_usage(self.temp_dir.name)
+        # do we have enough space
+        if (total_size * 2) > temp_free:
+            self.create_alert_dialog(parent=self, title="Not enough space",
+                                     message="You do not have enough disk space for the conversion\nif you try to continue with these files and presets\nthe conversion will probably fail.",
+                                     is_ok_type=True)
+            estimate.SetForegroundColour(wx.RED)
+        else:
+            estimate.SetForegroundColour(color_dark_green)
 
     def convert_browse_for_files(self, the_list, estimate):
         dlg = wx.FileDialog(self, "Video file", "", "", "*.*", wx.FD_OPEN | wx.FD_MULTIPLE)
@@ -1614,7 +1609,7 @@ class MainWindow(wx.Frame):
         # center in the middle, and give so
         up_down_buttons_sizer.Add(delete_bitmap, 0, wx.TOP, 30)
 
-        delete_bitmap.Bind(event=wx.EVT_LEFT_DOWN, handler=lambda evt: self.delete_list(convert_list))
+        delete_bitmap.Bind(event=wx.EVT_LEFT_DOWN, handler=lambda evt: self.delete_list(convert_list, estimated_size_indicator))
 
         # end the buttons
 
@@ -1871,7 +1866,7 @@ class MainWindow(wx.Frame):
                 the_list.Append([file.file])
         the_list.Select(index + 1)
 
-    def delete_list(self, the_list):
+    def delete_list(self, the_list, estimate):
         index = the_list.GetFirstSelected()
         if index == -1:
             return
@@ -1884,6 +1879,9 @@ class MainWindow(wx.Frame):
             else:
                 the_list.Append([file.file])
         the_list.Select(index + 1)
+
+        if estimate is not None:
+            self.calculate_conversion_estimates(estimate)
 
         # join several files
     def create_join_screen(self):
@@ -1965,7 +1963,7 @@ class MainWindow(wx.Frame):
         # center in the middle, and give so
         up_down_buttons_sizer.Add(delete_bitmap, 0, wx.TOP, 30)
 
-        delete_bitmap.Bind(event=wx.EVT_LEFT_DOWN, handler=lambda evt: self.delete_list(convert_list))
+        delete_bitmap.Bind(event=wx.EVT_LEFT_DOWN, handler=lambda evt: self.delete_list(convert_list, estimated_size_indicator))
 
         # end the buttons
 
@@ -2260,7 +2258,7 @@ class MainWindow(wx.Frame):
         # center in the middle, and give so
         up_down_buttons_sizer.Add(delete_bitmap, 0, wx.TOP, 30)
 
-        delete_bitmap.Bind(event=wx.EVT_LEFT_DOWN, handler=lambda evt: self.delete_list(convert_list))
+        delete_bitmap.Bind(event=wx.EVT_LEFT_DOWN, handler=lambda evt: self.delete_list(convert_list, None))
 
         # end the buttons
 
