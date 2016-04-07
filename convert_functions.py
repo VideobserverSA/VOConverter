@@ -287,6 +287,11 @@ class EncodeWithKeyFrames(threading.Thread):
                 ffmpeg_path,
                 # overwrite
                 "-y",
+                # hardware accel
+                "-hwaccel",
+                "dxva2",
+                "-threads",
+                "4",
                 # input file
                 "-i",
                 self.in_video,
