@@ -243,7 +243,7 @@ def get_video_info(video_path):
 # the convert functions
 class EncodeWithKeyFrames(threading.Thread):
 
-    def __init__(self, in_video, in_video_info, out_video, temp_dir, callback, preset, scale):
+    def __init__(self, in_video, in_video_info, out_video, temp_dir, callback, preset, scale, hwaccel):
 
         super().__init__()
 
@@ -256,6 +256,7 @@ class EncodeWithKeyFrames(threading.Thread):
         self.scale = scale
         self.p = None
         self.canceled = False
+        self.hwaccel = hwaccel
 
     def run(self):
 
@@ -287,11 +288,15 @@ class EncodeWithKeyFrames(threading.Thread):
                 ffmpeg_path,
                 # overwrite
                 "-y",
+                ]
+        if self.hwaccel:
+            cmd.extend([
                 # hardware accel
                 "-hwaccel",
                 "dxva2",
                 "-threads",
-                "4",
+                "4"])
+        cmd.extend([
                 # input file
                 "-i",
                 self.in_video,
@@ -307,7 +312,7 @@ class EncodeWithKeyFrames(threading.Thread):
                 "-b:a",
                 "128k",
                 "-strict",
-                "-2"]
+                "-2"])
         if self.scale:
             # pass scaling
             cmd.extend([
@@ -446,7 +451,7 @@ class ConvertToFastCopy(threading.Thread):
 
 
 class JoinFiles(threading.Thread):
-    def __init__(self, in_videos, out_video, callback, preset, tmp_dir):
+    def __init__(self, in_videos, out_video, callback, preset, tmp_dir, hwaccel):
 
         super().__init__()
 
@@ -461,6 +466,7 @@ class JoinFiles(threading.Thread):
 
         self.current_thr = None
         self.canceled = False
+        self.hwaccel = hwaccel
 
     def run(self):
 
@@ -489,7 +495,8 @@ class JoinFiles(threading.Thread):
                                                                      callback=self.update_progress, preset=self.preset,
                                                                      in_video_info=video_info,
                                                                      temp_dir=self.tmp_dir,
-                                                                     scale=mixed)
+                                                                     scale=mixed,
+                                                                     hwaccel=self.hwaccel)
 
                 convert_thr.start()
 

@@ -8,6 +8,7 @@ import tempfile
 import threading
 import time
 import subprocess
+import html.parser
 from boto3.session import Session
 import math
 import sys
@@ -118,6 +119,8 @@ class MainWindow(wx.Frame):
         self.watermark = settings.get("watermark", 0)
         self.pause_duration = settings.get("pause_duration", 4)
         self.font_size = settings.get("font_size", 30)
+
+        self.hwaccel = False
 
         self.canceled = False
 
@@ -259,7 +262,8 @@ class MainWindow(wx.Frame):
                                                                          out_video=out_video,
                                                                          tmp_dir=self.temp_dir,
                                                                          preset=the_preset,
-                                                                         callback=lambda progress: self.mark_progress(progress))
+                                                                         callback=lambda progress: self.mark_progress(progress),
+                                                                         hwaccel=self.hwaccel)
 
             join_thr.start()
 
@@ -384,6 +388,9 @@ class MainWindow(wx.Frame):
         # update settings
         settings.setsave("watermark", enabled)
 
+    def set_hwaccel_enabled(self, enabled):
+        self.hwaccel = (enabled == 1)
+
     def show_join_progress(self, e):
         # sanity check
         if self.destination_dir == "":
@@ -418,7 +425,8 @@ class MainWindow(wx.Frame):
                                                                      out_video=out_video,
                                                                      tmp_dir=self.temp_dir,
                                                                      preset=the_preset,
-                                                                     callback=lambda progress: self.mark_progress(progress))
+                                                                     callback=lambda progress: self.mark_progress(progress),
+                                                                     hwaccel=self.hwaccel)
 
         join_thr.start()
 
@@ -481,7 +489,8 @@ class MainWindow(wx.Frame):
 
         # first create and object to send
         client = aws_session.client(service_name="s3",
-                                    endpoint_url=self.aws_data["CloudfrontEndpoint"])
+                                    # endpoint_url=self.aws_data["CloudfrontEndpoint"])
+                                    )
 
         current_number = 1
         for file in self.filenames:
@@ -499,7 +508,9 @@ class MainWindow(wx.Frame):
             # upload_key = os.path.basename(file)
             # lets create a damn ugly upload key fuck this!
             md5time = hashlib.md5(str(time.time()).encode("UTF-8")).hexdigest()
-            upload_key = time.strftime("%Y%m%d%H%M%S", time.gmtime()) + "_" + md5time + "_" + str(self.token["user_id"]) + ".mp4"
+            upload_key = self.aws_data["Folder"] + time.strftime("%Y%m%d%H%M%S",
+                                                                 time.gmtime()) + "_" + md5time + "_" + str(
+                self.token["user_id"]) + ".mp4"
 
             print_mine("Upload key", upload_key)
 
@@ -1216,11 +1227,11 @@ class MainWindow(wx.Frame):
 
         else:
             pass
-            # login_btn = self.create_small_button(parent=anchor_window, length=150, text="LOGIN",
-            #                                      text_color=color_orange, back_color=color_dark_grey,
-            #                                      border_color=color_orange,
-            #                                      click_handler=self.show_login_form)
-            # anchor_window_sizer.Add(login_btn, 0, wx.CENTER | wx.RIGHT, 10)
+            login_btn = self.create_small_button(parent=anchor_window, length=150, text="LOGIN",
+                                                 text_color=color_orange, back_color=color_dark_grey,
+                                                 border_color=color_orange,
+                                                 click_handler=self.show_login_form)
+            anchor_window_sizer.Add(login_btn, 0, wx.CENTER | wx.RIGHT, 10)
 
         anchor_window.SetSizer(anchor_window_sizer)
 
@@ -1613,11 +1624,22 @@ class MainWindow(wx.Frame):
 
         # end the buttons
 
+        right_part_sizer = wx.BoxSizer(orient=wx.VERTICAL)
+
         add_a_file = self.create_small_button(parent=list_add, length=150, text="ADD FILES",
                                               text_color=color_white, back_color=color_dark_grey,
                                               click_handler=lambda x: self.convert_browse_for_files(convert_list,
-                                                                                                    estimated_size_indicator))
-        list_add_sizer.Add(add_a_file, 1, wx.RIGHT, 10)
+                                                                                                   estimated_size_indicator))
+
+        right_part_sizer.Add(add_a_file)
+
+        right_part_sizer.AddSpacer(20)
+
+        hwaccel_cb = wx.CheckBox(parent=list_add, id=wx.ID_ANY, label="HW Accel (Test)")
+        hwaccel_cb.Bind(wx.EVT_CHECKBOX, self.set_hwaccel_enabled)
+        right_part_sizer.Add(hwaccel_cb)
+
+        list_add_sizer.Add(right_part_sizer, 1, wx.RIGHT, 10)
 
         sizer.AddSpacer(20)
 
@@ -1967,11 +1989,22 @@ class MainWindow(wx.Frame):
 
         # end the buttons
 
+        right_part_sizer = wx.BoxSizer(orient=wx.VERTICAL)
+
         add_a_file = self.create_small_button(parent=list_add, length=150, text="ADD FILES",
                                               text_color=color_white, back_color=color_dark_grey,
                                               click_handler=lambda x: self.convert_browse_for_files(convert_list,
                                                                                                     estimated_size_indicator))
-        list_add_sizer.Add(add_a_file, 1, wx.RIGHT, 10)
+
+        right_part_sizer.Add(add_a_file)
+
+        right_part_sizer.AddSpacer(20)
+
+        hwaccel_cb = wx.CheckBox(parent=list_add, id=wx.ID_ANY, label="HW Accel (Test)")
+        hwaccel_cb.Bind(wx.EVT_CHECKBOX, self.set_hwaccel_enabled)
+        right_part_sizer.Add(hwaccel_cb)
+
+        list_add_sizer.Add(right_part_sizer, 1, wx.RIGHT, 10)
 
         # Estimated size
         estimated_size_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
@@ -2726,5 +2759,6 @@ settings_path = os.path.expanduser("~/VoConverter/voconverter.conf")
 settings = EasySettings(settings_path)
 
 app = wx.App(redirect=True, filename=os.path.expanduser("~/VoConverter/voconverter.log"))
+# app = wx.App(redirect=False)
 frame = MainWindow(None, "Videobserver Converter")
 app.MainLoop()
