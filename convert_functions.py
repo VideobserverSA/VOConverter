@@ -273,7 +273,7 @@ class EncodeWithKeyFrames(threading.Thread):
 
         if not self.scale:
             # we use the aspect ratio and calc a new size based on the preset and the width?
-            temp_h = int((self.in_video_info.width / self.in_video_info.height) * self.preset.height)
+            temp_h = int((self.in_video_info.height / self.in_video_info.width) * self.preset.width)
             # but x264 needs even values on both sides
             if temp_h % 2 != 0:
                 temp_h += 1
@@ -298,7 +298,8 @@ class EncodeWithKeyFrames(threading.Thread):
 
         cmd.extend([
             "-threads",
-            str(self.num_threads)
+            # str(self.num_threads),
+            "auto"
             ])
         cmd.extend([
                 # input file
@@ -337,7 +338,8 @@ class EncodeWithKeyFrames(threading.Thread):
                 # since flex VideoDisplay does not respect the sar and the dar
                 cmd.extend([
                     "-vf",
-                    "scale=" + str(self.preset.width) + "x" + str(self.preset.height)
+                    # "scale=" + str(self.preset.width) + "x" + str(self.preset.height),
+                    "scale=" + w + "x" + h,
                 ])
 
         cmd.extend([
