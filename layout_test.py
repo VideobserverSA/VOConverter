@@ -131,6 +131,10 @@ class MainWindow(wx.Frame):
         self.main_sizer.Add(self.current_window)
         self.SetSizer(self.main_sizer)
 
+        self.time_delta = 0
+
+        self.num_threads = 1
+
         # redraw the window
         self.Layout()
         self.Refresh()
@@ -249,6 +253,8 @@ class MainWindow(wx.Frame):
 
         self.canceled = False
 
+        start_time = time.time()
+
         current_number = 1
         for one_file in self.filenames:
 
@@ -263,7 +269,8 @@ class MainWindow(wx.Frame):
                                                                          tmp_dir=self.temp_dir,
                                                                          preset=the_preset,
                                                                          callback=lambda progress: self.mark_progress(progress),
-                                                                         hwaccel=self.hwaccel)
+                                                                         hwaccel=self.hwaccel,
+                                                                         num_threads=self.num_threads)
 
             join_thr.start()
 
@@ -281,6 +288,10 @@ class MainWindow(wx.Frame):
 
         self.final_path = out_video
         self.filenames = [out_video]
+
+        end_time = time.time()
+        self.time_delta = end_time - start_time
+
         self.show_convert_complete(None)
 
     def show_convert_complete(self, e):
@@ -391,6 +402,10 @@ class MainWindow(wx.Frame):
     def set_hwaccel_enabled(self, enabled):
         self.hwaccel = (enabled == 1)
 
+    def set_num_threads(self, num):
+        self.num_threads = num.GetInt()
+        print(self.num_threads)
+
     def show_join_progress(self, e):
         # sanity check
         if self.destination_dir == "":
@@ -408,6 +423,8 @@ class MainWindow(wx.Frame):
 
         presets, choices = convert_functions.get_presets()
         the_preset = convert_functions.get_preset(self.preset)
+
+        start_time = time.time()
 
         self.canceled = False
 
@@ -443,6 +460,10 @@ class MainWindow(wx.Frame):
 
         self.final_path = out_video
         self.filenames = [out_video]
+
+        end_time = time.time()
+        self.time_delta = end_time - start_time
+
         print_mine("SHOW JOIN COMPLETE WTF MAN WHY CRASH?")
         self.show_join_complete(None)
 
@@ -1639,6 +1660,15 @@ class MainWindow(wx.Frame):
         hwaccel_cb.Bind(wx.EVT_CHECKBOX, self.set_hwaccel_enabled)
         right_part_sizer.Add(hwaccel_cb)
 
+        right_part_sizer.AddSpacer(10)
+
+        threads_lbl = wx.StaticText(parent=list_add, id=wx.ID_ANY, label="N. Threads")
+        right_part_sizer.Add(threads_lbl)
+
+        n_threads = wx.Slider(parent=list_add, id=wx.ID_ANY, value=2, minValue=1, maxValue=8, style=wx.SL_LABELS)
+        n_threads.Bind(event=wx.EVT_SLIDER, handler=lambda evt: self.set_num_threads(evt.GetInt()))
+        right_part_sizer.Add(n_threads)
+
         list_add_sizer.Add(right_part_sizer, 1, wx.RIGHT, 10)
 
         sizer.AddSpacer(20)
@@ -1819,8 +1849,18 @@ class MainWindow(wx.Frame):
         converting_label.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
         converting_label.SetForegroundColour(color_dark_grey)
         converting_header_sizer.Add(converting_label)
+
+        if self.time_delta != 0:
+
+            seconds = int(self.time_delta % 60)
+            minutes = int(self.time_delta / 60)
+            hours = int(self.time_delta / (60 * 60))
+            elapsed_time = " t:" + format(hours, "02d") + ":" +  format(minutes, "02d") + ":" + format(seconds, "02d")
+        else:
+            elapsed_time = ""
+
         # the file name
-        converting_file_label = wx.StaticText(parent=win, id=wx.ID_ANY, label=self.final_path)
+        converting_file_label = wx.StaticText(parent=win, id=wx.ID_ANY, label=self.final_path + elapsed_time)
         converting_file_label.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False))
         converting_file_label.SetForegroundColour(color_dark_grey)
         converting_header_sizer.Add(converting_file_label, 0, wx.LEFT, 10)
@@ -2185,13 +2225,23 @@ class MainWindow(wx.Frame):
         # converting... file
         converting_header_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
         sizer.Add(converting_header_sizer, 0, wx.CENTER | wx.TOP, 20)
+
+        if self.time_delta != 0:
+
+            seconds = int(self.time_delta % 60)
+            minutes = int(self.time_delta / 60)
+            hours = int(self.time_delta / (60 * 60))
+            elapsed_time = " t:" + format(hours, "02d") + ":" + format(minutes, "02d") + ":" + format(seconds, "02d")
+        else:
+            elapsed_time = ""
+
         # the converting...
         converting_label = wx.StaticText(parent=win, id=wx.ID_ANY, label="Complete: ")
         converting_label.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False))
         converting_label.SetForegroundColour(color_dark_grey)
         converting_header_sizer.Add(converting_label)
         # the file name
-        converting_file_label = wx.StaticText(parent=win, id=wx.ID_ANY, label=self.final_path)
+        converting_file_label = wx.StaticText(parent=win, id=wx.ID_ANY, label=self.final_path + elapsed_time)
         converting_file_label.SetFont(wx.Font(9, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False))
         converting_file_label.SetForegroundColour(color_dark_grey)
         converting_header_sizer.Add(converting_file_label, 0, wx.LEFT, 10)

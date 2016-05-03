@@ -243,7 +243,7 @@ def get_video_info(video_path):
 # the convert functions
 class EncodeWithKeyFrames(threading.Thread):
 
-    def __init__(self, in_video, in_video_info, out_video, temp_dir, callback, preset, scale, hwaccel):
+    def __init__(self, in_video, in_video_info, out_video, temp_dir, callback, preset, scale, hwaccel, num_threads):
 
         super().__init__()
 
@@ -257,6 +257,7 @@ class EncodeWithKeyFrames(threading.Thread):
         self.p = None
         self.canceled = False
         self.hwaccel = hwaccel
+        self.num_threads = num_threads
 
     def run(self):
 
@@ -289,13 +290,16 @@ class EncodeWithKeyFrames(threading.Thread):
                 # overwrite
                 "-y",
                 ]
-        if self.hwaccel:
+        if self.hwaccel and self.num_threads < 2:
             cmd.extend([
                 # hardware accel
                 "-hwaccel",
-                "dxva2",
-                "-threads",
-                "4"])
+                "dxva2"])
+
+        cmd.extend([
+            "-threads",
+            str(self.num_threads)
+            ])
         cmd.extend([
                 # input file
                 "-i",
@@ -451,7 +455,7 @@ class ConvertToFastCopy(threading.Thread):
 
 
 class JoinFiles(threading.Thread):
-    def __init__(self, in_videos, out_video, callback, preset, tmp_dir, hwaccel):
+    def __init__(self, in_videos, out_video, callback, preset, tmp_dir, hwaccel, num_threads=4):
 
         super().__init__()
 
@@ -467,6 +471,7 @@ class JoinFiles(threading.Thread):
         self.current_thr = None
         self.canceled = False
         self.hwaccel = hwaccel
+        self.num_threads = num_threads
 
     def run(self):
 
@@ -496,7 +501,8 @@ class JoinFiles(threading.Thread):
                                                                      in_video_info=video_info,
                                                                      temp_dir=self.tmp_dir,
                                                                      scale=mixed,
-                                                                     hwaccel=self.hwaccel)
+                                                                     hwaccel=self.hwaccel,
+                                                                     num_threads=self.num_threads)
 
                 convert_thr.start()
 
