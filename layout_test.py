@@ -208,8 +208,8 @@ class MainWindow(wx.Frame):
     def show_upload(self, e):
         print_mine("UPLOAD")
         if not self.logged_in:
-            self.create_alert_dialog(parent=self, title="Coming soon.",
-                                     message="Soon you will be able to upload files directly.",
+            self.create_alert_dialog(parent=self, title="Please Login.",
+                                     message="Login to upload files",
                                      is_ok_type=True)
             return
         self.filenames = []
@@ -492,8 +492,8 @@ class MainWindow(wx.Frame):
         print_mine("DO THE UPLOAD")
 
         if not self.logged_in:
-            self.create_alert_dialog(parent=self, title="Coming soon.",
-                                     message="Soon you will be able to upload files directly.",
+            self.create_alert_dialog(parent=self, title="Please Login.",
+                                     message="Login to upload files",
                                      is_ok_type=True)
             return
 

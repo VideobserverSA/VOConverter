@@ -10,7 +10,7 @@ import jsonpickle
 import zlib
 import os
 
-api_url = "http://api.staging.videobserver.com/"
+api_url = "http://api.videobserver.com/"
 
 # lets us try to send the minimum 5 megabytes at a time
 part_size = 5 * 1024 * 1024
