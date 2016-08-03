@@ -212,11 +212,13 @@ def get_video_info(video_path):
             video_info = VideoInfo()
             for stream in info_json["streams"]:
                 if stream["codec_type"] == "video":
-                    video_info.set_w_and_h(stream["width"], stream["height"])
-                    video_info.set_bitrate(stream.get("bit_rate"))
-                    video_info.set_framerate(stream["avg_frame_rate"])
-                    video_info.set_video_codec(stream.get("codec_name"))
-                    video_info.set_sar_and_dar(stream.get("sample_aspect_ratio"), stream.get("display_aspect_ratio"))
+                    # but is it the bigger stream??
+                    if stream["width"] > video_info.width:
+                        video_info.set_w_and_h(stream["width"], stream["height"])
+                        video_info.set_bitrate(stream.get("bit_rate"))
+                        video_info.set_framerate(stream["avg_frame_rate"])
+                        video_info.set_video_codec(stream.get("codec_name"))
+                        video_info.set_sar_and_dar(stream.get("sample_aspect_ratio"), stream.get("display_aspect_ratio"))
                 if stream["codec_type"] == "audio":
                     video_info.set_audio_codec(stream.get("codec_name"))
                     has_sound = True
