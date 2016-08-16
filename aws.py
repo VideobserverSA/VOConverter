@@ -23,6 +23,7 @@ settings = EasySettings(os.path.expanduser("~/VoConverter/uploads.conf"))
 # boto3.set_stream_logger(name="botocore", level=logging.DEBUG)
 # boto3.set_stream_logger(name="s3", level=logging.DEBUG)
 
+
 def print_mine(*args):
     pass
     # print(args)

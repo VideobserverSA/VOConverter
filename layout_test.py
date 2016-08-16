@@ -120,8 +120,6 @@ class MainWindow(wx.Frame):
         self.pause_duration = settings.get("pause_duration", 4)
         self.font_size = settings.get("font_size", 30)
 
-        self.hwaccel = False
-
         self.canceled = False
 
         # init the main screen
@@ -132,8 +130,6 @@ class MainWindow(wx.Frame):
         self.SetSizer(self.main_sizer)
 
         self.time_delta = 0
-
-        self.num_threads = 1
 
         # redraw the window
         self.Layout()
@@ -268,9 +264,8 @@ class MainWindow(wx.Frame):
                                                                          out_video=out_video,
                                                                          tmp_dir=self.temp_dir,
                                                                          preset=the_preset,
-                                                                         callback=lambda progress: self.mark_progress(progress),
-                                                                         hwaccel=self.hwaccel,
-                                                                         num_threads=self.num_threads)
+                                                                         callback=lambda progress: self.mark_progress(progress)
+                                                                         )
 
             join_thr.start()
 
@@ -399,13 +394,6 @@ class MainWindow(wx.Frame):
         # update settings
         settings.setsave("watermark", enabled)
 
-    def set_hwaccel_enabled(self, enabled):
-        self.hwaccel = (enabled == 1)
-
-    def set_num_threads(self, num):
-        self.num_threads = num.GetInt()
-        print(self.num_threads)
-
     def show_join_progress(self, e):
         # sanity check
         if self.destination_dir == "":
@@ -442,8 +430,8 @@ class MainWindow(wx.Frame):
                                                                      out_video=out_video,
                                                                      tmp_dir=self.temp_dir,
                                                                      preset=the_preset,
-                                                                     callback=lambda progress: self.mark_progress(progress),
-                                                                     hwaccel=self.hwaccel)
+                                                                     callback=lambda progress: self.mark_progress(progress)
+                                                                     )
 
         join_thr.start()
 
@@ -528,9 +516,9 @@ class MainWindow(wx.Frame):
 
             # upload_key = os.path.basename(file)
             # lets create a damn ugly upload key fuck this!
-            md5time = hashlib.md5(str(time.time()).encode("UTF-8")).hexdigest()
-            upload_key = self.aws_data["Folder"] + time.strftime("%Y%m%d%H%M%S",
-                                                                 time.gmtime()) + "_" + md5time + "_" + str(
+            md5time = hashlib.md5(str(time.time()).encode("UTF-8")).hexdigest()[0:3]
+            upload_key = self.aws_data["Folder"] + time.strftime("%Y-%m-%d",
+                                                                 time.gmtime()) + "_" + os.path.basename(file)[0:15].replace(".mp4", "") + "_" + md5time + "_" + str(
                 self.token["user_id"]) + ".mp4"
 
             print_mine("Upload key", upload_key)
@@ -1656,19 +1644,6 @@ class MainWindow(wx.Frame):
 
         right_part_sizer.AddSpacer(20)
 
-        hwaccel_cb = wx.CheckBox(parent=list_add, id=wx.ID_ANY, label="HW Accel (Test)")
-        hwaccel_cb.Bind(wx.EVT_CHECKBOX, self.set_hwaccel_enabled)
-        right_part_sizer.Add(hwaccel_cb)
-
-        right_part_sizer.AddSpacer(10)
-
-        threads_lbl = wx.StaticText(parent=list_add, id=wx.ID_ANY, label="N. Threads")
-        right_part_sizer.Add(threads_lbl)
-
-        n_threads = wx.Slider(parent=list_add, id=wx.ID_ANY, value=2, minValue=1, maxValue=8, style=wx.SL_LABELS)
-        n_threads.Bind(event=wx.EVT_SLIDER, handler=lambda evt: self.set_num_threads(evt.GetInt()))
-        right_part_sizer.Add(n_threads)
-
         list_add_sizer.Add(right_part_sizer, 1, wx.RIGHT, 10)
 
         sizer.AddSpacer(20)
@@ -2039,10 +2014,6 @@ class MainWindow(wx.Frame):
         right_part_sizer.Add(add_a_file)
 
         right_part_sizer.AddSpacer(20)
-
-        hwaccel_cb = wx.CheckBox(parent=list_add, id=wx.ID_ANY, label="HW Accel (Test)")
-        hwaccel_cb.Bind(wx.EVT_CHECKBOX, self.set_hwaccel_enabled)
-        right_part_sizer.Add(hwaccel_cb)
 
         list_add_sizer.Add(right_part_sizer, 1, wx.RIGHT, 10)
 
