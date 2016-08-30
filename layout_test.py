@@ -45,6 +45,16 @@ if platform.system() == "Darwin":
 
     shell_status = False
     path_separator = "/"
+else:
+    # so check for 32 bit windows
+    if 'PROGRAMFILES(X86)' in os.environ:
+        # were 64!!!
+        ffmpeg_path = "ffmpeg_64.exe"
+        ffprobe_path = "ffprobe_64.exe"
+    else:
+        # were 32!
+        ffmpeg_path = "ffmpeg_32.exe"
+        ffprobe_path = "ffprobe_32.exe"
 
 # some colors
 color_dark_grey = wx.Colour(44, 49, 56)
