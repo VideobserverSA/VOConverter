@@ -956,6 +956,8 @@ class MainWindow(wx.Frame):
             join_args.append("aac_adtstoasc")
             join_args.append("-movflags")
             join_args.append("faststart")
+            join_args.append("-metadata")
+            join_args.append("comment=VOCONVERTER")
 
             # outfile
             out_filename = os.path.basename(one_file).replace(".vopl", "")
