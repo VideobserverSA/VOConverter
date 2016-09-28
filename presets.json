@@ -22,5 +22,13 @@
     "bitrate": 1750,
     "framerate" : 25,
     "keyframes" : 25
+  },
+  {
+    "name" : "Wide View",
+    "width" : 3000,
+    "height" : 600,
+    "bitrate": 9500,
+    "framerate" : 25,
+    "keyframes" : 25
   }
 ]

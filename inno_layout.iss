@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Vo Converter"
-#define MyAppVersion "1.1.24"
+#define MyAppVersion "1.1.26"
 #define MyAppPublisher "Videobserver SA"
 #define MyAppURL "http://www.videobserver.com"
 #define MyAppExeName "vo_converter.exe"
@@ -74,6 +74,7 @@ begin
    {write the INI directive}
    IniFile := ExpandConstant('{app}') + '\' + 'lang.ini';
    SetIniString('Language', 'Default Locale', Locale, IniFile);
+   SetIniString('Version', 'Version', ExpandConstant('{#MyAppVersion}'), IniFile);
    {MsgBox('fdx ' + IniFile, mbInformation, MB_OK)}
    Log('Set locale to: ' + Locale)
 end;

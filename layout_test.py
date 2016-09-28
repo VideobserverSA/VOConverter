@@ -20,6 +20,7 @@ from PIL import Image
 import hashlib
 import errno
 import shutil
+import configparser
 
 # we need this because: https://github.com/pyinstaller/pyinstaller/wiki/Recipe-subprocess
 if getattr(sys, 'frozen', False):
@@ -67,6 +68,11 @@ color_white = wx.WHITE
 color_black = wx.BLACK
 color_dark_green = wx.Colour(61, 209, 2)
 
+lang_conf = configparser.ConfigParser()
+lang_conf.read("lang.ini")
+current_version = lang_conf["Version"]["Version"]
+
+
 
 class ConvertFileDrop(wx.FileDropTarget):
 
@@ -76,7 +82,7 @@ class ConvertFileDrop(wx.FileDropTarget):
         self.estimate = estimate
 
     def OnDropFiles(self, x, y, filenames):
-        self.callback(filenames, self.estimate)
+        self.callback([x.lower() for x in filenames], self.estimate)
         return True
 
 
@@ -480,7 +486,7 @@ class MainWindow(wx.Frame):
             self.filenames.append(file_to_convert)
         self.calculate_conversion_estimates(estimate)
 
-        new_file_name = os.path.basename(filenames[0]).split(".")[0] + "_joined"
+        new_file_name = "_".join(os.path.basename(filenames[0]).split(".")[:-1]) + "_joined"
         final_name.SetValue(new_file_name)
 
     def set_final_filename(self, event):
@@ -1273,6 +1279,11 @@ class MainWindow(wx.Frame):
         copyright_text.SetForegroundColour(color_white)
         anchor_window_sizer.Add(copyright_text, 0, wx.CENTER | wx.LEFT, 20)
 
+        version_text = wx.StaticText(parent=anchor_window, id=wx.ID_ANY, label="v: " + current_version)
+        version_text.SetFont(wx.Font(7, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False))
+        version_text.SetForegroundColour(color_white)
+        anchor_window_sizer.Add(version_text, 0, wx.CENTER | wx.LEFT, 20)
+
         # a space in the middle
         anchor_window_sizer.AddStretchSpacer(1)
 
@@ -1382,7 +1393,7 @@ class MainWindow(wx.Frame):
         dialog.SendSizeEvent()
 
     def go_to_help(self, e):
-        webbrowser.open("http://faqs.videobserver.com/", new=0, autoraise=True)
+        webbrowser.open("https://www.videobserver.com/faqs/category/id/3/vo-converter", new=0, autoraise=True)
 
     def lost_pass(self, e):
         webbrowser.open("https://www.videobserver.com/forgot-password", new=0, autoraise=True)

@@ -1,3 +1,4 @@
+#-*- coding=utf-8 -*-
 import threading
 from subprocess import *
 import subprocess
