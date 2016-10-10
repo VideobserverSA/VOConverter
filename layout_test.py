@@ -1419,6 +1419,13 @@ class MainWindow(wx.Frame):
                                               is_ok_type=True)
             print_mine("wrong user and pass")
 
+        if code == 4:
+            dialog = self.create_alert_dialog(parent=self,
+                                              title="Not Allowed",
+                                              message="This user does not have permission to upload via converter.",
+                                              is_ok_type=True)
+            print_mine("no perms on acl")
+
     def do_logout(self, e):
         print_mine("Do LOGOUT")
         self.logged_in = False
