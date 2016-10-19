@@ -669,6 +669,30 @@ class MainWindow(wx.Frame):
 
             video_info = convert_functions.get_video_info(video_path)
 
+            has_overlap = False
+            last_start = 0
+            last_end = 0
+
+            for child in base.findall('.items/item'):
+                item_type = child.find("type").text
+                time_start = ""
+                time_end = ""
+                if item_type == "ga":
+                    real_time_start = float(child.find("game_action").find("video_time_start").text)
+                    time_start = int(real_time_start)
+                    real_time_end = float(child.find("game_action").find("video_time_end").text)
+                    time_end = int(real_time_end)
+                if item_type == "cue":
+                    real_time_start = float(child.find("action_cue").find("starting_time").text)
+                    time_start = int(real_time_start)
+                    real_time_end = float(child.find("action_cue").find("ending_time").text)
+                    time_end = int(real_time_end)
+                if time_start < last_end:
+                    has_overlap = True
+
+                last_start = time_start
+                last_end = time_end
+
             cut_number = 0
             # start parsing each item
             for child in base.findall('.items/item'):
@@ -784,6 +808,12 @@ class MainWindow(wx.Frame):
                 duration = time_end - time_start
                 real_duration = real_time_end - real_time_start
                 tmp_out = self.temp_dir.name + path_separator + str(cut_number) + ".mp4"
+
+                if has_overlap:
+                    if comments is None:
+                        comments = " "
+                    if enable_comments == "false":
+                        enable_comments = "true"
 
                 #  first check for comments
                 if comments is not None and enable_comments == "true":
