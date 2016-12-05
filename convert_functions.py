@@ -5,6 +5,7 @@ import subprocess
 import re
 import platform
 from qtfaststart import processor
+from qtfaststart import exceptions
 import json
 import sys
 import os
@@ -305,6 +306,9 @@ class EncodeWithKeyFrames(threading.Thread):
                 # input file
                 "-i",
                 self.in_video,
+                # input framrate
+                "-framerate",
+                str(self.preset.framerate),
                 # codec
                 "-x264opts",
                 "keyint=" + str(self.preset.keyframes) + ":min-keyint=" + str(self.preset.keyframes),
@@ -343,8 +347,8 @@ class EncodeWithKeyFrames(threading.Thread):
                 ])
 
         cmd.extend([
-                # frames
-                "-framerate",
+                # output framerate
+                "-r",
                 str(self.preset.framerate),
                 # output file
                 self.out_video + "_temp.mp4"
@@ -408,7 +412,13 @@ class EncodeWithKeyFrames(threading.Thread):
         log_file.close()
 
         if not self.canceled:
-            processor.process(self.out_video + "_temp.mp4", self.out_video)
+            # print("ahahahahahahahah", self.out_video + "_temp.mp4")
+            #try:
+                processor.process(self.out_video + "_temp.mp4", self.out_video)
+            #except exceptions.FastStartException:
+                #shutil.copy(self.out_video + "_temp.mp4", self.out_video)
+                # print("PUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUTA que pariu")
+
 
     def abort(self):
         print_mine("ABORT WITH KEY FRAMES")
@@ -448,6 +458,8 @@ class ConvertToFastCopy(threading.Thread):
             "copy",
             "-bsf:v",
             "h264_mp4toannexb",
+            "-bsf:a",
+            "aac_adtstoasc",
             "-f",
             "mpegts",
             # output file
@@ -479,11 +491,22 @@ class JoinFiles(threading.Thread):
         mixed = False
         test_w = self.in_videos[0].video_info.width
         test_h = self.in_videos[0].video_info.height
+        test_f = self.in_videos[0].video_info.framerate
+        mixed_framerates = False
+        has_sound = True
         for test_video in self.in_videos:
+            # check key frames too ffs
             if test_video.video_info.width != test_w or test_video.video_info.height != test_h:
                 mixed = True
+            if test_video.video_info.framerate != test_f:
+                mixed_framerates = True
+                has_sound = test_video.video_info.has_sound
 
         print_mine("MIXED MIXED", mixed)
+        print_mine("MEXIDO MEXIDO", mixed_framerates)
+
+        if mixed_framerates:
+            self.preset.keyframes = 25
 
         # loop the in videos and convert according to the preset
         for video in self.in_videos:
@@ -494,7 +517,7 @@ class JoinFiles(threading.Thread):
             # use the damn preset
             video_info = video.video_info
 
-            if not video_info.has_vo_tag:
+            if not video_info.has_vo_tag or mixed_framerates:
                 self.current_thr = convert_thr = EncodeWithKeyFrames(in_video=video.file,
                                                                      out_video=self.tmp_dir.name + path_separator + str(self.cut_number) + "_to_join.mp4",
                                                                      callback=self.update_progress, preset=self.preset,
@@ -534,29 +557,50 @@ class JoinFiles(threading.Thread):
         join_args.append(ffmpeg_path)
         # overwrite
         join_args.append("-y")
-        # input
-        join_args.append("-i")
         # the concat files
         concat = "concat:"
+        concat_file = open(self.tmp_dir.name + path_separator + "final_join.txt", "w", -1, "utf-8")
         for x in range(0, self.cut_number):
-            concat += self.tmp_dir.name + path_separator + str(x) + "_fast.mp4" + "|"
+            if not mixed_framerates:
+                concat += self.tmp_dir.name + path_separator + str(x) + "_fast.mp4" + "|"
+            else:
+                join_args.append("-i")
+                join_args.append(self.tmp_dir.name + path_separator + str(x) + "_to_join.mp4")
         concat = concat[:-1]
         concat += ""
-        join_args.append(concat)
 
-        # fast copy concatneation
-        join_args.append("-c")
-        join_args.append("copy")
-        join_args.append("-bsf:a")
-        join_args.append("aac_adtstoasc")
-        join_args.append("-movflags")
-        join_args.append("faststart")
-        join_args.append("-metadata")
-        join_args.append("comment=VOCONVERTER")
+        if not mixed_framerates:
+            join_args.append("-i")
+            join_args.append(concat)
+            # fast copy concatneation
+            join_args.append("-c")
+            join_args.append("copy")
+            join_args.append("-bsf:a")
+            join_args.append("aac_adtstoasc")
+            join_args.append("-movflags")
+            join_args.append("faststart")
+            join_args.append("-metadata")
+            join_args.append("comment=VOCONVERTER")
+        else:
+            join_args.append("-filter_complex")
+            if has_sound:
+                join_args.append("[0:v:0] [0:a:0] [1:v:0] [1:a:0] concat=n=2:v=1:a=1 [v] [a]")
+                join_args.append("-map")
+                join_args.append("[v]")
+                join_args.append("-map")
+                join_args.append("[a]")
+            else:
+                join_args.append("[0:v:0] [1:v:0] concat=n=2:v=1 [v]")
+                join_args.append("-map")
+                join_args.append("[v]")
+
 
         # outfile
         # put it on desktop for now
         join_args.append("" + self.out_video + "")
+        # join_args.append("test.mp4")
+
+        print_mine("JOIN ARGS", join_args)
 
         if not self.canceled:
             try:

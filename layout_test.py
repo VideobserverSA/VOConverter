@@ -155,6 +155,9 @@ class MainWindow(wx.Frame):
 
         self.Show()
 
+        self.last_upload_chunk_time = time.time()
+        self.upload_speed = "NO"
+
     # progress funcs
     def mark_progress(self, progress):
         self.current_progress = progress
@@ -181,7 +184,10 @@ class MainWindow(wx.Frame):
             m = int((remain / 60) % 60)
             h = int((remain / (60 * 60)) % 60)
             time_str = str(h) + "h " + str(m) + "m " + str(s) + "s"
-            text.SetLabel("Estimated time: " + time_str + " " + str(self.current_progress) + "%")
+            label_text = "Estimated time: " + time_str + " " + str(self.current_progress) + "%"
+            if self.upload_speed is not "NO":
+                label_text += "        Speed: " + str(self.upload_speed) + " Kb/s"
+            text.SetLabel(label_text)
 
     def reset_progress(self):
         self.current_progress = 0
@@ -257,6 +263,9 @@ class MainWindow(wx.Frame):
             print_mine("NO PRESET")
             return
         print_mine("CONVERT PROGRESS")
+
+        self.upload_speed = "NO"
+
         win, gauge, estimate_text, current_file = self.create_convert_progress()
         self.replace_view(win)
 
@@ -422,6 +431,9 @@ class MainWindow(wx.Frame):
             print_mine("NO PRESET")
             return
         print_mine("CONVERT PROGRESS")
+
+        self.upload_speed = "NO"
+
         win, gauge, estimate_text, current_file = self.create_join_progress()
         self.replace_view(win)
 
@@ -495,6 +507,9 @@ class MainWindow(wx.Frame):
     def show_upload_progress(self, e):
         print_mine("DO THE UPLOAD")
 
+        self.last_upload_chunk_time = time.time()
+        self.upload_speed = "NO"
+
         if not self.logged_in:
             self.create_alert_dialog(parent=self, title="Please Login.",
                                      message="Login to upload files",
@@ -532,10 +547,8 @@ class MainWindow(wx.Frame):
 
             # upload_key = os.path.basename(file)
             # lets create a damn ugly upload key fuck this!
-            md5time = hashlib.md5(str(time.time()).encode("UTF-8")).hexdigest()[0:3]
-            upload_key = self.aws_data["Folder"] + time.strftime("%Y-%m-%d",
-                                                                 time.gmtime()) + "_" + os.path.basename(file)[0:15].replace(".mp4", "") + "_" + md5time + "_" + str(
-                self.token["user_id"]) + ".mp4"
+            md5time = str(hashlib.md5(str(time.time()).encode("UTF-8")).hexdigest()[0:32])
+            upload_key = self.aws_data["Folder"] + time.strftime("%Y%m%d", time.gmtime()) + "_" + md5time + "_" + str(self.token["user_id"]) + ".mp4"
 
             print_mine("Upload key", upload_key)
 
@@ -553,7 +566,8 @@ class MainWindow(wx.Frame):
                                                               file=file,
                                                               progress_callback=lambda progress: self.mark_upload_progress(progress, total_size),
                                                               resume_callback=lambda progress: self.mark_upload_progress(progress, total_size),
-                                                              name="upload-thr")
+                                                              name="upload-thr",
+                                                              token=self.token)
             upload_thr.start()
 
             while upload_thr.is_alive():
@@ -590,6 +604,17 @@ class MainWindow(wx.Frame):
             self.filenames.append(file)
 
     def mark_upload_progress(self, progress, total):
+        now = time.time()
+        # seconds since last?
+        time_delta = now - self.last_upload_chunk_time
+        mbps = (5 * 1024 * 1024) / ((1 * 1024 * 1024) * time_delta)
+        kbps = mbps * 1024
+        mbps_print = "{0:.2f}".format(mbps)
+        kbps_print = "{0:.2f}".format(kbps)
+        # print("DELTA DELTA DELTA", time_delta, mbps_print, kbps_print)
+        self.last_upload_chunk_time = now
+        self.upload_speed = kbps_print
+
         print_mine("UP:", progress, total)
         self.current_upload_size += progress
         percentage = math.ceil((self.current_upload_size / total) * 100)

@@ -1,5 +1,6 @@
 import urllib.request
 from datetime import time
+from time import gmtime, strftime
 from urllib.request import Request
 import urllib.parse
 import urllib.error
@@ -9,6 +10,7 @@ from easysettings import EasySettings
 import jsonpickle
 import zlib
 import os
+from boto3.session import Session
 
 api_url = "http://api.videobserver.com/"
 
@@ -76,7 +78,7 @@ def get_aws_data(token):
     try:
 
         # compose the data
-        data = {"timeout": 7200}
+        data = {"timeout": 3600}
         post_data = urllib.parse.urlencode(data)
         binary_data = post_data.encode()
 
@@ -118,7 +120,7 @@ def confirm_upload(token, bucket, key, duration, size):
 
 class UploadFile(threading.Thread):
 
-    def __init__(self, s3client, bucket, file, key, progress_callback, resume_callback, name):
+    def __init__(self, s3client, bucket, file, key, progress_callback, resume_callback, name, token):
 
         super().__init__(name=name)
 
@@ -126,6 +128,7 @@ class UploadFile(threading.Thread):
         self.bucket = bucket
         self.file = file
         self.key = key
+        self.token = token
 
         # print_mine(self.total_size)
 
@@ -175,10 +178,22 @@ class UploadFile(threading.Thread):
             upload.checksum = checksum
             upload.size = size
 
+            # get the new key
+            aws_data = get_aws_data(self.token["token"])
+
+            aws_session = Session(aws_access_key_id=aws_data["AccessKeyId"],
+                                  aws_secret_access_key=aws_data["SecretAccessKey"],
+                                  aws_session_token=aws_data["SessionToken"],
+                                  region_name=aws_data["Region"])
+
+            # first create and object to send
+            client = aws_session.client(service_name="s3",
+                                        )
+
             # lets do this with a multi part upload so we can cancel it?
-            ret = self.s3client.create_multipart_upload(Bucket=self.bucket,
-                                                        Key=self.key
-                                                        )
+            ret = client.create_multipart_upload(Bucket=self.bucket,
+                                                 Key=self.key
+                                                 )
 
             # grab the upload id to use in the following methods
             upload.upload_id = ret["UploadId"]
@@ -209,14 +224,30 @@ class UploadFile(threading.Thread):
             if len(buffer) != part_size:
                 done = True
 
+            # get the new key
+            aws_data = get_aws_data(self.token["token"])
+
+            aws_session = Session(aws_access_key_id=aws_data["AccessKeyId"],
+                                  aws_secret_access_key=aws_data["SecretAccessKey"],
+                                  aws_session_token=aws_data["SessionToken"],
+                                  region_name=aws_data["Region"])
+
+            # first create and object to send
+            client = aws_session.client(service_name="s3",
+                                        )
+
             # now we upload the part
-            part_upload_ret = self.s3client.upload_part(Bucket=self.bucket,
-                                                        Key=self.key,
-                                                        PartNumber=self.current_part,
-                                                        UploadId=self.upload_id,
-                                                        Body=buffer,
-                                                        ContentLength=len(buffer)
-                                                        )
+            part_upload_ret = client.upload_part(Bucket=self.bucket,
+                                                 Key=self.key,
+                                                 PartNumber=self.current_part,
+                                                 UploadId=self.upload_id,
+                                                 Body=buffer,
+                                                 ContentLength=len(buffer)
+                                                 )
+
+            print_mine("time", strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()))
+            print_mine("part no", self.current_part, self.bucket, self.key, len(buffer))
+            print_mine(part_upload_ret)
 
             self.part_etag_list.append({'ETag': part_upload_ret["ETag"], 'PartNumber': self.current_part})
             self.progress_callback(len(buffer))
@@ -234,11 +265,24 @@ class UploadFile(threading.Thread):
         if not self.canceled:
             # and now complete the upload
             parts_dict = {'Parts': self.part_etag_list}
-            complete_ret = self.s3client.complete_multipart_upload(Bucket=self.bucket,
-                                                                   Key=self.key,
-                                                                   MultipartUpload=parts_dict,
-                                                                   UploadId=self.upload_id
-                                                                   )
+
+            # get the new key
+            aws_data = get_aws_data(self.token["token"])
+
+            aws_session = Session(aws_access_key_id=aws_data["AccessKeyId"],
+                                  aws_secret_access_key=aws_data["SecretAccessKey"],
+                                  aws_session_token=aws_data["SessionToken"],
+                                  region_name=aws_data["Region"])
+
+            # first create and object to send
+            client = aws_session.client(service_name="s3",
+                                        )
+
+            complete_ret = client.complete_multipart_upload(Bucket=self.bucket,
+                                                            Key=self.key,
+                                                            MultipartUpload=parts_dict,
+                                                            UploadId=self.upload_id
+                                                            )
             upload.complete = True
             settings.set("uploads", jsonpickle.encode(self.current_uploads))
             settings.save()
@@ -257,10 +301,23 @@ class UploadFile(threading.Thread):
         del self.current_uploads[self.file]
         settings.set("uploads", jsonpickle.encode(self.current_uploads))
         settings.save()
-        abort_ret = self.s3client.abort_multipart_upload(Bucket=self.bucket,
-                                                         Key=self.key,
-                                                         UploadId=self.upload_id
-                                                         )
+
+        # get the new key
+        aws_data = get_aws_data(self.token["token"])
+
+        aws_session = Session(aws_access_key_id=aws_data["AccessKeyId"],
+                              aws_secret_access_key=aws_data["SecretAccessKey"],
+                              aws_session_token=aws_data["SessionToken"],
+                              region_name=aws_data["Region"])
+
+        # first create and object to send
+        client = aws_session.client(service_name="s3",
+                                    )
+
+        abort_ret = client.abort_multipart_upload(Bucket=self.bucket,
+                                                  Key=self.key,
+                                                  UploadId=self.upload_id
+                                                  )
         print_mine(abort_ret)
 
     def abort(self):
