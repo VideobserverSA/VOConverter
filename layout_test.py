@@ -1005,7 +1005,7 @@ class MainWindow(wx.Frame):
             # the concat files
             concat = "concat:"
             for x in range(0, cut_number):
-                concat += self.temp_dir.name + path_separator + str(x) + ".mp4" + "|"
+                concat += self.temp_dir.name + path_separator + str(x) + "_comments.mp4" + "|"
             concat = concat[:-1]
             concat += ""
             join_args.append(concat)
