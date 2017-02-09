@@ -21,6 +21,7 @@ import hashlib
 import errno
 import shutil
 import configparser
+import _locale
 
 # we need this because: https://github.com/pyinstaller/pyinstaller/wiki/Recipe-subprocess
 if getattr(sys, 'frozen', False):
@@ -2847,6 +2848,13 @@ class MainWindow(wx.Frame):
         sizer.Add(footer_window)
 
         return win
+
+# THIS FIXES THE FUCKING CYRLIC ARAB PROBLEM BUGGER THIS TWAT IN ITS WORN OUT ARSEHOLE.
+# MAY THE UTF-8 AND CP1512 AND THE FESTERING CUNT IT CAME FROM ROTH IN THE DEPTHS OF HELL
+# (praguejar em ingles... Só para ti David)
+# See http://stackoverflow.com/questions/31469707/changing-the-locale-preferred-encoding-in-python-3-in-windows
+# to find where I lifted the hack
+_locale._getdefaultlocale = (lambda *args: ['en_US', 'utf8'])
 
 os.makedirs(os.path.expanduser("~/VoConverter/"), exist_ok=True)
 # trunc vo converter.log?
