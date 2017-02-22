@@ -720,6 +720,9 @@ class MainWindow(wx.Frame):
                 last_end = time_end
 
             cut_number = 0
+
+            do_fucky_join = True
+
             # start parsing each item
             for child in base.findall('.items/item'):
 
@@ -830,6 +833,9 @@ class MainWindow(wx.Frame):
 
                 # for drw in multiple_drawings:
                 #    print_mine(drw.drawing_time)
+
+                if has_drawing or has_multiple_drawings:
+                    do_fucky_join = False
 
                 duration = time_end - time_start
                 real_duration = real_time_end - real_time_start
@@ -1005,8 +1011,15 @@ class MainWindow(wx.Frame):
             join_args.append("-i")
             # the concat files
             concat = "concat:"
-            for x in range(0, cut_number):
-                concat += self.temp_dir.name + path_separator + str(x) + "_comments.mp4" + "|"
+
+            print_mine("SOMETHIN'S FUCKY", do_fucky_join)
+            if do_fucky_join:
+                for x in range(0, cut_number):
+                    concat += self.temp_dir.name + path_separator + str(x) + "_comments.mp4" + "|"
+            else:
+                for x in range(0, cut_number):
+                    concat += self.temp_dir.name + path_separator + str(x) + "_.mp4" + "|"
+
             concat = concat[:-1]
             concat += ""
             join_args.append(concat)
