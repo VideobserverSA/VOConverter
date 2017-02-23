@@ -562,10 +562,10 @@ class JoinFiles(threading.Thread):
         concat_file = open(self.tmp_dir.name + path_separator + "final_join.txt", "w", -1, "utf-8")
         for x in range(0, self.cut_number):
             if not mixed_framerates:
-                concat += self.tmp_dir.name + path_separator + str(x) + "_fast.mp4" + "|"
+                concat += self.tmp_dir.name + path_separator + str(x) + "fuck_fast.mp4" + "|"
             else:
                 join_args.append("-i")
-                join_args.append(self.tmp_dir.name + path_separator + str(x) + "_to_join.mp4")
+                join_args.append(self.tmp_dir.name + path_separator + str(x) + "fuck_to_join.mp4")
         concat = concat[:-1]
         concat += ""
 
@@ -606,7 +606,26 @@ class JoinFiles(threading.Thread):
             try:
                 out = check_call(join_args, stderr=STDOUT, shell=False)
             except CalledProcessError as cpe:
-                print_mine("ERROR>>", cpe.output)
+                print_mine("ERROR IN JOIN>>", cpe.output)
+
+                recover_path = os.path.dirname(self.out_video)
+                recover_dir = recover_path + path_separator + os.path.basename(self.out_video) + " RECOVER" + path_separator
+
+                if not os.path.exists(recover_dir):
+                    os.makedirs(recover_dir)
+
+                for x in range(0, self.cut_number):
+                    if mixed_framerates:
+                        origin = self.tmp_dir.name + path_separator + str(x) + "_to_join.mp4"
+                    else:
+                        origin = self.tmp_dir.name + path_separator + str(x) + "_fast.mp4"
+                    destination = recover_dir + str(x + 1) + ".mp4"
+
+                    if os.path.exists(origin):
+                        print_mine("COPY STUFF", origin, destination)
+                        # shutil.copy(origin, destination)
+                        # Since we expect large > 1gb files, we move them instead of copying
+                        shutil.move(origin, destination)
 
             # we are DONE!
             self.callback(100)
