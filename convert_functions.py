@@ -562,10 +562,10 @@ class JoinFiles(threading.Thread):
         concat_file = open(self.tmp_dir.name + path_separator + "final_join.txt", "w", -1, "utf-8")
         for x in range(0, self.cut_number):
             if not mixed_framerates:
-                concat += self.tmp_dir.name + path_separator + str(x) + "fuck_fast.mp4" + "|"
+                concat += self.tmp_dir.name + path_separator + str(x) + "_fast.mp4" + "|"
             else:
                 join_args.append("-i")
-                join_args.append(self.tmp_dir.name + path_separator + str(x) + "fuck_to_join.mp4")
+                join_args.append(self.tmp_dir.name + path_separator + str(x) + "_to_join.mp4")
         concat = concat[:-1]
         concat += ""
 

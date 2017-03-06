@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Vo Converter"
-#define MyAppVersion "1.1.41"
+#define MyAppVersion "1.1.42"
 #define MyAppPublisher "Videobserver SA"
 #define MyAppURL "http://www.videobserver.com"
 #define MyAppExeName "vo_converter.exe"
@@ -19,7 +19,7 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-AppCopyright=Copyright (C) 2016 Videobserver SA
+AppCopyright=Copyright (C) 2017 Videobserver SA
 DefaultDirName={pf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 LicenseFile=C:\Users\Rui\PycharmProjects\VOConverter\gpl.txt
