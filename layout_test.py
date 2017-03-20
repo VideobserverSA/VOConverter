@@ -747,6 +747,7 @@ class MainWindow(wx.Frame):
                 drawing_time = ""
                 screenshot = ""
 
+                #TEST
                 has_multiple_drawings = False
                 multiple_drawings = []
 
@@ -835,8 +836,14 @@ class MainWindow(wx.Frame):
                 # for drw in multiple_drawings:
                 #    print_mine(drw.drawing_time)
 
+
                 if has_drawing or has_multiple_drawings:
                     do_fucky_join = False
+
+                ############## HACKING ############
+                backup_has_drawing = has_drawing
+                has_drawing = True
+                ###################################
 
                 duration = time_end - time_start
                 real_duration = real_time_end - real_time_start
@@ -908,6 +915,10 @@ class MainWindow(wx.Frame):
                         self.Update()
                         dummy_event = threading.Event()
                         dummy_event.wait(timeout=0.01)
+
+                ############## HACKING ############
+                has_drawing = backup_has_drawing
+                ###################################
 
                 # do we add an overlay?
                 if has_drawing:
