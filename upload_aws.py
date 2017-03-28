@@ -21,8 +21,8 @@ import platform
 import shutil
 
 # api_url = "http://api.qa.videobserver.com/"
-# api_url = "http://api.videobserver.com/"
-api_url = "http://api.staging.videobserver.com/"
+api_url = "http://api.videobserver.com/"
+# api_url = "http://api.staging.videobserver.com/"
 # test_file = "teste user.mp4"
 # test_file = "d:\\adil_camara_fixa.mp4"
 # test_file = "c:\\Users\Rui\Desktop\drawing_ERROR.mp4"
