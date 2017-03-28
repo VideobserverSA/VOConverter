@@ -172,27 +172,27 @@ def get_presets():
     presets_file = open("presets.json", "r")
     presets_json = json.load(presets_file)
     preset_choices = []
-    #for preset_json in presets_json:
-    #    preset = EncodingPreset(name=preset_json["name"],
-    #                            width=preset_json["width"],
-    #                            height=preset_json["height"],
-    #                            bitrate=preset_json["bitrate"],
-    #                            framerate=preset_json["framerate"],
-    #                            keyframes=preset_json["keyframes"])
-    #    presets.append(preset)
-    #    preset_choices.append(preset.name)
-    #original_preset = EncodingPreset(name="Original",
-    #                                 width=0,
-    #                                 height=0,
-    #                                 bitrate=0,
-    #                                 framerate=0,
-    #                                 keyframes=0)
-    original_preset = EncodingPreset(name="HD",
-                                     width=1280,
-                                     height=720,
-                                     bitrate=2350,
-                                     framerate=25,
-                                     keyframes=25)
+    for preset_json in presets_json:
+        preset = EncodingPreset(name=preset_json["name"],
+                                width=preset_json["width"],
+                                height=preset_json["height"],
+                                bitrate=preset_json["bitrate"],
+                                framerate=preset_json["framerate"],
+                                keyframes=preset_json["keyframes"])
+        presets.append(preset)
+        preset_choices.append(preset.name)
+    original_preset = EncodingPreset(name="Original",
+                                     width=0,
+                                     height=0,
+                                     bitrate=0,
+                                     framerate=0,
+                                     keyframes=0)
+    #original_preset = EncodingPreset(name="HD",
+    #                                 width=1280,
+    #                                 height=720,
+    #                                 bitrate=2350,
+    #                                 framerate=25,
+    #                                 keyframes=25)
     preset_choices.append(original_preset.name)
     presets.append(original_preset)
 
