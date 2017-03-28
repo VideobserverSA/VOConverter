@@ -1411,11 +1411,11 @@ class MainWindow(wx.Frame):
 
         else:
             pass
-            login_btn = self.create_small_button(parent=anchor_window, length=150, text="LOGIN",
-                                                 text_color=color_orange, back_color=color_dark_grey,
-                                                 border_color=color_orange,
-                                                 click_handler=self.show_login_form)
-            anchor_window_sizer.Add(login_btn, 0, wx.CENTER | wx.RIGHT, 10)
+            #login_btn = self.create_small_button(parent=anchor_window, length=150, text="LOGIN",
+            #                                     text_color=color_orange, back_color=color_dark_grey,
+            #                                     border_color=color_orange,
+            #                                     click_handler=self.show_login_form)
+            #anchor_window_sizer.Add(login_btn, 0, wx.CENTER | wx.RIGHT, 10)
 
         anchor_window.SetSizer(anchor_window_sizer)
 
@@ -1618,27 +1618,27 @@ class MainWindow(wx.Frame):
                                             hover_color=color_home_headers,
                                             click_handler=self.show_convert_join)
 
-        convert_btn = self.create_nav_button(parent=win,
-                                             size=(190, 190),
-                                             file="assets/home_upload_file.png",
-                                             text="UPLOAD",
-                                             back_color=color_home_back,
-                                             text_color=color_home_text,
-                                             hover_color=color_home_headers,
-                                             click_handler=self.show_upload)
+        #convert_btn = self.create_nav_button(parent=win,
+        #                                     size=(190, 190),
+        #                                     file="assets/home_upload_file.png",
+        #                                     text="UPLOAD",
+        #                                     back_color=color_home_back,
+        #                                     text_color=color_home_text,
+        #                                     hover_color=color_home_headers,
+        #                                     click_handler=self.show_upload)
 
-        join_btn = self.create_nav_button(parent=win,
-                                          size=(190, 190),
-                                          file="assets/home_create_playlist.png",
-                                          text="CREATE PLAYLIST",
-                                          back_color=color_home_back,
-                                          text_color=color_home_text,
-                                          hover_color=color_home_headers,
-                                          click_handler=self.show_playlist)
+        #join_btn = self.create_nav_button(parent=win,
+        #                                  size=(190, 190),
+        #                                  file="assets/home_create_playlist.png",
+        #                                  text="CREATE PLAYLIST",
+        #                                  back_color=color_home_back,
+        #                                  text_color=color_home_text,
+        #                                  hover_color=color_home_headers,
+        #                                  click_handler=self.show_playlist)
 
-        button_sizer.Add(upload_btn)
-        button_sizer.Add(convert_btn, 0, wx.LEFT, 5)
-        button_sizer.Add(join_btn, 0, wx.LEFT, 5)
+        button_sizer.Add(upload_btn, 0, wx.LEFT, 200)
+        #button_sizer.Add(convert_btn, 0, wx.LEFT, 200)
+        #button_sizer.Add(join_btn, 0, wx.LEFT, 5)
         sizer.Add(button_sizer, 0, wx.LEFT | wx.RIGHT, 10)
 
         # select a funtion?
@@ -1732,7 +1732,6 @@ class MainWindow(wx.Frame):
 
     # convert just one file
     def create_convert_screen(self):
-
         win = wx.Window(parent=self, id=wx.ID_ANY)
         win.SetBackgroundColour(color_white)
         # main sizer
@@ -2102,7 +2101,6 @@ class MainWindow(wx.Frame):
 
         # join several files
     def create_join_screen(self):
-
         win = wx.Window(parent=self, id=wx.ID_ANY)
         win.SetBackgroundColour(color_white)
         # main sizer
